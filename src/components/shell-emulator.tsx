@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Terminal } from "lucide-react";
@@ -16,30 +15,37 @@ interface CommandOutput {
 const initialWelcomeMessage: CommandOutput = {
   id: Date.now().toString(),
   type: "output",
-  text: "Welcome to BinaryBlocksphere v0.1.0\nType 'help' for a list of available commands.",
+  text: "Welcome to BinaryBlocksphere v0.2.0\nType 'help' for a list of available commands.\nType 'desktop' to launch the Graphical Desktop Environment.",
 };
 
 const initialCoreFeatures = [
   "System Initialization", "Binary Fold", "Change Propagation", 
   "Virtual Driver (Z-plane)", "SHELL EMULATION", "PERSONAL ENV", "VIRTUAL RAM", 
-  "VIRTUAL DRIVER", "POWERSHELL LINUX AND DARWIN INTERPERATOR ALL IN WONE", 
-  "OWN NATIVE ENV", "DESKTOP GUI ENV (via 'desktop' command)", 
-  "ISOLATED ROOT WITH FILESYSTEM DISGNED FOR ITS NATIVE COSS PATFORM ENV", 
-  "RUNS IN BROWSER OR OVER THE TOP OF OTHER OS WITH ITS OWN ISOLATED ROOT", 
+  "VIRTUAL DRIVER", "POWERSHELL LINUX AND DARWIN INTERPERATOR ALL IN WONE (simulated via pkg)", 
+  "OWN NATIVE ENV", 
+  "Graphical Desktop Environment (GDE) with App Launcher (via 'desktop' command)",
+  "Web Browser with multi-search engine support (in GDE)",
+  "Actual Web Requests (curl/wget with browser fetch, CORS limitations apply)",
+  "ISOLATED ROOT WITH FILESYSTEM DISGNED FOR ITS NATIVE COSS PATFORM ENV (simulated)", 
+  "RUNS IN BROWSER OR OVER THE TOP OF OTHER OS WITH ITS OWN ISOLATED ROOT (conceptual)", 
   "VIRTUAL CLOCK DESIGNED FOR BI DIRECTIONAL BINARY TIMING",
-  "Networking Utilities (curl, wget)",
-  "Unified Package Manager (pkg)",
-  "Cross-Platform Hybrid Compilation (bbs-script)",
-  "Internet & Localhost Connectivity (connect)",
+  "Networking Utilities (curl, wget - actual fetch attempts)",
+  "Unified Package Manager (pkg - simulated)",
+  "Cross-Platform Hybrid Compilation (bbs-script - simulated)",
+  "Internet & Localhost Connectivity (connect - simulated, curl/wget - actual fetch attempts)",
+  "Factory Reset (factory-reset command)",
 ];
 
 const availablePackages = ["powershell", "darwin-tools", "linux-core", "web-utils", "bbs-dev-kit", "gui-tools"];
 
-export function ShellEmulator() {
+interface ShellEmulatorProps {
+  onOpenDesktop: () => void;
+}
+
+export function ShellEmulator({ onOpenDesktop }: ShellEmulatorProps) {
   const [history, setHistory] = useState<CommandOutput[]>([initialWelcomeMessage]);
   const [inputValue, setInputValue] = useState("");
   const [installedPackages, setInstalledPackages] = useState<string[]>(["core-utils"]);
-  const [coreFeatures, setCoreFeatures] = useState<string[]>(initialCoreFeatures);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -56,7 +62,7 @@ export function ShellEmulator() {
     inputRef.current?.focus();
   }, []);
 
-  const handleCommand = (command: string) => {
+  const handleCommand = async (command: string) => {
     const newHistoryEntry: CommandOutput = { 
       id: `${Date.now()}-input-${Math.random()}`, 
       type: "input", 
@@ -73,7 +79,7 @@ export function ShellEmulator() {
 
     switch (cmd.toLowerCase()) {
       case "help":
-        outputText = "BinaryBlocksphere v0.1.0 - Available Commands:\n" +
+        outputText = "BinaryBlocksphere v0.2.0 - Available Commands:\n" +
           "  help                       - Show this help message\n" +
           "  clear                      - Clear the terminal screen\n" +
           "  date                       - Display the current system time\n" +
@@ -83,16 +89,17 @@ export function ShellEmulator() {
           "  whoami                     - Display current user (guest)\n" +
           "  sysinit                    - Simulate system initialization\n" +
           "  fold                       - Simulate binary fold operation\n" +
-          "  curl <url>                 - Transfer data from or to a server (simulated)\n" +
-          "  wget <url>                 - Download files from network (simulated)\n" +
+          "  curl <url>                 - Transfer data from a server (uses browser fetch)\n" +
+          "  wget <url>                 - Download files from network (uses browser fetch, save simulated)\n" +
           "  connect <address>          - Connect to a network address (simulated)\n" +
           "  pkg install <name>         - Install a package (e.g., powershell, darwin-tools, linux-core)\n" +
           "  pkg remove <name>          - Remove an installed package\n" +
           "  pkg list                   - List installed packages\n" +
           "  pkg update                 - Update all packages (simulated)\n" +
           "  bbs-script \"<instruction>\" - Execute a natural language script (simulated)\n" +
-          "  desktop                    - Initialize the Graphical Desktop Environment (simulated)\n" +
-          "  launch <app_name>          - Launch an application within the GDE (e.g., launch terminal)";
+          "  desktop                    - Initialize the Graphical Desktop Environment (GDE)\n" +
+          "  launch <app_name>          - Launch an application (use GDE for app launching)\n" +
+          "  factory-reset              - Resets the shell to its initial state";
         break;
       case "clear":
         setHistory([initialWelcomeMessage]);
@@ -106,11 +113,11 @@ export function ShellEmulator() {
                      `Standard Time: ${now.toLocaleString()}`;
         break;
       case "features":
-        outputText = "BinaryBlocksphere Core Features:\n" + coreFeatures.map(f => `  - ${f}`).join("\n");
+        outputText = "BinaryBlocksphere Core Features:\n" + initialCoreFeatures.map(f => `  - ${f}`).join("\n");
         break;
       case "status":
         const featureQuery = args.join(" ").toLowerCase();
-        const foundFeature = coreFeatures.find(f => f.toLowerCase().includes(featureQuery));
+        const foundFeature = initialCoreFeatures.find(f => f.toLowerCase().includes(featureQuery));
         if (foundFeature) {
           outputText = `Status of '${foundFeature}': Active and Nominal.`;
         } else if (featureQuery) {
@@ -136,20 +143,30 @@ export function ShellEmulator() {
       case "curl":
       case "wget":
         if (args.length === 0) {
-          outputText = `Usage: ${cmd.toLowerCase()} <url>`;
+          outputText = `Usage: ${cmd.toLowerCase()} <url>\nNote: Uses browser's fetch API. Subject to CORS limitations.`;
           outputType = "error";
         } else {
           const url = args[0];
-          if (cmd.toLowerCase() === "curl") {
-            outputText = `Simulating curl request to ${url}...\n`;
-            if (url.startsWith("http://localhost:") || url.startsWith("https://localhost:")) {
-              outputText += `Connected to ${url}.\nResponse (simulated): {\"status\": \"ok\", \"message\": \"Local service responding.\"}`;
-            } else {
-              outputText += `Fetching content from ${url}...\nResponse (simulated): <!DOCTYPE html><html><body><h1>Content from ${url}</h1></body></html>`;
+          outputText = `Attempting to fetch ${url} using browser's fetch API...\n`;
+          try {
+            const response = await fetch(url, { mode: 'cors' });
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
             }
-          } else { // wget
-            const fileName = url.substring(url.lastIndexOf('/') + 1) || "index.html";
-            outputText = `Simulating wget download from ${url}...\nSaving to '${fileName}' (simulated)...\nDownload complete. 1.2MB received.`;
+            const contentType = response.headers.get("content-type");
+            if (contentType && (contentType.includes("application/json") || contentType.includes("text/html") || contentType.includes("text/plain"))) {
+              const data = await response.text();
+              outputText += `Response from ${url} (first 500 chars):\n${data.substring(0,500)}\n...\n`;
+            } else {
+               outputText += `Received binary data or non-text content from ${url}. Cannot display directly.\n`;
+            }
+            if (cmd.toLowerCase() === "wget") {
+              const fileName = url.substring(url.lastIndexOf('/') + 1) || "index.html";
+              outputText += `Simulated save to '${fileName}'. Content fetched.`;
+            }
+          } catch (error: any) {
+            outputText += `Error fetching ${url}: ${error.message}\nThis might be due to CORS policy or network issues.`;
+            outputType = "error";
           }
         }
         break;
@@ -160,7 +177,7 @@ export function ShellEmulator() {
         } else {
           const address = args[0];
           if (address.includes("localhost:")) {
-            outputText = `Attempting to connect to ${address}...\nSuccessfully connected to local service on ${address}.`;
+            outputText = `Attempting to connect to ${address}...\nSuccessfully connected to local service on ${address}. (Simulated)`;
           } else {
             outputText = `Establishing connection to ${address}...\nSecure connection established to ${address}. (Simulated)`;
           }
@@ -222,7 +239,7 @@ export function ShellEmulator() {
           outputText = "Usage: bbs-script \"<natural language instruction>\"";
           outputType = "error";
         } else {
-          outputText = `BBS-Script Engine v0.1 (Simulated)
+          outputText = `BBS-Script Engine v0.2 (Simulated)
 --------------------------------------
 Parsing: "${scriptInput}"
 Interpreted Intent: [Analyzing intent...]
@@ -237,34 +254,24 @@ Execution Complete. Result: [Simulated output for "${scriptInput}"]`;
         }
         break;
       case "desktop":
+        onOpenDesktop();
         outputText = "Initializing Graphical Desktop Environment (GDE)...\n" +
-                     "GDE Version: 0.1-alpha (Simulated)\n" +
-                     "Loading window manager, icon themes, app launchers...\n" +
-                     "Welcome to BBS Desktop!\n" +
-                     "Type 'launch <app_name>' to start an application (e.g., 'launch terminal').";
+                     "GDE Version: 0.2-alpha\n" +
+                     "Welcome to BBS Desktop! Use the icons in the GDE to launch applications.";
         if (!installedPackages.includes("gui-tools")) {
             setInstalledPackages(prev => [...prev, "gui-tools"]);
             outputText += "\n'gui-tools' package automatically installed for GDE.";
         }
-        outputType = "output";
         break;
       case "launch":
-        if (args.length === 0) {
-          outputText = "Usage: launch <app_name>";
-          outputType = "error";
-        } else {
-          const appName = args[0].toLowerCase();
-          if (appName === "terminal") {
-            outputText = "Launching new terminal window... (Simulated - Current terminal remains primary)";
-          } else if (appName === "files" && installedPackages.includes("gui-tools")) {
-             outputText = "Launching File Explorer... (Simulated)";
-          } else if (appName === "settings" && installedPackages.includes("gui-tools")) {
-             outputText = "Launching System Settings... (Simulated)";
-          } else {
-            outputText = `Application '${appName}' not found or GDE module not fully initialized. Ensure 'gui-tools' is installed.`;
-            outputType = "error";
-          }
-        }
+         outputText = "To launch applications, please use the 'desktop' command to open the Graphical Desktop Environment and use its app launcher.";
+         outputType = "warning";
+        break;
+      case "factory-reset":
+        setHistory([initialWelcomeMessage]);
+        setInstalledPackages(["core-utils"]);
+        outputText = "System has been reset to factory defaults.\nShell history and installed packages have been cleared.";
+        outputType = "warning";
         break;
       default:
         if (command.trim() === "") {
@@ -286,7 +293,13 @@ Execution Complete. Result: [Simulated output for "${scriptInput}"]`;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    handleCommand(inputValue);
+    if (inputValue.trim()) {
+      handleCommand(inputValue);
+    } else {
+      // Add an empty prompt line if user just presses enter
+      setHistory(prev => [...prev, {id: `${Date.now()}-empty`, type: "input", text: "", prompt}]);
+      setInputValue("");
+    }
   };
 
   const handleTerminalClick = () => {
@@ -297,6 +310,8 @@ Execution Complete. Result: [Simulated output for "${scriptInput}"]`;
     <div 
       className="w-full max-w-4xl h-[70vh] md:h-[600px] glassmorphic rounded-lg shadow-2xl flex flex-col overflow-hidden border border-primary/30"
       onClick={handleTerminalClick}
+      aria-label="Shell Emulator"
+      role="application"
     >
       <div className="flex items-center p-3 bg-black/40 border-b border-primary/20">
         <Terminal className="w-5 h-5 mr-2 text-primary" />
@@ -337,12 +352,10 @@ Execution Complete. Result: [Simulated output for "${scriptInput}"]`;
             placeholder="Type a command..."
             autoComplete="off"
             spellCheck="false"
+            aria-label="Command input"
           />
         </div>
       </form>
     </div>
   );
 }
-
-
-    

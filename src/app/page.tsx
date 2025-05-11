@@ -5,9 +5,11 @@ import { ShellEmulator } from "@/components/shell-emulator";
 import { Preloader } from "@/components/preloader";
 import { StatusBar } from "@/components/status-bar";
 import { BinaryBlocksphereIcon } from '@/components/icons/BinaryBlocksphereIcon';
+import { DesktopEnvironment } from '@/components/desktop-environment';
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
+  const [isDesktopOpen, setIsDesktopOpen] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 2000); // Simulate loading time
@@ -28,10 +30,12 @@ export default function Home() {
       </header>
       
       <div className="flex items-center justify-center flex-grow w-full pt-16 md:pt-0"> {/* Added padding top for header */}
-        <ShellEmulator />
+        <ShellEmulator onOpenDesktop={() => setIsDesktopOpen(true)} />
       </div>
       
       <StatusBar />
+
+      <DesktopEnvironment isOpen={isDesktopOpen} onClose={() => setIsDesktopOpen(false)} />
     </div>
   );
 }
