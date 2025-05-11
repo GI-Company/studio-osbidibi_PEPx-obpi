@@ -4,16 +4,17 @@ import type * as React from 'react';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Globe, TerminalSquare, XIcon } from 'lucide-react';
+import { Globe, TerminalSquare, XIcon, HardDrive } from 'lucide-react';
 import { MiniBrowser } from './mini-browser';
 import { Separator } from './ui/separator';
+import { VirtualPartitionApp } from './virtual-partition-app';
 
 interface DesktopEnvironmentProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type ActiveApp = 'browser' | 'terminal' | null;
+type ActiveApp = 'browser' | 'terminal' | 'virtualPartition' | null;
 
 export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps) {
   const [activeApp, setActiveApp] = useState<ActiveApp>(null);
@@ -32,6 +33,19 @@ export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps)
   const handleDialogClose = () => {
     closeApp();
     onClose();
+  };
+
+  const getAppTitle = () => {
+    switch (activeApp) {
+      case 'browser':
+        return 'Web Browser';
+      case 'terminal':
+        return 'Terminal';
+      case 'virtualPartition':
+        return 'Virtual Partition Environment';
+      default:
+        return '';
+    }
   };
 
   return (
@@ -71,6 +85,17 @@ export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps)
               <TerminalSquare className="w-8 h-8 text-accent" />
               <span className="text-xs">Terminal</span>
             </Button>
+            <Button 
+              variant="ghost" 
+              size="lg"
+              className="flex flex-col items-center justify-center h-auto p-2 space-y-1 text-foreground hover:bg-primary/20"
+              onClick={() => openApp('virtualPartition')}
+              aria-label="Launch Virtual Partition"
+              data-ai-hint="virtual machine disk"
+            >
+              <HardDrive className="w-8 h-8 text-accent" />
+              <span className="text-xs">V-Partition</span>
+            </Button>
           </div>
 
           {/* App Display Area */}
@@ -86,7 +111,7 @@ export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps)
                  <div className="absolute inset-0 flex flex-col p-1">
                     <div className="flex items-center justify-between p-2 mb-2 rounded-t-md bg-secondary/50">
                         <span className="font-medium text-foreground">
-                            {activeApp === 'browser' ? 'Web Browser' : 'Terminal'}
+                          {getAppTitle()}
                         </span>
                         <Button variant="ghost" size="icon" onClick={closeApp} aria-label="Close App">
                             <XIcon className="w-4 h-4" />
@@ -99,6 +124,7 @@ export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps)
                                 <p className="text-muted-foreground">Terminal application placeholder. <br/>The main terminal is available outside the GDE.</p>
                             </div>
                         )}
+                        {activeApp === 'virtualPartition' && <VirtualPartitionApp />}
                     </div>
                 </div>
             )}
@@ -106,7 +132,7 @@ export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps)
         </div>
         <Separator className="my-0 bg-primary/20" />
          <DialogDescription className="p-2 text-xs text-center text-muted-foreground/70">
-            BinaryBlocksphere GDE v0.2-alpha. Applications run in a sandboxed environment.
+            BinaryBlocksphere GDE v0.3-alpha. Applications run in a sandboxed environment. Virtual Partition added.
           </DialogDescription>
       </DialogContent>
     </Dialog>
