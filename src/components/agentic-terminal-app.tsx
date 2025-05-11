@@ -79,7 +79,7 @@ export function AgenticTerminalApp({ onSaveProjectToPixelStore }: AgenticTermina
         </div>
       )}
       <div className="flex-grow overflow-hidden">
-        <ChatInterface userTier={userTier} isTrialActive={isTrialActive} />
+        <ChatInterface userTier={isAdmin ? 'admin' : userTier} isTrialActive={isTrialActive} />
       </div>
     </div>
   );
