@@ -21,8 +21,10 @@ import { FileManagerApp } from './file-manager-app';
 import { UserManagementApp } from '@/components/admin/user-management-app';
 import { SessionLogsApp } from '@/components/admin/session-logs-app';
 import { MediaPlayerApp } from '@/components/media-player-app';
-import { ConnectivityCenterApp } from '@/components/connectivity-center-app'; // Added ConnectivityCenterApp
+import { ConnectivityCenterApp } from '@/components/connectivity-center-app';
 import { toast } from '@/hooks/use-toast';
+import { useVFS } from '@/contexts/VFSContext'; // Import useVFS
+
 
 type ActiveApp = 
   | 'browser' 
@@ -35,18 +37,20 @@ type ActiveApp =
   | 'userManagement'
   | 'sessionLogs'
   | 'mediaPlayer'
-  | 'connectivityCenter' // Added connectivityCenter
-  | { type: 'pixelProject'; id: string; name: string } 
+  | 'connectivityCenter'
+  | { type: 'pixelProject'; id: string; name: string; path: string; } // Added path
   | null;
 
 interface SavedProject {
   id: string;
   name: string;
   icon: React.ElementType;
+  path: string; // VFS path to the project
 }
 
 export function DesktopEnvironment() {
   const { currentUser, logout } = useAuth();
+  const { getItem: getVFSItem } = useVFS(); // For checking project existence
   const [activeApp, setActiveApp] = useState<ActiveApp>(null);
   const [showWelcome, setShowWelcome] = useState(true);
   const [isLaunchpadOpen, setIsLaunchpadOpen] = useState(false);
@@ -77,13 +81,18 @@ export function DesktopEnvironment() {
 
   const availableApps = isAdmin ? [...coreAppsList, ...adminAppsList] : coreAppsList;
 
-  const handleAddSavedProject = (projectName: string) => {
+  const handleAddSavedProject = (projectName: string, projectPath: string) => {
     const newProject: SavedProject = {
       id: `project-${Date.now()}`,
       name: projectName,
-      icon: Package,
+      icon: Package, // Standard icon for saved projects
+      path: projectPath,
     };
-    setSavedPixelStoreProjects(prev => [...prev, newProject]);
+    setSavedPixelStoreProjects(prev => {
+      // Avoid duplicates by path
+      if (prev.find(p => p.path === projectPath)) return prev;
+      return [...prev, newProject];
+    });
   };
 
   const openApp = (app: ActiveApp | string) => {
@@ -97,12 +106,19 @@ export function DesktopEnvironment() {
 
   const openPixelStoreProject = async (project: SavedProject) => {
     setIsLoadingProject(true);
-    toast({ title: "Loading Project", description: `Opening "${project.name}" from PixelStore... (Conceptual conversion)`});
-    setActiveApp({type: 'pixelProject', id: project.id, name: project.name});
+    toast({ title: "Loading Project from VFS", description: `Opening "${project.name}" from ${project.path}...`});
+    setActiveApp({type: 'pixelProject', id: project.id, name: project.name, path: project.path });
     setShowWelcome(false);
-    await new Promise(resolve => setTimeout(resolve, 2500));
-    openApp('agenticTerminal');
-    toast({ title: "Project Loaded", description: `"${project.name}" is now active in Agent Terminal.`});
+    
+    // Check if project files exist in VFS (conceptual check)
+    const manifestFile = getVFSItem(`${project.path}/manifest.bbs-proj`);
+    if (!manifestFile) {
+        toast({ title: "Project Load Warning", description: `Manifest for "${project.name}" not found at ${project.path}. Proceeding with agent terminal.`, variant: "default"});
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 2500)); // Simulate loading
+    openApp('agenticTerminal'); // Open terminal for the project context
+    toast({ title: "Project Context Active", description: `Project "${project.name}" loaded. Agent Terminal is active for this project.`});
     setIsLoadingProject(false);
   };
 
@@ -149,7 +165,7 @@ export function DesktopEnvironment() {
     if (appInfo) return appInfo.name;
     
     if (typeof activeApp === 'object' && activeApp.type === 'pixelProject') {
-      return `PixelStore Project: ${activeApp.name}`;
+      return `Project: ${activeApp.name} (VFS: ${activeApp.path})`;
     }
     switch (activeApp) {
       case 'browser': return 'Web Browser';
@@ -162,7 +178,7 @@ export function DesktopEnvironment() {
       case 'userManagement': return 'User Management Console';
       case 'sessionLogs': return 'Session Activity Logs';
       case 'mediaPlayer': return 'Multimedia Hub';
-      case 'connectivityCenter': return 'Connectivity Center';
+      case 'connectivityCenter': return 'BBS Connectivity Center';
       default: return 'OSbidibi GDE Application';
     }
   };
@@ -265,8 +281,8 @@ export function DesktopEnvironment() {
           {isLoadingProject && typeof activeApp === 'object' && activeApp?.type === 'pixelProject' && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm z-10">
                   <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-                  <p className="text-lg text-foreground radiant-text">Loading PixelStore Project: {activeApp.name}...</p>
-                  <p className="text-sm text-muted-foreground radiant-text">(Conceptual data conversion in progress)</p>
+                  <p className="text-lg text-foreground radiant-text">Loading Project from VFS: {activeApp.name}...</p>
+                  <p className="text-sm text-muted-foreground radiant-text">(Path: {activeApp.path})</p>
               </div>
           )}
 
@@ -316,11 +332,10 @@ export function DesktopEnvironment() {
 
         <Separator className="my-0 bg-primary/20" />
          <div className="p-1.5 text-xs text-center text-muted-foreground/70 radiant-text bg-black/40">
-            OSbidibi-PEPX0.0.1 GDE v0.9.2-alpha. Main entry point active.
+            OSbidibi-PEPX0.0.1 GDE v0.9.3-alpha. Main entry point active. VFS operational.
           </div>
       </div>
       <AppLaunchpad isOpen={isLaunchpadOpen} onClose={() => setIsLaunchpadOpen(false)} apps={allLaunchableItems} />
     </div>
   );
 }
-    

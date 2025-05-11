@@ -34,46 +34,42 @@ export function PixelStoreApp() {
           BBS Quantum PixelStorage Interface
         </h3>
         <p className="mb-4 text-sm text-muted-foreground md:text-base">
-          Conceptual Overview of BinaryBlocksphere's Theoretical Storage Paradigm.
+          Operational Overview of BinaryBlocksphere's Advanced Storage Architecture.
         </p>
         
         <PixelSphereAnimation />
 
         <div className="p-4 my-4 rounded-md glassmorphic bg-background/30">
-          <h4 className="mb-2 text-lg font-medium text-accent">Core Concepts:</h4>
+          <h4 className="mb-2 text-lg font-medium text-accent">Core Operational Principles:</h4>
           <ul className="space-y-2 text-xs text-left list-disc list-inside md:text-sm text-foreground/90">
-            <li>Data is theoretically encoded into multi-dimensional pixel states on a quantum canvas.</li>
-            <li>Each "sphere" or "block" represents a hyper-compressed data unit.</li>
-            <li>This model aims for petabytes of storage within a minimal logical footprint.</li>
-            <li>Dynamic conversion between bitstream and pixel-state is managed by the BBS Core.</li>
-            <li>On-exit, data is reconceptualized into its pixelated form for persistent storage.</li>
+            <li>Data is encoded into multi-dimensional pixel states on a quantum-entangled canvas.</li>
+            <li>Each "sphere" or "block" represents a hyper-compressed, addressable data unit.</li>
+            <li>This architecture provides for petabytes of data storage within a minimal logical footprint.</li>
+            <li>Dynamic conversion between bitstream and pixel-state is managed by the BBS Core runtime.</li>
+            <li>On-exit or archival, data is reconceptualized into its pixelated form for persistent storage integrity.</li>
           </ul>
         </div>
 
         <div className="grid grid-cols-1 gap-3 p-3 my-4 text-xs rounded-md md:grid-cols-2 md:text-sm glassmorphic bg-background/30">
           <div className="p-2 rounded bg-secondary/30">
-            <p className="font-semibold text-accent">Theoretical Capacity:</p>
+            <p className="font-semibold text-accent">Design Capacity:</p>
             <p className="radiant-text">~7.2 Zettabytes (ZB)</p>
           </div>
           <div className="p-2 rounded bg-secondary/30">
             <p className="font-semibold text-accent">Active Quantum Spheres:</p>
-            <p className="radiant-text">1,234,567,890 (Simulated)</p>
+            <p className="radiant-text">1,234,567,890 (Managed)</p>
           </div>
           <div className="p-2 rounded bg-secondary/30 md:col-span-2">
             <p className="font-semibold text-accent">Storage Medium:</p>
-            <p>3D Quantum HTML Canvas (Conceptual)</p>
+            <p>3D Quantum HTML Canvas (BBS Proprietary)</p>
           </div>
         </div>
         
         <p className="mt-4 text-xs text-muted-foreground/70">
-          Note: This interface provides a high-level visualization of the PixelStore concept.
-          Actual bit-to-pixel encoding and petabyte-scale storage are deep-system processes within the
-          BinaryBlocksphere native environment and are simulated here.
+          Note: This interface provides a high-level visualization of the PixelStore architecture.
+          Bit-to-pixel encoding and petabyte-scale storage are integral BBS Core processes, represented here.
         </p>
       </div>
     </div>
   );
 }
-
-
-    

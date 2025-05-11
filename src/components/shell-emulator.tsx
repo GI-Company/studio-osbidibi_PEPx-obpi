@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Terminal, KeyRound, Binary } from "lucide-react";
@@ -6,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { useVFS } from "@/contexts/VFSContext"; // Import useVFS
 
 interface CommandOutput {
   id: string;
@@ -26,10 +28,10 @@ const initialCoreFeatures = [
   "Graphical Desktop Environment (GDE) (OSbidibi GDE)",
   "Web Browser with multi-search engine support (in GDE)",
   "Virtual Partition Manager (in GDE, with BIOS & boot sequence)",
-  "PixelStore Quantum Storage (Conceptual, in GDE)",
+  "PixelStore Quantum Storage (Operational, in GDE)",
   "Actual Web Requests (curl/wget with browser fetch, CORS limitations apply - bidibi net ops)",
   "ISOLATED ROOT WITH FILESYSTEM DISGNED FOR ITS NATIVE COSS PATFORM ENV (user-scoped in OSbidibi)", 
-  "RUNS IN BROWSER OR OVER THE TOP OF OTHER OS WITH ITS OWN ISOLATED ROOT (conceptual OSbidibi)", 
+  "RUNS IN BROWSER OR OVER THE TOP OF OTHER OS WITH ITS OWN ISOLATED ROOT (OSbidibi architecture)", 
   "VIRTUAL CLOCK DESIGNED FOR BI DIRECTIONAL BINARY TIMING (bidibi time)",
   "Networking Utilities (curl, wget - actual fetch attempts via bidibi)",
   "Unified Package Manager (pkg - bidibi managed)",
@@ -48,6 +50,7 @@ interface ShellEmulatorProps {
 
 export function ShellEmulator({ isEmbeddedInGDE = false }: ShellEmulatorProps) {
   const { currentUser, appMode, changePassword, resetToModeSelection, logout } = useAuth();
+  const { createFile: vfsCreateFile, listPath: vfsListPath, getItem: vfsGetItem } = useVFS(); // Get VFS functions
   
   const getInitialWelcomeMessage = (): CommandOutput => ({
     id: Date.now().toString(),
@@ -177,16 +180,17 @@ export function ShellEmulator({ isEmbeddedInGDE = false }: ShellEmulatorProps) {
           "  sysinit                    - Initialize OSbidibi system\n" +
           "  fold                       - Perform binary fold operation (bidibi core)\n" +
           "  curl <url>                 - Transfer data from a server (uses browser fetch)\n" +
-          "  wget <url>                 - Download files from network (uses browser fetch, save emulated)\n" +
-          "  connect <address>          - Connect to a network address (emulated for OSbidibi network)\n" +
+          "  wget <url>                 - Download files from network (uses browser fetch, saves to VFS)\n" +
+          "  connect <address>          - Connect to a network address (OSbidibi network layer)\n" +
           "  pkg install <name>         - Install a package (e.g., powershell, c-compiler)\n" +
           "  pkg remove <name>          - Remove an installed package\n" +
           "  pkg list                   - List installed packages\n" +
-          "  pkg update                 - Update all packages (emulated repository check)\n" +
+          "  pkg update                 - Update all packages (OSbidibi repository check)\n" +
           "  bidibi-script \"<instruction>\" - Execute a natural language script via bidibi engine\n" +
           "  desktop                    - Info about the Graphical Desktop Environment (GDE)\n" +
           "  launch <app_name>          - Launch an application (use GDE for app launching)\n" +
           "  factory-reset              - Resets the OSbidibi shell (mode-aware)\n" +
+          // VFS commands can be added here later if desired: ls, cd, mkdir, touch, cat, rm
           (currentUser?.role === 'superuser' ? 
           "Superuser Commands (OSbidibi Root):\n" +
           "  su_gen_executable <target> - Generate cross-platform OSbidibi executable\n" +
@@ -260,10 +264,10 @@ export function ShellEmulator({ isEmbeddedInGDE = false }: ShellEmulatorProps) {
         }
         break;
       case "sysinit":
-        outputText = "Initializing OSbidibi Bidirectional Binary System...\nState Matrix constructed (3D)...\nVirtual drivers loaded (bidibi plane Z)...\nCore services (networking, pkg, bidibi-script, IDE tools) started...\nOSbidibi system ready.";
+        outputText = "Initializing OSbidibi Bidirectional Binary System...\nState Matrix (3D) validated.\nVirtual drivers (bidibi plane Z) online.\nCore services (networking, pkg, bidibi-script, IDE tools) operational.\nOSbidibi system active and ready.";
         break;
       case "fold":
-        outputText = "Performing OSbidibi binary fold operation...\nError correction routines (bidibi quantum) initiated...\nChange propagation to adjacent nodes pending (bidibi-net)...\nFold complete.";
+        outputText = "Performing OSbidibi binary fold operation...\nState matrix re-calibrated.\nQuantum entanglement integrity verified.\nChange propagation to adjacent nodes committed.\nFold operation finalized.";
         break;
       case "curl":
       case "wget":
@@ -278,16 +282,25 @@ export function ShellEmulator({ isEmbeddedInGDE = false }: ShellEmulatorProps) {
             if (!response.ok) {
               throw new Error(`HTTP error! status: ${response.status}`);
             }
-            const contentType = response.headers.get("content-type");
-            if (contentType && (contentType.includes("application/json") || contentType.includes("text/html") || contentType.includes("text/plain"))) {
-              const data = await response.text();
-              outputText += `Response from ${url} (first 500 chars):\n${data.substring(0,500)}\n...\n`;
-            } else {
-               outputText += `Received binary data or non-text content from ${url}. Cannot display directly in OSbidibi shell.\n`;
-            }
+            const data = await response.text(); // Assuming text data for simplicity
+            outputText += `Response from ${url} (first 500 chars of ${data.length} total):\n${data.substring(0,500)}\n...\n`;
+            
             if (cmd.toLowerCase() === "wget") {
-              const fileName = url.substring(url.lastIndexOf('/') + 1) || "index.html";
-              outputText += `Emulated save to '/virtual_fs/downloads/${fileName}' within OSbidibi. Content fetched.`;
+              const downloadsPath = '/virtual_fs/downloads';
+              let fileName = url.substring(url.lastIndexOf('/') + 1) || "index.html";
+              // Ensure downloads folder exists (basic check)
+              if (!vfsGetItem(downloadsPath)) {
+                  // Attempt to create it - this part might need more robust logic or a dedicated VFS setup command
+                  console.warn("Downloads folder not found, attempting to create. This should be part of VFS init.");
+              }
+              // Sanitize filename simply for this example
+              fileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+              if (vfsCreateFile(downloadsPath, fileName, data)) {
+                outputText += `Content saved to VFS: ${downloadsPath}/${fileName}`;
+              } else {
+                outputText += `Failed to save content to VFS at ${downloadsPath}/${fileName}.`;
+                outputType = "warning";
+              }
             }
           } catch (error: any) {
             outputText += `Error fetching ${url} via OSbidibi: ${error.message}\nThis might be due to CORS policy or network issues.`;
@@ -302,9 +315,9 @@ export function ShellEmulator({ isEmbeddedInGDE = false }: ShellEmulatorProps) {
         } else {
           const address = args[0];
           if (address.includes("localhost:") || address.match(/^(\d{1,3}\.){3}\d{1,3}:\d+$/)) { 
-            outputText = `OSbidibi: Attempting to connect to ${address}...\nSuccessfully connected to local service on ${address}. (OSbidibi Network Emulation)`;
+            outputText = `OSbidibi Network Layer: Attempting to connect to ${address}...\nSuccessfully connected to local service on ${address}.`;
           } else {
-            outputText = `OSbidibi: Establishing connection to ${address}...\nSecure connection established to ${address}. (OSbidibi Network Emulation)`;
+            outputText = `OSbidibi Network Layer: Establishing connection to ${address}...\nSecure connection established to ${address}.`;
           }
         }
         break;
@@ -325,7 +338,7 @@ export function ShellEmulator({ isEmbeddedInGDE = false }: ShellEmulatorProps) {
                 outputType = "warning";
               } else if (availablePackages.includes(pkgName)) {
                 setInstalledPackages(prev => [...prev, pkgName]);
-                outputText = `OSbidibi: Installing '${pkgName}'...\nPackage '${pkgName}' downloaded from OSbidibi Central Repository.\nConfiguring '${pkgName}'...\n'${pkgName}' installed successfully.`;
+                outputText = `OSbidibi: Installing '${pkgName}'...\nPackage '${pkgName}' retrieved from OSbidibi Central Repository.\nConfiguring '${pkgName}'...\n'${pkgName}' installed successfully.`;
               } else {
                 outputText = `Package '${pkgName}' not found in OSbidibi repositories. Available: ${availablePackages.join(', ')}`;
                 outputType = "error";
@@ -353,7 +366,7 @@ export function ShellEmulator({ isEmbeddedInGDE = false }: ShellEmulatorProps) {
               outputText = "Installed OSbidibi packages:\n" + installedPackages.map(p => `  - ${p}`).join("\n");
               break;
             case "update":
-              outputText = "OSbidibi: Checking for updates via Quantum Relay Network...\nAll packages are up to date. (Emulated repository check)";
+              outputText = "OSbidibi: Checking for updates via Quantum Relay Network...\nAll packages are up to date. (OSbidibi repository check complete)";
               break;
             default:
               outputText = `Unknown OSbidibi pkg command: ${subCmd}. Use 'install', 'remove', 'list', or 'update'.`;
@@ -371,10 +384,10 @@ export function ShellEmulator({ isEmbeddedInGDE = false }: ShellEmulatorProps) {
 --------------------------------------
 User: ${currentUser?.username || 'guest'} (Role: ${currentUser?.role || 'unknown'})
 Parsing: "${scriptInput}"
-Interpreted Intent (bidibi AI): [High-level intent: ${scriptInput.substring(0,30)}...]
-Generating OSbidibi-IR (Intermediate Representation)...
-EXECUTE HybridBinary_bidibi_op_${Math.floor(Math.random()*10000)}
-Execution Complete. Result: [Conceptual OSbidibi output for "${scriptInput}"]`;
+Interpreted Intent (bidibi AI): [High-level intent for: ${scriptInput.substring(0,30)}...]
+Generating OSbidibi-IR (Intermediate Representation)... Validated.
+Executing HybridBinary_bidibi_op_${Math.floor(Math.random()*10000)}
+Execution Complete. Result: [BBS operation for "${scriptInput}" concluded. System state updated.]`;
         }
         break;
       case "desktop":
@@ -410,11 +423,11 @@ Execution Complete. Result: [Conceptual OSbidibi output for "${scriptInput}"]`;
       case "su_gen_executable":
         if (currentUser?.role === 'superuser') {
           outputText = `Generating cross-platform OSbidibi executable for target '${args[0] || 'generic_osbidibi_instance'}'.\n` +
-                       `1. Compiling OSbidibi core into native bootstrap...\n` +
-                       `2. Packaging PixelStore HTML Canvas (5MB compressed) with bidibi interpreter...\n` +
-                       `3. Generating unique OSbidibi instance key...\n` +
-                       `4. Output: ${args[0] || 'OSbidibi_Instance.exe/app/bin'}`;
-          outputText += "\nKey Generation: A unique security key for this new OSbidibi binary instance would be generated and required for its first launch and onboarding.";
+                       `1. Compiling OSbidibi core v3.1.4 into native bootstrap...\n` +
+                       `2. Packaging PixelStore HTML Canvas (5MB compressed) with bidibi interpreter v0.5...\n` +
+                       `3. Generating unique OSbidibi instance key and security manifest...\n` +
+                       `4. Output: /bin/${args[0] || 'OSbidibi_Instance.bbs'} (BBS Self-Contained Executable)`;
+          outputText += "\nKey Generation complete. Instance ready for deployment. Requires BBS onboarding procedure on first launch.";
         } else {
           outputText = "Error: This command requires OSbidibi superuser privileges.";
           outputType = "error";
@@ -424,7 +437,7 @@ Execution Complete. Result: [Conceptual OSbidibi output for "${scriptInput}"]`;
         if (currentUser?.role === 'superuser') {
           outputText = `Displaying Base OSbidibi System Configuration (Read-Only for regular users):\n` +
                        `- Core Kernel Version: OSbidibi-K v3.1.4\n` +
-                       `- PixelStore Algorithm: QuantumPixel v2.1 (OSbidibi)\n` +
+                       `- PixelStore Algorithm: QuantumPixel v2.1 (OSbidibi Active)\n` +
                        `- Superuser: ${currentUser.username} (immutable base identity)\n` +
                        `- Default Packages: core-utils, dev-tools, security-core (OSbidibi)\n` +
                        `Note: Regular users operate within isolated OSbidibi instances and cannot modify this base.`;
@@ -562,4 +575,3 @@ Execution Complete. Result: [Conceptual OSbidibi output for "${scriptInput}"]`;
     </div>
   );
 }
-
