@@ -32,7 +32,6 @@ export default function UserOnboarding() {
     }
     setIsLoading(true);
     await onboardUser(username, password);
-    // AuthContext handles navigation on successful onboarding
     setIsLoading(false);
   };
 
@@ -42,12 +41,12 @@ export default function UserOnboarding() {
         <CardHeader className="items-center text-center">
           <UserPlus className="w-12 h-12 mb-4 text-primary" />
           <CardTitle className="text-2xl radiant-text">Create Account</CardTitle>
-          <CardDescription>Join BinaryBlocksphere Persistent Environment</CardDescription>
+          <CardDescription className="radiant-text">Join BinaryBlocksphere Persistent Environment</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username" className="radiant-text">Username</Label>
               <Input 
                 id="username" 
                 type="text" 
@@ -59,7 +58,7 @@ export default function UserOnboarding() {
               />
             </div>
             <div className="relative">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="radiant-text">Password</Label>
               <Input 
                 id="password" 
                 type={showPassword ? "text" : "password"} 
@@ -73,14 +72,14 @@ export default function UserOnboarding() {
                 type="button" 
                 variant="ghost" 
                 size="icon" 
-                className="absolute right-1 top-7 h-7 w-7" 
+                className="absolute right-1 top-7 h-7 w-7 button-3d-interactive" 
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
             </div>
             <div>
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="radiant-text">Confirm Password</Label>
               <Input 
                 id="confirmPassword" 
                 type={showPassword ? "text" : "password"} 
@@ -91,16 +90,16 @@ export default function UserOnboarding() {
                 placeholder="Re-enter your password"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full button-3d-interactive" disabled={isLoading}>
               {isLoading ? "Creating Account..." : "Create Account"}
             </Button>
           </form>
         </CardContent>
         <CardFooter className="flex-col items-center space-y-2">
-           <Button variant="link" size="sm" onClick={resetToModeSelection} className="text-muted-foreground">
+           <Button variant="link" size="sm" onClick={resetToModeSelection} className="text-muted-foreground radiant-text button-3d-interactive">
             Back to Mode Selection
           </Button>
-          <div className="flex items-center text-xs text-muted-foreground">
+          <div className="flex items-center text-xs text-muted-foreground radiant-text">
             <BinaryBlocksphereIcon className="w-4 h-4 mr-1.5 text-primary" />
             BinaryBlocksphere Secure Onboarding
           </div>
@@ -109,3 +108,5 @@ export default function UserOnboarding() {
     </div>
   );
 }
+
+```

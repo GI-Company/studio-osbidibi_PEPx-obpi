@@ -8,71 +8,75 @@ body {
 
 @layer base {
   :root {
-    --background: 224 71% 4%; /* Very Dark Blue-Black */
-    --foreground: 210 20% 98%; /* Almost White */
+    --background: 224 71% 3%; /* Very Dark Blue-Black, almost black */
+    --foreground: 210 30% 98%; /* Bright White */
 
-    --muted: 220 15% 25%;
-    --muted-foreground: 210 20% 65%;
+    --muted: 220 15% 20%; /* Kept for less prominent elements */
+    --muted-foreground: 210 20% 60%;
 
-    --popover: 220 15% 12%; /* Base for popover, glass effect applied in component */
-    --popover-foreground: 210 20% 98%;
+    /* Card and Popover will form the base of the "green hued glass" */
+    --card: 140 30% 10%; /* Very Dark, slightly desaturated Green-Cyan for glass base */
+    --card-foreground: 210 30% 98%;
 
-    --card: 220 15% 15%; /* Base for card, glass effect applied in component */
-    --card-foreground: 210 20% 98%;
+    --popover: 140 30% 9%; /* Slightly darker for popovers */
+    --popover-foreground: 210 30% 98%;
 
-    --border: 215 14% 34%; /* Subtle borders for glass edges */
-    --input: 220 15% 20%; /* Input field background */
+    --border: 140 25% 25%; /* Adjusted to complement greenish glass */
+    --input: 140 20% 15%; /* Dark green-hued input background */
 
-    --primary: 135 63% 43%; /* Teal - User's "accent green hue" */
-    --primary-foreground: 210 20% 98%; /* Almost White */
+    --primary: 135 65% 45%; /* Vibrant Teal - User's "accent green hue" */
+    --primary-foreground: 200 100% 95%; /* Brighter white for primary contrast */
 
-    --secondary: 210 10% 16%; /* Dark Blue - User's "primary color" */
-    --secondary-foreground: 210 20% 90%; /* Light Grayish */
+    --secondary: 210 10% 12%; /* Darker Blue-Gray for secondary elements */
+    --secondary-foreground: 210 20% 85%;
 
-    --accent: 135 60% 55%; /* Brighter Teal for highlights */
-    --accent-foreground: 210 20% 98%;
+    --accent: 135 60% 58%; /* Brighter Teal for highlights */
+    --accent-foreground: 200 100% 95%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 210 20% 98%;
 
-    --ring: 135 60% 55%; /* Brighter Teal for focus rings */
+    --ring: 135 60% 58%; /* Brighter Teal for focus rings */
     
     --radius: 0.5rem;
 
     /* Specific theme variables */
-    --shell-text-radiant: 0 0 8px rgba(200, 220, 255, 0.5), 0 0 3px rgba(170, 200, 255, 0.7);
-    --shell-prompt-color: hsl(135 70% 60%);
+    --shell-text-radiant: 
+      0 0 6px hsla(var(--foreground), 0.6), 
+      0 0 2px hsla(var(--accent), 0.8), 
+      0 0 10px hsla(var(--primary), 0.3);
+    --shell-prompt-color: hsl(var(--accent));
   }
 
   .dark {
-    --background: 224 71% 4%;
-    --foreground: 210 20% 98%;
+    --background: 224 71% 3%;
+    --foreground: 210 30% 98%;
 
-    --muted: 220 15% 25%;
-    --muted-foreground: 210 20% 65%;
+    --muted: 220 15% 20%;
+    --muted-foreground: 210 20% 60%;
 
-    --popover: 220 15% 12%;
-    --popover-foreground: 210 20% 98%;
+    --card: 140 30% 10%;
+    --card-foreground: 210 30% 98%;
 
-    --card: 220 15% 15%;
-    --card-foreground: 210 20% 98%;
+    --popover: 140 30% 9%;
+    --popover-foreground: 210 30% 98%;
 
-    --border: 215 14% 34%;
-    --input: 220 15% 20%;
+    --border: 140 25% 25%;
+    --input: 140 20% 15%;
 
-    --primary: 135 63% 43%;
-    --primary-foreground: 210 20% 98%;
+    --primary: 135 65% 45%;
+    --primary-foreground: 200 100% 95%;
 
-    --secondary: 210 10% 16%;
-    --secondary-foreground: 210 20% 90%;
+    --secondary: 210 10% 12%;
+    --secondary-foreground: 210 20% 85%;
 
-    --accent: 135 60% 55%;
-    --accent-foreground: 210 20% 98%;
+    --accent: 135 60% 58%;
+    --accent-foreground: 200 100% 95%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 210 20% 98%;
 
-    --ring: 135 60% 55%;
+    --ring: 135 60% 58%;
   }
 }
 
@@ -88,14 +92,33 @@ body {
 }
 
 .glassmorphic {
-  background-color: hsla(var(--card), 0.5); /* Use card color with alpha */
-  backdrop-filter: blur(12px) saturate(150%);
-  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  background-color: hsla(var(--card), 0.65); /* Use card color with more transparency */
+  backdrop-filter: blur(10px) saturate(120%); /* Slightly softer blur */
+  -webkit-backdrop-filter: blur(10px) saturate(120%);
   border-width: 1px;
-  border-color: hsla(var(--border), 0.2);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  border-color: hsla(var(--border), 0.25); /* More subtle border for glass edges */
+  box-shadow: 0 6px 24px 0 rgba(0, 0, 0, 0.3); /* Softer shadow */
 }
 
 .radiant-text {
   text-shadow: var(--shell-text-radiant);
+}
+
+/* Subtle 3D hover effect for buttons */
+.button-3d-interactive {
+  @apply transition-all duration-150 ease-out;
+}
+.button-3d-interactive:hover {
+  @apply transform scale-[1.03] -translate-y-[1px] shadow-lg;
+}
+.button-3d-interactive:active {
+  @apply transform scale-[1.01] translate-y-0 shadow-md;
+}
+
+/* Apply to specific buttons if desired, e.g., primary action buttons */
+.btn-primary.button-3d-interactive {
+   box-shadow: 0 2px 4px hsla(var(--primary), 0.3);
+}
+.btn-primary.button-3d-interactive:hover {
+   box-shadow: 0 4px 8px hsla(var(--primary), 0.4);
 }

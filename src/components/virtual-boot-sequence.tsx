@@ -1,3 +1,4 @@
+
 "use client";
 import type * as React from 'react';
 import { useEffect, useState } from 'react';
@@ -46,17 +47,19 @@ export function VirtualBootSequenceScreen({ onBootComplete }: VirtualBootSequenc
   }, [currentMessageIndex, onBootComplete, progress]);
 
   return (
-    <div className="w-full h-full p-4 font-mono text-sm bg-black text-green-400 overflow-y-auto flex flex-col rounded-md">
-      <div className="flex-grow">
+    <div className="w-full h-full p-4 font-mono text-sm bg-card text-accent overflow-y-auto flex flex-col justify-between items-center rounded-md">
+      <div className="flex-grow w-full max-w-2xl"> {/* Text block constrained */}
         {log.map((line, index) => (
-          <p key={index} className="whitespace-pre leading-tight">{line}</p>
+          <p key={index} className="whitespace-pre leading-tight radiant-text">{line}</p>
         ))}
-         {currentMessageIndex < bootMessages.length && <span className="animate-pulse">_</span>}
+         {currentMessageIndex < bootMessages.length && <span className="animate-pulse radiant-text">_</span>}
       </div>
-      <div className="mt-4 shrink-0">
-        <Progress value={progress} className="w-full h-3 [&>div]:bg-green-500 bg-gray-700" />
-        <p className="mt-1 text-xs text-center text-gray-300">{progress}% Complete</p>
+      <div className="mt-4 shrink-0 w-full max-w-2xl">
+        <Progress value={progress} className="w-full h-3 [&>div]:bg-primary bg-secondary" />
+        <p className="mt-1 text-xs text-center text-muted-foreground radiant-text">{progress}% Complete</p>
       </div>
     </div>
   );
 }
+
+```

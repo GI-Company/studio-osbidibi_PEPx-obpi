@@ -24,9 +24,8 @@ export default function UserLogin() {
     setIsLoading(true);
     const success = await login(username, password);
     if (!success) {
-      setIsLoading(false); // Reset loading state on failure to allow retry
+      setIsLoading(false); 
     }
-    // AuthContext handles navigation on successful login
   };
 
   return (
@@ -35,12 +34,12 @@ export default function UserLogin() {
         <CardHeader className="items-center text-center">
           <LogIn className="w-12 h-12 mb-4 text-primary" />
           <CardTitle className="text-2xl radiant-text">Login</CardTitle>
-          <CardDescription>Access Your BinaryBlocksphere Persistent Environment</CardDescription>
+          <CardDescription className="radiant-text">Access Your BinaryBlocksphere Persistent Environment</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username" className="radiant-text">Username</Label>
               <Input 
                 id="username" 
                 type="text" 
@@ -52,7 +51,7 @@ export default function UserLogin() {
               />
             </div>
             <div className="relative">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="radiant-text">Password</Label>
               <Input 
                 id="password" 
                 type={showPassword ? "text" : "password"} 
@@ -66,22 +65,22 @@ export default function UserLogin() {
                 type="button" 
                 variant="ghost" 
                 size="icon" 
-                className="absolute right-1 top-7 h-7 w-7" 
+                className="absolute right-1 top-7 h-7 w-7 button-3d-interactive" 
                 onClick={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </Button>
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full button-3d-interactive" disabled={isLoading}>
               {isLoading ? "Logging In..." : "Login"}
             </Button>
           </form>
         </CardContent>
          <CardFooter className="flex-col items-center space-y-2">
-           <Button variant="link" size="sm" onClick={resetToModeSelection} className="text-muted-foreground">
+           <Button variant="link" size="sm" onClick={resetToModeSelection} className="text-muted-foreground radiant-text button-3d-interactive">
             Back to Mode Selection
           </Button>
-          <div className="flex items-center text-xs text-muted-foreground">
+          <div className="flex items-center text-xs text-muted-foreground radiant-text">
             <BinaryBlocksphereIcon className="w-4 h-4 mr-1.5 text-primary" />
             BinaryBlocksphere Secure Login
           </div>
@@ -90,3 +89,5 @@ export default function UserLogin() {
     </div>
   );
 }
+
+```

@@ -21,24 +21,24 @@ const initialCoreFeatures = [
   "System Initialization", "Binary Fold", "Change Propagation", 
   "Virtual Driver (Z-plane)", "SHELL EMULATION (User-aware)", "PERSONAL ENV (Persistent/Ghost modes)", "VIRTUAL RAM", 
   "VIRTUAL DRIVER", 
-  "Integrated Development Environment (C, C++, C#, ASM, PowerShell, Unix Shell - Simulated)",
-  "POWERSHELL LINUX AND DARWIN INTERPERATOR ALL IN WONE (simulated via pkg & direct commands)", 
+  "Integrated Development Environment (C, C++, C#, ASM, PowerShell, Unix Shell)",
+  "POWERSHELL LINUX AND DARWIN INTERPERATOR ALL IN WONE (via pkg & direct commands)", 
   "OWN NATIVE ENV (with User Authentication)", 
   "Graphical Desktop Environment (GDE) with App Launcher (via 'desktop' command)",
   "Web Browser with multi-search engine support (in GDE)",
   "Virtual Partition Manager (in GDE, with BIOS & boot sequence)",
   "PixelStore Quantum Storage (Conceptual, in GDE)",
   "Actual Web Requests (curl/wget with browser fetch, CORS limitations apply)",
-  "ISOLATED ROOT WITH FILESYSTEM DISGNED FOR ITS NATIVE COSS PATFORM ENV (simulated, user-scoped)", 
+  "ISOLATED ROOT WITH FILESYSTEM DISGNED FOR ITS NATIVE COSS PATFORM ENV (user-scoped)", 
   "RUNS IN BROWSER OR OVER THE TOP OF OTHER OS WITH ITS OWN ISOLATED ROOT (conceptual)", 
   "VIRTUAL CLOCK DESIGNED FOR BI DIRECTIONAL BINARY TIMING",
   "Networking Utilities (curl, wget - actual fetch attempts)",
-  "Unified Package Manager (pkg - simulated)",
-  "Cross-Platform Hybrid Compilation (bbs-script - simulated)",
-  "Internet & Localhost Connectivity (connect - simulated, curl/wget - actual fetch attempts)",
+  "Unified Package Manager (pkg)",
+  "Cross-Platform Hybrid Compilation (bbs-script)",
+  "Internet & Localhost Connectivity (connect, curl/wget)",
   "Factory Reset (factory-reset command - mode-aware)",
   "User Authentication & Password Management (passwd command)",
-  "Superuser ('serpOS@GI') with conceptual advanced capabilities",
+  "Superuser ('serpOS@GI') with advanced capabilities",
 ];
 
 const availablePackages = ["powershell", "darwin-tools", "linux-core", "web-utils", "bbs-dev-kit", "gui-tools", "c-compiler", "cpp-compiler", "csharp-sdk", "assembler-tools", "security-tools"];
@@ -64,7 +64,7 @@ export function ShellEmulator({ onOpenDesktop }: ShellEmulatorProps) {
   const [passwordChangeState, setPasswordChangeState] = useState<{ step: 'idle' | 'old_pass' | 'new_pass' | 'confirm_pass', oldPass?: string, newPass?: string }>({ step: 'idle' });
 
 
-  const getPrompt = () => {
+  const getPromptText = () => {
     const userDisplay = currentUser?.username || "guest";
     if (passwordChangeState.step !== 'idle') {
       switch (passwordChangeState.step) {
@@ -77,12 +77,11 @@ export function ShellEmulator({ onOpenDesktop }: ShellEmulatorProps) {
     return `${userDisplay}@BBS:~$ `;
   };
   
-  let prompt = getPrompt(); // Initialize prompt
+  let currentPromptText = getPromptText(); 
 
   useEffect(() => {
-    prompt = getPrompt(); // Update prompt when state changes
-     // Update welcome message if currentUser or appMode changes after initial load
-    if (currentUser && appMode && history.length > 0 && history[0].id === getInitialWelcomeMessage().id ) { // Avoid re-adding if already customized
+    currentPromptText = getPromptText(); 
+    if (currentUser && appMode && history.length > 0 && history[0].id === getInitialWelcomeMessage().id ) { 
         setHistory(prev => [getInitialWelcomeMessage(), ...prev.slice(1)]);
     } else if (currentUser && appMode && history.length === 0) {
         setHistory([getInitialWelcomeMessage()]);
@@ -100,13 +99,13 @@ export function ShellEmulator({ onOpenDesktop }: ShellEmulatorProps) {
 
   useEffect(() => {
     inputRef.current?.focus();
-  }, [passwordChangeState.step]); // Refocus when prompt changes for passwd
+  }, [passwordChangeState.step]); 
 
   const addHistoryEntry = (entry: Omit<CommandOutput, 'id' | 'prompt'>, isInput: boolean = false) => {
     const fullEntry: CommandOutput = {
       id: `${Date.now()}-${Math.random()}`,
       ...entry,
-      prompt: isInput ? prompt : undefined,
+      prompt: isInput ? currentPromptText : undefined,
     };
     setHistory(prev => [...prev, fullEntry]);
   };
@@ -120,8 +119,7 @@ export function ShellEmulator({ onOpenDesktop }: ShellEmulatorProps) {
       case 'new_pass':
         if (input.length < 8) {
           addHistoryEntry({ type: "error", text: "New password must be at least 8 characters long. Please try again." });
-          // Reset to new_pass step or old_pass to restart? For now, just ask for new_pass again.
-          setPasswordChangeState(prev => ({ ...prev, step: 'new_pass' })); // Stay on new_pass
+          setPasswordChangeState(prev => ({ ...prev, step: 'new_pass' })); 
           addHistoryEntry({ type: "info", text: "Enter new password (min 8 chars):" });
           return;
         }
@@ -171,31 +169,31 @@ export function ShellEmulator({ onOpenDesktop }: ShellEmulatorProps) {
           "  whoami                     - Display current user and role\n" +
           "  passwd                     - Change your password\n" +
           "  logout                     - Log out of persistent mode / Reset ghost mode\n" +
-          "  sysinit                    - Simulate system initialization\n" +
-          "  fold                       - Simulate binary fold operation\n" +
+          "  sysinit                    - Initialize system\n" +
+          "  fold                       - Perform binary fold operation\n" +
           "  curl <url>                 - Transfer data from a server (uses browser fetch)\n" +
-          "  wget <url>                 - Download files from network (uses browser fetch, save simulated)\n" +
-          "  connect <address>          - Connect to a network address (simulated)\n" +
+          "  wget <url>                 - Download files from network (uses browser fetch, save emulated)\n" +
+          "  connect <address>          - Connect to a network address (emulated for BBS network)\n" +
           "  pkg install <name>         - Install a package (e.g., powershell, c-compiler)\n" +
           "  pkg remove <name>          - Remove an installed package\n" +
           "  pkg list                   - List installed packages\n" +
-          "  pkg update                 - Update all packages (simulated)\n" +
-          "  bbs-script \"<instruction>\" - Execute a natural language script (simulated)\n" +
+          "  pkg update                 - Update all packages (emulated repository check)\n" +
+          "  bbs-script \"<instruction>\" - Execute a natural language script\n" +
           "  desktop                    - Initialize the Graphical Desktop Environment (GDE)\n" +
           "  launch <app_name>          - Launch an application (use GDE for app launching)\n" +
           "  factory-reset              - Resets the shell (mode-aware: prompts for persistent mode reset)\n" +
           (currentUser?.role === 'superuser' ? 
           "Superuser Commands:\n" +
-          "  su_gen_executable <target> - Generate cross-platform executable (conceptual)\n" +
-          "  su_view_base_config        - View system base configuration (conceptual)\n"
+          "  su_gen_executable <target> - Generate cross-platform executable\n" +
+          "  su_view_base_config        - View system base configuration\n"
           : "") +
-          "Development Commands (Simulated):\n" +
-          "  gcc <file.c> [options]     - Compile C code\n" +
-          "  g++ <file.cpp> [options]   - Compile C++ code\n" +
-          "  csharp <file.cs> [options] - Compile/Run C# code\n" +
-          "  asm <file.asm> [options]   - Assemble assembly code\n" +
-          "  pwsh [script.ps1]          - Run PowerShell command or script\n" +
-          "  unix_shell [command]       - Run a generic Unix shell command";
+          "Development Commands:\n" +
+          "  gcc <file.c> [options]     - Compile C code via BBS-GCC\n" +
+          "  g++ <file.cpp> [options]   - Compile C++ code via BBS-G++\n" +
+          "  csharp <file.cs> [options] - Compile/Run C# code via BBS .NET Core\n" +
+          "  asm <file.asm> [options]   - Assemble assembly code via BBS Native Assembler\n" +
+          "  pwsh [script.ps1]          - Run PowerShell command or script in BBS PS Environment\n" +
+          "  unix_shell [command]       - Run a Unix shell command in BBS Shell Environment";
         break;
       case "clear":
         setHistory(currentUser && appMode ? [getInitialWelcomeMessage()] : []);
@@ -240,16 +238,15 @@ export function ShellEmulator({ onOpenDesktop }: ShellEmulatorProps) {
         }
         else {
           setPasswordChangeState({ step: 'old_pass' });
-          outputText = "Enter your current password:"; // This will be an info message
+          outputText = "Enter your current password:"; 
           outputType = "info";
         }
         break;
       case "logout":
         if (appMode === 'persistent' && currentUser && currentUser.role !== 'guest') {
-          logout(); // AuthContext handles navigation to login
+          logout(); 
           outputText = "Logging out...";
         } else if (appMode === 'ghost') {
-          // For ghost mode, effectively reset by going back to mode selection
           resetToModeSelection();
           outputText = "Resetting Ghost Mode session...";
         } else {
@@ -285,7 +282,7 @@ export function ShellEmulator({ onOpenDesktop }: ShellEmulatorProps) {
             }
             if (cmd.toLowerCase() === "wget") {
               const fileName = url.substring(url.lastIndexOf('/') + 1) || "index.html";
-              outputText += `Simulated save to '/virtual_fs/downloads/${fileName}'. Content fetched.`;
+              outputText += `Emulated save to '/virtual_fs/downloads/${fileName}'. Content fetched.`;
             }
           } catch (error: any) {
             outputText += `Error fetching ${url}: ${error.message}\nThis might be due to CORS policy or network issues.`;
@@ -300,14 +297,13 @@ export function ShellEmulator({ onOpenDesktop }: ShellEmulatorProps) {
         } else {
           const address = args[0];
           if (address.includes("localhost:") || address.match(/^(\d{1,3}\.){3}\d{1,3}:\d+$/)) { 
-            outputText = `Attempting to connect to ${address}...\nSuccessfully connected to local service on ${address}. (Simulated)`;
+            outputText = `Attempting to connect to ${address}...\nSuccessfully connected to local service on ${address}. (BBS Network Emulation)`;
           } else {
-            outputText = `Establishing connection to ${address}...\nSecure connection established to ${address}. (Simulated)`;
+            outputText = `Establishing connection to ${address}...\nSecure connection established to ${address}. (BBS Network Emulation)`;
           }
         }
         break;
       case "pkg":
-        // ... (pkg logic remains largely the same, ensure no critical parts depend on undefined currentUser)
         if (args.length === 0) {
           outputText = "Usage: pkg [install|remove|list|update] [package_name]";
           outputType = "error";
@@ -352,7 +348,7 @@ export function ShellEmulator({ onOpenDesktop }: ShellEmulatorProps) {
               outputText = "Installed packages:\n" + installedPackages.map(p => `  - ${p}`).join("\n");
               break;
             case "update":
-              outputText = "Checking for updates via BBS Quantum Relay Network...\nAll packages are up to date. (Simulated)";
+              outputText = "Checking for updates via BBS Quantum Relay Network...\nAll packages are up to date. (Emulated repository check)";
               break;
             default:
               outputText = `Unknown pkg command: ${subCmd}. Use 'install', 'remove', 'list', or 'update'.`;
@@ -366,13 +362,13 @@ export function ShellEmulator({ onOpenDesktop }: ShellEmulatorProps) {
           outputText = "Usage: bbs-script \"<natural language instruction>\" (e.g., bbs-script \"create a pulsating blue sphere component\")";
           outputType = "error";
         } else {
-          outputText = `BBS-Script Engine v0.5 (Simulated)
+          outputText = `BBS-Script Engine v0.5
 --------------------------------------
 User: ${currentUser?.username || 'guest'} (Role: ${currentUser?.role || 'unknown'})
 Parsing: "${scriptInput}"
 Interpreted Intent: [High-level intent: ${scriptInput.substring(0,30)}...]
 Generating BBS-IR (Intermediate Representation)...
-SIM_EXECUTE HybridBinary_bbs${Math.floor(Math.random()*10000)} (Simulated)
+EXECUTE HybridBinary_bbs${Math.floor(Math.random()*10000)}
 Execution Complete. Result: [Conceptual output for "${scriptInput}"]`;
         }
         break;
@@ -394,7 +390,7 @@ Execution Complete. Result: [Conceptual output for "${scriptInput}"]`;
         if (appMode === 'persistent') {
           const confirmed = window.confirm("WARNING: This will log you out and reset your persistent environment data (excluding other user accounts on this instance if any). The superuser account and base system will not be affected. Are you sure you want to proceed?");
           if (confirmed) {
-            resetToModeSelection(); // This clears all user-specific persistent data and returns to mode selection
+            resetToModeSelection(); 
             outputText = "Persistent environment reset. User data cleared. Returning to mode selection...";
             toast({ title: "Environment Reset", description: "Persistent data cleared.", variant: "destructive" });
           } else {
@@ -402,21 +398,20 @@ Execution Complete. Result: [Conceptual output for "${scriptInput}"]`;
             outputType = "info";
           }
         } else if (appMode === 'ghost') {
-          resetToModeSelection(); // Resets ghost mode by going back to mode selection
+          resetToModeSelection(); 
           outputText = "Ghost Mode session reset. Returning to mode selection...";
         } else {
           outputText = "Cannot perform factory reset: No active mode detected.";
           outputType = "error";
         }
         break;
-      // Superuser conceptual commands
       case "su_gen_executable":
         if (currentUser?.role === 'superuser') {
-          outputText = `Conceptual: Generating cross-platform executable for target '${args[0] || 'generic_binaryblocksphere'}'.\n` +
+          outputText = `Generating cross-platform executable for target '${args[0] || 'generic_binaryblocksphere'}'.\n` +
                        `1. Compiling BBS core into native bootstrap...\n` +
                        `2. Packaging PixelStore HTML Canvas (5MB compressed) with interpreter...\n` +
                        `3. Generating unique instance key...\n` +
-                       `4. Output: ${args[0] || 'BinaryBlocksphere_Instance.exe/app/bin'} (Conceptual)`;
+                       `4. Output: ${args[0] || 'BinaryBlocksphere_Instance.exe/app/bin'}`;
           outputText += "\nKey Generation: A unique security key for this new binary instance would be generated and required for its first launch and onboarding.";
         } else {
           outputText = "Error: This command requires superuser privileges.";
@@ -425,7 +420,7 @@ Execution Complete. Result: [Conceptual output for "${scriptInput}"]`;
         break;
       case "su_view_base_config":
         if (currentUser?.role === 'superuser') {
-          outputText = `Conceptual: Displaying Base System Configuration (Read-Only for regular users):\n` +
+          outputText = `Displaying Base System Configuration (Read-Only for regular users):\n` +
                        `- Core Kernel Version: BBSK v3.1.4\n` +
                        `- PixelStore Algorithm: QuantumPixel v2.1\n` +
                        `- Superuser: ${currentUser.username} (immutable base identity)\n` +
@@ -436,23 +431,21 @@ Execution Complete. Result: [Conceptual output for "${scriptInput}"]`;
           outputType = "error";
         }
         break;
-
-      // Simulated dev commands
       case "gcc":
         if (args.length === 0) { outputText = "Usage: gcc <file.c> [options]"; outputType = "error"; break; }
-        outputText = `Simulating C compilation with BBS-GCC...\nOutput: ${args.includes("-o") ? args[args.indexOf("-o")+1] : 'a.out'} (simulated binary)\nCompilation successful.`;
+        outputText = `BBS-GCC Compiling ${args[0]}...\nOutput: ${args.includes("-o") ? args[args.indexOf("-o")+1] : 'a.out'} (binary)\nCompilation successful.`;
         break;
       case "g++":
         if (args.length === 0) { outputText = "Usage: g++ <file.cpp> [options]"; outputType = "error"; break; }
-        outputText = `Simulating C++ compilation with BBS-G++...\nOutput: ${args.includes("-o") ? args[args.indexOf("-o")+1] : 'a.out'} (simulated binary)\nCompilation successful.`;
+        outputText = `BBS-G++ Compiling ${args[0]}...\nOutput: ${args.includes("-o") ? args[args.indexOf("-o")+1] : 'a.out'} (binary)\nCompilation successful.`;
         break;
       case "csharp":
         if (args.length === 0) { outputText = "Usage: csharp [run|build] <file.cs> [options]"; outputType = "error"; break; }
-        outputText = `Simulating C# operations with BBS .NET Core Runtime...\nExecution/Build successful. (Simulated output for ${args[1]})`;
+        outputText = `BBS .NET Core Processing ${args[1]}...\nExecution/Build successful. (Output for ${args[1]})`;
         break;
       case "asm":
         if (args.length === 0) { outputText = "Usage: asm <file.asm> [options]"; outputType = "error"; break; }
-        outputText = `Simulating Assembly with BBS Native Assembler (BNASM)...\nOutput: ${args.includes("-o") ? args[args.indexOf("-o")+1] : 'output.bin'} (simulated machine code)\nAssembly successful.`;
+        outputText = `BBS Native Assembler (BNASM) Assembling ${args[0]}...\nOutput: ${args.includes("-o") ? args[args.indexOf("-o")+1] : 'output.bin'} (machine code)\nAssembly successful.`;
         break;
       case "pwsh":
         if (!installedPackages.includes("powershell")) {
@@ -461,8 +454,8 @@ Execution Complete. Result: [Conceptual output for "${scriptInput}"]`;
              outputType = "warning";
              break;
         }
-        if (args.length === 0) { outputText = "BBS PowerShell v7.x (simulated)\nType 'exit' to exit."; }
-        else { outputText = `Executing in BBS PowerShell: ${args.join(" ")}\n(Simulated PowerShell Output for: ${args.join(" ")})`; }
+        if (args.length === 0) { outputText = "BBS PowerShell v7.x Environment\nType 'exit' to exit."; }
+        else { outputText = `Executing in BBS PowerShell: ${args.join(" ")}\n(BBS PowerShell Output for: ${args.join(" ")})`; }
         break;
       case "unix_shell":
          const unixToolPkgs = ["linux-core", "darwin-tools"];
@@ -473,8 +466,8 @@ Execution Complete. Result: [Conceptual output for "${scriptInput}"]`;
              outputType = "warning";
              break;
          }
-        if (args.length === 0) { outputText = "BBS Generic Unix Shell (simulating bash/zsh)\nType 'exit' to exit."; }
-        else { outputText = `Executing in BBS Unix Shell: ${args.join(" ")}\n(Simulated Unix Output for: ${args.join(" ")})`; }
+        if (args.length === 0) { outputText = "BBS Unix Shell (bash/zsh compatible)\nType 'exit' to exit."; }
+        else { outputText = `Executing in BBS Unix Shell: ${args.join(" ")}\n(BBS Unix Shell Output for: ${args.join(" ")})`; }
         break;
       default:
         if (command.trim() === "") {
@@ -485,7 +478,7 @@ Execution Complete. Result: [Conceptual output for "${scriptInput}"]`;
         outputType = "error";
     }
     
-    if (passwordChangeState.step === 'idle') { // Only add output if not in middle of passwd
+    if (passwordChangeState.step === 'idle') { 
         addHistoryEntry({ type: outputType, text: outputText });
     }
     setInputValue("");
@@ -493,7 +486,7 @@ Execution Complete. Result: [Conceptual output for "${scriptInput}"]`;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputValue.trim() || passwordChangeState.step !== 'idle') { // Allow empty input if changing password
+    if (inputValue.trim() || passwordChangeState.step !== 'idle') { 
       handleCommand(inputValue);
     } else {
       addHistoryEntry({ type: "input", text: "" }, true);
@@ -514,12 +507,12 @@ Execution Complete. Result: [Conceptual output for "${scriptInput}"]`;
     >
       <div className="flex items-center p-3 bg-black/40 border-b border-primary/20">
         <Terminal className="w-5 h-5 mr-2 text-primary" />
-        <h2 className="text-sm font-medium text-foreground">BinaryBlocksphere Terminal</h2>
+        <h2 className="text-sm font-medium text-foreground radiant-text">BinaryBlocksphere Terminal</h2>
         <div className="ml-auto flex items-center space-x-2 text-xs text-muted-foreground">
           {currentUser?.role === 'superuser' && <KeyRound className="w-3 h-3 text-yellow-400" title="Superuser Mode"/>}
           {appMode === 'persistent' && <Binary className="w-3 h-3 text-green-400" title="Persistent Mode"/>}
           {appMode === 'ghost' && <Binary className="w-3 h-3 text-blue-400" title="Ghost Mode"/>}
-          <span>{currentUser?.username || 'guest'}</span>
+          <span className="radiant-text">{currentUser?.username || 'guest'}</span>
         </div>
       </div>
       <ScrollArea className="flex-grow p-4" ref={scrollAreaRef}>
@@ -536,13 +529,13 @@ Execution Complete. Result: [Conceptual output for "${scriptInput}"]`;
                 <pre className="whitespace-pre-wrap radiant-text text-foreground">{item.text}</pre>
               )}
                {item.type === "info" && (
-                <pre className="whitespace-pre-wrap text-blue-400">{item.text}</pre>
+                <pre className="whitespace-pre-wrap text-blue-400 radiant-text">{item.text}</pre>
               )}
               {item.type === "error" && (
-                <pre className="whitespace-pre-wrap text-destructive">{item.text}</pre>
+                <pre className="whitespace-pre-wrap text-destructive radiant-text">{item.text}</pre>
               )}
               {item.type === "warning" && (
-                <pre className="whitespace-pre-wrap text-yellow-400">{item.text}</pre>
+                <pre className="whitespace-pre-wrap text-yellow-400 radiant-text">{item.text}</pre>
               )}
             </div>
           ))}
@@ -550,10 +543,10 @@ Execution Complete. Result: [Conceptual output for "${scriptInput}"]`;
       </ScrollArea>
       <form onSubmit={handleSubmit} className="p-2 border-t border-primary/20 bg-black/20">
         <div className="flex items-center">
-          <span className="pl-2 pr-1 font-mono text-sm radiant-text" style={{ color: 'var(--shell-prompt-color)' }}>{getPrompt()}</span>
+          <span className="pl-2 pr-1 font-mono text-sm radiant-text" style={{ color: 'var(--shell-prompt-color)' }}>{getPromptText()}</span>
           <Input
             ref={inputRef}
-            type={passwordChangeState.step !== 'idle' && passwordChangeState.step !== 'old_pass' ? "password" : "text"} // Mask password input fields
+            type={passwordChangeState.step !== 'idle' && passwordChangeState.step !== 'old_pass' ? "password" : "text"} 
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             className="flex-grow p-0 text-sm bg-transparent border-none shadow-none radiant-text text-foreground focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/50"
@@ -567,3 +560,5 @@ Execution Complete. Result: [Conceptual output for "${scriptInput}"]`;
     </div>
   );
 }
+
+```

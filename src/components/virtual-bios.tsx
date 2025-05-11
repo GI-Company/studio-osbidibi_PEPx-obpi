@@ -1,3 +1,4 @@
+
 "use client";
 import type * as React from 'react';
 import { useEffect, useState } from 'react';
@@ -34,24 +35,24 @@ export function VirtualBiosScreen({ onContinue }: VirtualBiosScreenProps) {
       const timer = setTimeout(() => {
         setDisplayedLines(prev => [...prev, biosLines[currentIndex]]);
         setCurrentIndex(prev => prev + 1);
-      }, 50); // Faster typing effect
+      }, 50); 
       return () => clearTimeout(timer);
     }
   }, [currentIndex]);
 
   return (
-    <div className="w-full h-full p-4 font-mono text-sm bg-[#0000A0] text-[#FFFFFF] overflow-y-auto flex flex-col justify-between rounded-md">
-      <div className="flex-grow">
+    <div className="w-full h-full p-4 font-mono text-sm bg-card text-accent overflow-y-auto flex flex-col justify-between items-center rounded-md">
+      <div className="flex-grow w-full max-w-2xl"> {/* Text block constrained and left-aligned by default */}
         {displayedLines.map((line, index) => (
-          <p key={index} className="whitespace-pre leading-tight">{line}</p>
+          <p key={index} className="whitespace-pre leading-tight radiant-text">{line}</p>
         ))}
-        {currentIndex < biosLines.length && <span className="animate-pulse">_</span>}
+        {currentIndex < biosLines.length && <span className="animate-pulse radiant-text">_</span>}
       </div>
       {currentIndex >= biosLines.length && (
         <div className="flex justify-center mt-4 space-x-4 shrink-0">
           <Button 
             variant="outline" 
-            className="text-black bg-gray-300 hover:bg-gray-400 border-gray-500 px-6 py-2" 
+            className="text-foreground bg-muted hover:bg-accent hover:text-accent-foreground border-primary/50 px-6 py-2 button-3d-interactive" 
             onClick={onContinue}
             aria-label="Continue Boot"
             >
@@ -59,7 +60,7 @@ export function VirtualBiosScreen({ onContinue }: VirtualBiosScreenProps) {
           </Button>
           <Button 
             variant="outline" 
-            className="text-black bg-gray-300 hover:bg-gray-400 border-gray-500 px-6 py-2" 
+            className="text-foreground bg-muted hover:bg-accent hover:text-accent-foreground border-primary/50 px-6 py-2 button-3d-interactive" 
             disabled
             aria-label="Enter Setup (Not Implemented)"
             >
@@ -70,3 +71,5 @@ export function VirtualBiosScreen({ onContinue }: VirtualBiosScreenProps) {
     </div>
   );
 }
+
+```
