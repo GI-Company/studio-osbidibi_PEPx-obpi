@@ -1,4 +1,3 @@
-
 "use client";
 
 import type * as React from 'react';
@@ -9,11 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { BinaryBlocksphereIcon } from "@/components/icons/BinaryBlocksphereIcon";
 import { useAuth } from "@/contexts/AuthContext";
-import { LogIn, Eye, EyeOff } from 'lucide-react';
+import { LogIn, Eye, EyeOff, UserPlus } from 'lucide-react'; // Added UserPlus
 import { toast } from '@/hooks/use-toast';
 
 export default function UserLogin() {
-  const { login, resetToModeSelection } = useAuth();
+  const { login, resetToModeSelection, switchToOnboarding } = useAuth(); // Added switchToOnboarding
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -26,6 +25,7 @@ export default function UserLogin() {
     if (!success) {
       setIsLoading(false); 
     }
+    // setIsLoading will be managed by auth state changes implicitly
   };
 
   return (
@@ -76,11 +76,14 @@ export default function UserLogin() {
             </Button>
           </form>
         </CardContent>
-         <CardFooter className="flex-col items-center space-y-2">
+         <CardFooter className="flex-col items-center space-y-3 pt-4">
+           <Button variant="link" size="sm" onClick={switchToOnboarding} className="text-primary radiant-text button-3d-interactive">
+             <UserPlus className="w-4 h-4 mr-2"/> Create an account
+           </Button>
            <Button variant="link" size="sm" onClick={resetToModeSelection} className="text-muted-foreground radiant-text button-3d-interactive">
             Back to Mode Selection
           </Button>
-          <div className="flex items-center text-xs text-muted-foreground radiant-text">
+          <div className="flex items-center text-xs text-muted-foreground radiant-text pt-2">
             <BinaryBlocksphereIcon className="w-4 h-4 mr-1.5 text-primary" />
             BinaryBlocksphere Secure Login
           </div>

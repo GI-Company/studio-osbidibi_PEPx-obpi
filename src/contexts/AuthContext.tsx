@@ -1,4 +1,3 @@
-
 "use client";
 import type * as React from 'react';
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
@@ -12,7 +11,6 @@ interface User {
   id: string;
   username: string;
   role: 'superuser' | 'user' | 'guest';
-  // passwordHash?: string; // For simulation, we'll store password directly in localStorage if needed
 }
 
 type AuthStatus = 
@@ -34,16 +32,17 @@ interface AuthContextType {
   selectMode: (mode: 'persistent' | 'ghost') => void;
   changePassword: (oldPass: string, newPass: string) => Promise<boolean>;
   resetToModeSelection: () => void;
+  switchToOnboarding: () => void; // New function
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const LOCAL_STORAGE_KEYS = {
   APP_MODE: 'binaryblocksphere_appMode',
-  CURRENT_USER: 'binaryblocksphere_currentUser', // For persistent user, not ghost
-  USERS: 'binaryblocksphere_users', // Stores all created users { [username]: password }
-  ONBOARDING_COMPLETE: 'binaryblocksphere_onboardingComplete', // For the instance, not per user
-  SUPERUSER_PASSWORD: 'binaryblocksphere_superuserPassword' // For superuser password changes
+  CURRENT_USER: 'binaryblocksphere_currentUser', 
+  USERS: 'binaryblocksphere_users', 
+  ONBOARDING_COMPLETE: 'binaryblocksphere_onboardingComplete',
+  SUPERUSER_PASSWORD: 'binaryblocksphere_superuserPassword'
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -79,22 +78,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      setIsLoading(true);
       const storedMode = localStorage.getItem(LOCAL_STORAGE_KEYS.APP_MODE) as 'persistent' | 'ghost' | null;
       setAppMode(storedMode);
 
       if (storedMode === 'persistent') {
-        const onboardingComplete = localStorage.getItem(LOCAL_STORAGE_KEYS.ONBOARDING_COMPLETE) === 'true';
         const storedUserJson = localStorage.getItem(LOCAL_STORAGE_KEYS.CURRENT_USER);
         if (storedUserJson) {
           const user = JSON.parse(storedUserJson) as User;
           setCurrentUser(user);
           setAuthStatus('authenticated');
-        } else if (!onboardingComplete) {
-          setAuthStatus('needs_onboarding');
         } else {
+          // If in persistent mode but no user logged in, go to login screen.
+          // ONBOARDING_COMPLETE flag is set by selectMode or reset by resetToModeSelection.
           setAuthStatus('needs_login');
         }
       } else if (storedMode === 'ghost') {
@@ -115,14 +113,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setCurrentUser({ id: 'ghost', username: 'GhostUser', role: 'guest' });
         setAuthStatus('ghost_mode');
         localStorage.removeItem(LOCAL_STORAGE_KEYS.CURRENT_USER);
-        // Ghost mode should not persist user data across sessions typically
       } else { // persistent
-        const onboardingComplete = localStorage.getItem(LOCAL_STORAGE_KEYS.ONBOARDING_COMPLETE) === 'true';
-        if (!onboardingComplete) {
-          setAuthStatus('needs_onboarding');
-        } else {
-          setAuthStatus('needs_login');
-        }
+        // For persistent mode, always go to login first.
+        // Onboarding can be reached from the login page.
+        // This ensures superuser can always attempt login.
+        localStorage.setItem(LOCAL_STORAGE_KEYS.ONBOARDING_COMPLETE, 'true'); 
+        setAuthStatus('needs_login');
       }
     }
   };
@@ -165,11 +161,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     users[username] = pass;
     saveUsers(users);
     
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(LOCAL_STORAGE_KEYS.ONBOARDING_COMPLETE, 'true');
-    }
+    // ONBOARDING_COMPLETE is already set to true when persistent mode is selected.
+    // localStorage.setItem(LOCAL_STORAGE_KEYS.ONBOARDING_COMPLETE, 'true'); 
     
-    // Automatically log in the new user
     const newUser: User = { id: username, username, role: 'user' };
     setCurrentUser(newUser);
     setAuthStatus('authenticated');
@@ -186,16 +180,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem(LOCAL_STORAGE_KEYS.CURRENT_USER);
       const storedMode = localStorage.getItem(LOCAL_STORAGE_KEYS.APP_MODE) as 'persistent' | 'ghost' | null;
       if (storedMode === 'persistent') {
-        const onboardingComplete = localStorage.getItem(LOCAL_STORAGE_KEYS.ONBOARDING_COMPLETE) === 'true';
-        if (!onboardingComplete) {
-           setAuthStatus('needs_onboarding'); // Should ideally not happen if user was logged in
-        } else {
-           setAuthStatus('needs_login');
-        }
-      } else if (storedMode === 'ghost') { // Reset ghost mode to initial ghost user state
+         setAuthStatus('needs_login'); // After logout in persistent, go back to login
+      } else if (storedMode === 'ghost') { 
         setCurrentUser({ id: 'ghost', username: 'GhostUser', role: 'guest' });
         setAuthStatus('ghost_mode');
-      } else { // No mode selected or cleared
+      } else { 
         setAuthStatus('needs_mode_selection');
       }
     }
@@ -233,15 +222,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setCurrentUser(null);
         setAppMode(null);
         setAuthStatus('needs_mode_selection');
-        // Clear all related local storage to truly reset
         Object.values(LOCAL_STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
     }
     toast({ title: "System Reset", description: "System state cleared. Please select an operating mode." });
   }, []);
 
+  const switchToOnboarding = () => {
+    setAuthStatus('needs_onboarding');
+  };
 
   return (
-    <AuthContext.Provider value={{ currentUser, authStatus, isLoading, appMode, login, logout, onboardUser, selectMode, changePassword, resetToModeSelection }}>
+    <AuthContext.Provider value={{ currentUser, authStatus, isLoading, appMode, login, logout, onboardUser, selectMode, changePassword, resetToModeSelection, switchToOnboarding }}>
       {children}
     </AuthContext.Provider>
   );
