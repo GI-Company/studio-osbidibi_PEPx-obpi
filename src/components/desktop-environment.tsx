@@ -5,20 +5,21 @@ import type * as React from 'react';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb, PanelLeftOpen, PanelRightOpen, LayoutGrid } from 'lucide-react';
+import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb, PanelLeftOpen, PanelRightOpen, LayoutGrid, BotMessageSquare } from 'lucide-react';
 import { MiniBrowser } from './mini-browser';
 import { Separator } from './ui/separator';
 import { VirtualPartitionApp } from './virtual-partition-app';
 import { PixelStoreApp } from './pixel-store-app';
 import { CodingAssistantApp } from './coding-assistant-app';
-import { AppLaunchpad } from './app-launchpad'; // New Launchpad
+import { AppLaunchpad } from './app-launchpad'; 
+import { AgenticTerminalApp } from './agentic-terminal-app'; // New App Component
 
 interface DesktopEnvironmentProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type ActiveApp = 'browser' | 'terminal' | 'virtualPartition' | 'pixelStore' | 'codingAssistant' | null;
+type ActiveApp = 'browser' | 'terminal' | 'virtualPartition' | 'pixelStore' | 'codingAssistant' | 'agenticTerminal' | null;
 
 export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps) {
   const [activeApp, setActiveApp] = useState<ActiveApp>(null);
@@ -29,6 +30,7 @@ export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps)
   const appsList = [
     { id: 'browser', name: 'Browser', icon: Globe, action: () => openApp('browser'), dataAiHint: "web browser" },
     { id: 'terminal', name: 'Terminal', icon: TerminalSquare, action: () => openApp('terminal'), dataAiHint: "command line" },
+    { id: 'agenticTerminal', name: 'Agent Terminal', icon: BotMessageSquare, action: () => openApp('agenticTerminal'), dataAiHint: "AI agent terminal" },
     { id: 'virtualPartition', name: 'V-Partition', icon: HardDrive, action: () => openApp('virtualPartition'), dataAiHint: "virtual machine disk" },
     { id: 'pixelStore', name: 'PixelStore', icon: Layers3, action: () => openApp('pixelStore'), dataAiHint: "data storage concept" },
     { id: 'codingAssistant', name: 'AI Assist', icon: Lightbulb, action: () => openApp('codingAssistant'), dataAiHint: "AI assistant code" },
@@ -56,6 +58,7 @@ export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps)
       case 'virtualPartition': return 'Virtual Partition Environment';
       case 'pixelStore': return 'BBS PixelStore Interface';
       case 'codingAssistant': return 'AI Coding Assistant / Chat';
+      case 'agenticTerminal': return 'Agentic Coding Terminal';
       default: return '';
     }
   };
@@ -81,7 +84,7 @@ export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps)
         </DialogHeader>
 
         <div className="flex flex-grow min-h-0">
-          {/* App Launcher / Dock - Draggable/repositionable is a conceptual future enhancement. */}
+          {/* App Launcher / Dock */}
           {isDockVisible && (
             <div className="w-20 p-3 border-r border-primary/20 flex flex-col items-center space-y-4 bg-black/30 overflow-y-auto transition-all duration-300 ease-in-out">
               {appsList.map(app => (
@@ -130,6 +133,7 @@ export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps)
                         {activeApp === 'virtualPartition' && <VirtualPartitionApp />}
                         {activeApp === 'pixelStore' && <PixelStoreApp />}
                         {activeApp === 'codingAssistant' && <CodingAssistantApp />}
+                        {activeApp === 'agenticTerminal' && <AgenticTerminalApp />}
                     </div>
                 </div>
             )}
@@ -137,7 +141,7 @@ export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps)
         </div>
         <Separator className="my-0 bg-primary/20" />
          <DialogDescription className="p-2 text-xs text-center text-muted-foreground/70 radiant-text">
-            BinaryBlocksphere GDE v0.6.0-alpha. AI Chat integrated. Dock can be hidden. Launchpad available.
+            BinaryBlocksphere GDE v0.7.0-alpha. Agentic Terminal added.
           </DialogDescription>
       </DialogContent>
       <AppLaunchpad isOpen={isLaunchpadOpen} onClose={() => setIsLaunchpadOpen(false)} apps={appsList} />
