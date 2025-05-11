@@ -2,22 +2,22 @@
 "use client";
 
 import type * as React from 'react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb, PanelLeftOpen, PanelRightOpen, LayoutGrid, BotMessageSquare, LogOut, FolderOpen, Package, Loader2 } from 'lucide-react';
+import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb, LayoutGrid, BotMessageSquare, LogOut, FolderOpen, Package, Loader2 } from 'lucide-react';
 import { MiniBrowser } from './mini-browser';
 import { Separator } from './ui/separator';
 import { VirtualPartitionApp } from './virtual-partition-app';
 import { PixelStoreApp } from './pixel-store-app';
 import { CodingAssistantApp } from './coding-assistant-app';
-import { AppLaunchpad } from './app-launchpad'; 
+import { AppLaunchpad } from './app-launchpad';
 import { AgenticTerminalApp } from './agentic-terminal-app';
 import { ShellEmulator } from './shell-emulator';
 import { BinaryBlocksphereIcon } from '@/components/icons/BinaryBlocksphereIcon';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles } from 'lucide-react';
-import { FileManagerApp } from './file-manager-app'; // New app
+import { FileManagerApp } from './file-manager-app';
 import { toast } from '@/hooks/use-toast';
 
 type ActiveApp = 'browser' | 'osbidibiShell' | 'virtualPartition' | 'pixelStore' | 'codingAssistant' | 'agenticTerminal' | 'fileManager' | { type: 'pixelProject'; id: string; name: string } | null;
@@ -25,17 +25,18 @@ type ActiveApp = 'browser' | 'osbidibiShell' | 'virtualPartition' | 'pixelStore'
 interface SavedProject {
   id: string;
   name: string;
-  icon: React.ElementType; // Should be Package icon
+  icon: React.ElementType;
 }
 
 export function DesktopEnvironment() {
   const { currentUser, logout } = useAuth();
   const [activeApp, setActiveApp] = useState<ActiveApp>(null);
   const [showWelcome, setShowWelcome] = useState(true);
-  const [isDockVisible, setIsDockVisible] = useState(true);
   const [isLaunchpadOpen, setIsLaunchpadOpen] = useState(false);
   const [savedPixelStoreProjects, setSavedPixelStoreProjects] = useState<SavedProject[]>([]);
   const [isLoadingProject, setIsLoadingProject] = useState(false);
+  const [isBottomDockVisible, setIsBottomDockVisible] = useState(false);
+  const dockHideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const coreAppsList = [
     { id: 'osbidibiShell', name: 'OSbidibi Shell', icon: TerminalSquare, action: () => openApp('osbidibiShell'), dataAiHint: "OS command line" },
@@ -51,34 +52,30 @@ export function DesktopEnvironment() {
     const newProject: SavedProject = {
       id: `project-${Date.now()}`,
       name: projectName,
-      icon: Package, // Icon for saved projects
+      icon: Package,
     };
     setSavedPixelStoreProjects(prev => [...prev, newProject]);
   };
 
-  const openApp = (app: ActiveApp | string) => { // Allow string for core app IDs
+  const openApp = (app: ActiveApp | string) => {
     if (typeof app === 'string' && coreAppsList.find(a => a.id === app)) {
-      setActiveApp(app as any); // Cast for core app IDs
+      setActiveApp(app as any);
     } else {
       setActiveApp(app);
     }
     setShowWelcome(false);
   };
-  
+
   const openPixelStoreProject = async (project: SavedProject) => {
     setIsLoadingProject(true);
     toast({ title: "Loading Project", description: `Opening "${project.name}" from PixelStore... (Conceptual conversion)`});
     setActiveApp({type: 'pixelProject', id: project.id, name: project.name});
     setShowWelcome(false);
-    // Simulate loading delay
     await new Promise(resolve => setTimeout(resolve, 2500));
-    // Conceptually, now open AgenticTerminalApp "with" this project context
-    // For now, we'll just open the generic AgenticTerminalApp
-    openApp('agenticTerminal'); 
+    openApp('agenticTerminal');
     toast({ title: "Project Loaded", description: `"${project.name}" is now active in Agent Terminal.`});
     setIsLoadingProject(false);
   };
-
 
   const closeApp = () => {
     setActiveApp(null);
@@ -86,8 +83,8 @@ export function DesktopEnvironment() {
   };
 
   const handleFullLogout = () => {
-    closeApp(); 
-    logout(); 
+    closeApp();
+    logout();
   };
 
   const getAppTitle = () => {
@@ -99,7 +96,6 @@ export function DesktopEnvironment() {
     if (typeof activeApp === 'object' && activeApp.type === 'pixelProject') {
       return `PixelStore Project: ${activeApp.name}`;
     }
-    // Fallback for core app names if not found or for other types
     switch (activeApp) {
       case 'browser': return 'Web Browser';
       case 'osbidibiShell': return 'OSbidibi-PEPX0.0.1 Shell (bidibi)';
@@ -111,7 +107,7 @@ export function DesktopEnvironment() {
       default: return 'OSbidibi GDE Application';
     }
   };
-  
+
   const allLaunchableApps = [
     ...coreAppsList,
     ...savedPixelStoreProjects.map(p => ({
@@ -122,6 +118,33 @@ export function DesktopEnvironment() {
       dataAiHint: `project ${p.name.toLowerCase()}`
     }))
   ];
+
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => {
+      if (dockHideTimeoutRef.current) {
+        clearTimeout(dockHideTimeoutRef.current);
+        dockHideTimeoutRef.current = null;
+      }
+      if (event.clientY > window.innerHeight - 50) { // 50px activation zone at the bottom
+        setIsBottomDockVisible(true);
+      } else {
+        // Delay hiding if mouse moves out of the zone but not over the dock
+        if(isBottomDockVisible) {
+         dockHideTimeoutRef.current = setTimeout(() => {
+            setIsBottomDockVisible(false);
+          }, 300);
+        }
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      if (dockHideTimeoutRef.current) {
+        clearTimeout(dockHideTimeoutRef.current);
+      }
+    };
+  }, [isBottomDockVisible]);
 
 
   return (
@@ -147,13 +170,11 @@ export function DesktopEnvironment() {
             </Button>
         </div>
       </header>
-      
+
       <div className="flex flex-col flex-grow min-h-0">
         <div className="p-1.5 md:p-2 border-b border-primary/20 flex items-center justify-between space-x-2 bg-black/40 shrink-0">
             <div className="flex items-center space-x-1">
-                <Button variant="ghost" size="icon" onClick={() => setIsDockVisible(!isDockVisible)} className="button-3d-interactive w-8 h-8 md:w-9 md:h-9" aria-label={isDockVisible ? "Hide Dock" : "Show Dock"}>
-                    {isDockVisible ? <PanelLeftOpen className="w-4 h-4 md:w-5 md:h-5"/> : <PanelRightOpen className="w-4 h-4 md:w-5 md:h-5"/>}
-                </Button>
+                {/* Replaced dock toggle with launchpad */}
                 <Button variant="ghost" size="icon" onClick={() => setIsLaunchpadOpen(true)} className="button-3d-interactive w-8 h-8 md:w-9 md:h-9" aria-label="Open Launchpad">
                     <LayoutGrid className="w-4 h-4 md:w-5 md:h-5"/>
                 </Button>
@@ -170,54 +191,64 @@ export function DesktopEnvironment() {
             </div>
         </div>
 
-        <div className="flex flex-grow min-h-0">
-          {isDockVisible && (
-            <div className="w-20 p-2 md:p-3 border-r border-primary/20 flex flex-col items-center space-y-3 md:space-y-4 bg-black/40 overflow-y-auto transition-all duration-300 ease-in-out">
-              {allLaunchableApps.map(app => (
-                 <Button 
-                    key={app.id}
-                    variant="ghost" 
-                    size="lg"
-                    className={`flex flex-col items-center justify-center h-auto p-1.5 md:p-2 space-y-1 text-foreground hover:bg-primary/20 button-3d-interactive w-full 
-                                ${(typeof activeApp === 'string' && activeApp === app.id) || (typeof activeApp === 'object' && activeApp?.type === 'pixelProject' && activeApp.id === app.id) ? 'bg-primary/40' : 'bg-card/30'}`}
-                    onClick={app.action}
-                    aria-label={`Launch ${app.name}`}
-                    data-ai-hint={app.dataAiHint || app.name.toLowerCase().replace(' ', '')}
-                  >
-                    <app.icon className="w-7 h-7 md:w-8 md:h-8 text-accent" />
-                    <span className="text-[10px] md:text-xs text-center radiant-text">{app.name}</span>
-                  </Button>
-              ))}
+        {/* Main Content Area */}
+        <div className="flex-grow p-1 md:p-2 overflow-hidden bg-background/40 relative">
+          {showWelcome && activeApp === null && (
+            <div className="flex flex-col items-center justify-center h-full text-center p-4">
+              <BinaryBlocksphereIcon className="w-20 h-20 text-primary opacity-60 mb-4" />
+              <h2 className="text-xl md:text-2xl font-semibold text-foreground radiant-text">Welcome to OSbidibi GDE</h2>
+              <p className="text-sm text-muted-foreground radiant-text">Select an application from the dock or launchpad.</p>
             </div>
           )}
-
-          <div className="flex-grow p-1 md:p-2 overflow-hidden bg-background/40 relative">
-            {showWelcome && activeApp === null && (
-              <div className="flex flex-col items-center justify-center h-full text-center p-4">
-                <BinaryBlocksphereIcon className="w-20 h-20 text-primary opacity-60 mb-4" />
-                <h2 className="text-xl md:text-2xl font-semibold text-foreground radiant-text">Welcome to OSbidibi GDE</h2>
-                <p className="text-sm text-muted-foreground radiant-text">Select an application from the dock or launchpad.</p>
+          {isLoadingProject && typeof activeApp === 'object' && activeApp?.type === 'pixelProject' && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm z-10">
+                  <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+                  <p className="text-lg text-foreground radiant-text">Loading PixelStore Project: {activeApp.name}...</p>
+                  <p className="text-sm text-muted-foreground radiant-text">(Conceptual data conversion in progress)</p>
               </div>
-            )}
-             {isLoadingProject && typeof activeApp === 'object' && activeApp?.type === 'pixelProject' && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm z-10">
-                    <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-                    <p className="text-lg text-foreground radiant-text">Loading PixelStore Project: {activeApp.name}...</p>
-                    <p className="text-sm text-muted-foreground radiant-text">(Conceptual data conversion in progress)</p>
-                </div>
-            )}
-            
-            <div className={`absolute inset-0 flex flex-col transition-opacity duration-300 ${activeApp && !isLoadingProject ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                {activeApp === 'osbidibiShell' && <ShellEmulator isEmbeddedInGDE={true} />}
-                {activeApp === 'browser' && <MiniBrowser />}
-                {activeApp === 'virtualPartition' && <VirtualPartitionApp />}
-                {activeApp === 'pixelStore' && <PixelStoreApp />}
-                {activeApp === 'codingAssistant' && <CodingAssistantApp />}
-                {activeApp === 'agenticTerminal' && <AgenticTerminalApp onSaveProjectToPixelStore={handleAddSavedProject} />}
-                {activeApp === 'fileManager' && <FileManagerApp />}
-            </div>
+          )}
+
+          <div className={`absolute inset-0 flex flex-col transition-opacity duration-300 ${activeApp && !isLoadingProject ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+              {activeApp === 'osbidibiShell' && <ShellEmulator isEmbeddedInGDE={true} />}
+              {activeApp === 'browser' && <MiniBrowser />}
+              {activeApp === 'virtualPartition' && <VirtualPartitionApp />}
+              {activeApp === 'pixelStore' && <PixelStoreApp />}
+              {activeApp === 'codingAssistant' && <CodingAssistantApp />}
+              {activeApp === 'agenticTerminal' && <AgenticTerminalApp onSaveProjectToPixelStore={handleAddSavedProject} />}
+              {activeApp === 'fileManager' && <FileManagerApp />}
           </div>
         </div>
+        {/* Bottom Dock */}
+        <div
+            className={`fixed bottom-0 left-0 right-0 h-[70px] md:h-[80px] bg-black/50 backdrop-blur-md border-t border-primary/20 flex items-center justify-center 
+                        px-2 md:px-4 space-x-2 md:space-x-3 overflow-x-auto transition-transform duration-300 ease-in-out z-20
+                        ${isBottomDockVisible ? 'translate-y-0' : 'translate-y-full'}`}
+            onMouseEnter={() => {
+              if (dockHideTimeoutRef.current) clearTimeout(dockHideTimeoutRef.current);
+              setIsBottomDockVisible(true);
+            }}
+            onMouseLeave={() => {
+               dockHideTimeoutRef.current = setTimeout(() => {
+                setIsBottomDockVisible(false);
+              }, 300);
+            }}
+        >
+            {allLaunchableApps.map(app => (
+            <Button
+                key={app.id}
+                variant="ghost"
+                className={`flex flex-col items-center justify-center h-[55px] w-[55px] md:h-[65px] md:w-[65px] p-1 space-y-0.5 text-foreground hover:bg-primary/20 button-3d-interactive
+                            ${(typeof activeApp === 'string' && activeApp === app.id) || (typeof activeApp === 'object' && activeApp?.type === 'pixelProject' && activeApp.id === app.id) ? 'bg-primary/40' : 'bg-card/30'}`}
+                onClick={app.action}
+                aria-label={`Launch ${app.name}`}
+                data-ai-hint={app.dataAiHint || app.name.toLowerCase().replace(' ', '')}
+            >
+                <app.icon className="w-5 h-5 md:w-6 md:h-6 text-accent" />
+                <span className="text-[8px] md:text-[10px] text-center radiant-text truncate w-full">{app.name}</span>
+            </Button>
+            ))}
+        </div>
+
         <Separator className="my-0 bg-primary/20" />
          <div className="p-1.5 text-xs text-center text-muted-foreground/70 radiant-text bg-black/40">
             OSbidibi-PEPX0.0.1 GDE v0.9.0-alpha. Main entry point active.
@@ -227,5 +258,4 @@ export function DesktopEnvironment() {
     </div>
   );
 }
-
     
