@@ -4,7 +4,7 @@
 import type * as React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb, LayoutGrid, BotMessageSquare, LogOut, FolderOpen, Package, Loader2, Users, Activity, Lock, PlaySquare, ScreenShare } from 'lucide-react';
+import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb, LayoutGrid, BotMessageSquare, LogOut, FolderOpen, Package, Loader2, Users, Activity, Lock, PlaySquare, ScreenShare, Wifi } from 'lucide-react';
 import { MiniBrowser } from './mini-browser';
 import { Separator } from './ui/separator';
 import { VirtualPartitionApp } from './virtual-partition-app';
@@ -20,7 +20,8 @@ import { Sparkles } from 'lucide-react';
 import { FileManagerApp } from './file-manager-app';
 import { UserManagementApp } from '@/components/admin/user-management-app';
 import { SessionLogsApp } from '@/components/admin/session-logs-app';
-import { MediaPlayerApp } from '@/components/media-player-app'; // Added MediaPlayerApp
+import { MediaPlayerApp } from '@/components/media-player-app';
+import { ConnectivityCenterApp } from '@/components/connectivity-center-app'; // Added ConnectivityCenterApp
 import { toast } from '@/hooks/use-toast';
 
 type ActiveApp = 
@@ -33,7 +34,8 @@ type ActiveApp =
   | 'fileManager' 
   | 'userManagement'
   | 'sessionLogs'
-  | 'mediaPlayer' // Added mediaPlayer
+  | 'mediaPlayer'
+  | 'connectivityCenter' // Added connectivityCenter
   | { type: 'pixelProject'; id: string; name: string } 
   | null;
 
@@ -65,6 +67,7 @@ export function DesktopEnvironment() {
     { id: 'pixelStore', name: 'PixelStore', icon: Layers3, action: () => openApp('pixelStore'), dataAiHint: "data storage concept" },
     { id: 'fileManager', name: 'File Manager', icon: FolderOpen, action: () => openApp('fileManager'), dataAiHint: "file system browser" },
     { id: 'mediaPlayer', name: 'Media Hub', icon: PlaySquare, action: () => openApp('mediaPlayer'), dataAiHint: "media player video audio" },
+    { id: 'connectivityCenter', name: 'Connectivity', icon: Wifi, action: () => openApp('connectivityCenter'), dataAiHint: "network wifi cast" },
   ];
 
   const adminAppsList = [
@@ -159,6 +162,7 @@ export function DesktopEnvironment() {
       case 'userManagement': return 'User Management Console';
       case 'sessionLogs': return 'Session Activity Logs';
       case 'mediaPlayer': return 'Multimedia Hub';
+      case 'connectivityCenter': return 'Connectivity Center';
       default: return 'OSbidibi GDE Application';
     }
   };
@@ -277,6 +281,7 @@ export function DesktopEnvironment() {
               {isAdmin && activeApp === 'userManagement' && <UserManagementApp />}
               {isAdmin && activeApp === 'sessionLogs' && <SessionLogsApp />}
               {activeApp === 'mediaPlayer' && <MediaPlayerApp />} 
+              {activeApp === 'connectivityCenter' && <ConnectivityCenterApp />}
           </div>
         </div>
         <div
@@ -311,7 +316,7 @@ export function DesktopEnvironment() {
 
         <Separator className="my-0 bg-primary/20" />
          <div className="p-1.5 text-xs text-center text-muted-foreground/70 radiant-text bg-black/40">
-            OSbidibi-PEPX0.0.1 GDE v0.9.1-alpha. Main entry point active.
+            OSbidibi-PEPX0.0.1 GDE v0.9.2-alpha. Main entry point active.
           </div>
       </div>
       <AppLaunchpad isOpen={isLaunchpadOpen} onClose={() => setIsLaunchpadOpen(false)} apps={allLaunchableItems} />
