@@ -560,5 +560,3 @@ Execution Complete. Result: [Conceptual output for "${scriptInput}"]`;
     </div>
   );
 }
-
-```

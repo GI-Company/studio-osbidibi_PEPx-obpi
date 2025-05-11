@@ -128,5 +128,3 @@ export function MiniBrowser({ initialUrl = "https://www.google.com/webhp?igu=1" 
     </div>
   );
 }
-
-```
