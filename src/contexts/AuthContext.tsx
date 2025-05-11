@@ -1,7 +1,9 @@
+
 "use client";
 import type * as React from 'react';
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
+import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs for social users
 
 // Superuser credentials
 const SUPERUSER_USERNAME = "serpOS@GI";
@@ -11,6 +13,7 @@ interface User {
   id: string;
   username: string;
   role: 'superuser' | 'user' | 'guest';
+  provider?: 'google' | 'microsoft' | 'yahoo' | 'credentials';
 }
 
 type AuthStatus = 
@@ -20,6 +23,8 @@ type AuthStatus =
   | 'needs_login'
   | 'authenticated'
   | 'ghost_mode';
+
+type SocialProvider = 'google' | 'microsoft' | 'yahoo';
 
 interface AuthContextType {
   currentUser: User | null;
@@ -32,7 +37,8 @@ interface AuthContextType {
   selectMode: (mode: 'persistent' | 'ghost') => void;
   changePassword: (oldPass: string, newPass: string) => Promise<boolean>;
   resetToModeSelection: () => void;
-  switchToOnboarding: () => void; // New function
+  switchToOnboarding: () => void;
+  signInWithProvider: (provider: SocialProvider) => Promise<boolean>; // New method for social login
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -80,6 +86,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      // Ensure uuid is loaded on client
+      import('uuid').then(uuid => {
+        // console.log("UUID library loaded for client-side generation.");
+      });
+
       setIsLoading(true);
       const storedMode = localStorage.getItem(LOCAL_STORAGE_KEYS.APP_MODE) as 'persistent' | 'ghost' | null;
       setAppMode(storedMode);
@@ -91,12 +102,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setCurrentUser(user);
           setAuthStatus('authenticated');
         } else {
-          // If in persistent mode but no user logged in, go to login screen.
-          // ONBOARDING_COMPLETE flag is set by selectMode or reset by resetToModeSelection.
           setAuthStatus('needs_login');
         }
       } else if (storedMode === 'ghost') {
-        setCurrentUser({ id: 'ghost', username: 'GhostUser', role: 'guest' });
+        setCurrentUser({ id: 'ghost', username: 'GhostUser', role: 'guest', provider: 'credentials' });
         setAuthStatus('ghost_mode');
       } else {
         setAuthStatus('needs_mode_selection');
@@ -110,13 +119,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem(LOCAL_STORAGE_KEYS.APP_MODE, mode);
       setAppMode(mode);
       if (mode === 'ghost') {
-        setCurrentUser({ id: 'ghost', username: 'GhostUser', role: 'guest' });
+        setCurrentUser({ id: 'ghost', username: 'GhostUser', role: 'guest', provider: 'credentials' });
         setAuthStatus('ghost_mode');
         localStorage.removeItem(LOCAL_STORAGE_KEYS.CURRENT_USER);
-      } else { // persistent
-        // For persistent mode, always go to login first.
-        // Onboarding can be reached from the login page.
-        // This ensures superuser can always attempt login.
+      } else { 
         localStorage.setItem(LOCAL_STORAGE_KEYS.ONBOARDING_COMPLETE, 'true'); 
         setAuthStatus('needs_login');
       }
@@ -129,9 +135,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const superuserPassword = loadSuperuserPassword();
 
     if (username === SUPERUSER_USERNAME && pass === superuserPassword) {
-      user = { id: SUPERUSER_USERNAME, username, role: 'superuser' };
+      user = { id: SUPERUSER_USERNAME, username, role: 'superuser', provider: 'credentials' };
     } else if (users[username] && users[username] === pass) {
-      user = { id: username, username, role: 'user' };
+      user = { id: username, username, role: 'user', provider: 'credentials' };
     }
 
     if (user) {
@@ -160,11 +166,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     users[username] = pass;
     saveUsers(users);
-    
-    // ONBOARDING_COMPLETE is already set to true when persistent mode is selected.
-    // localStorage.setItem(LOCAL_STORAGE_KEYS.ONBOARDING_COMPLETE, 'true'); 
-    
-    const newUser: User = { id: username, username, role: 'user' };
+        
+    const newUser: User = { id: username, username, role: 'user', provider: 'credentials' };
     setCurrentUser(newUser);
     setAuthStatus('authenticated');
     if (appMode === 'persistent') {
@@ -174,15 +177,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   };
 
+  const signInWithProvider = async (provider: SocialProvider): Promise<boolean> => {
+    // This is a STUBBED implementation for social login.
+    // In a real app, you would integrate with an OAuth library like NextAuth.js
+    // or directly with the provider's SDK.
+    toast({ title: `Simulating Sign-in`, description: `Attempting to sign in with ${provider}...` });
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    // Check if uuid is available
+    if (typeof window === 'undefined' || !window.uuidv4) {
+        // Fallback or handle server-side, though this should ideally be client-side.
+        // For this stub, we'll just make a simpler ID.
+        console.warn("uuidv4 not available on window, using simpler ID for social user.");
+    }
+    const userId = typeof window !== 'undefined' && window.uuidv4 ? window.uuidv4() : `social-${provider}-${Date.now()}`;
+
+
+    const user: User = {
+      id: userId,
+      username: `${provider.charAt(0).toUpperCase() + provider.slice(1)}User_${userId.substring(0, 4)}`,
+      role: 'user',
+      provider: provider,
+    };
+
+    setCurrentUser(user);
+    setAuthStatus('authenticated');
+    if (appMode === 'persistent') {
+      localStorage.setItem(LOCAL_STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+    }
+    toast({ title: "Sign-in Successful", description: `Welcome, ${user.username}! (via ${provider})` });
+    return true;
+  };
+
+
   const logout = () => {
     setCurrentUser(null);
     if (typeof window !== 'undefined') {
       localStorage.removeItem(LOCAL_STORAGE_KEYS.CURRENT_USER);
       const storedMode = localStorage.getItem(LOCAL_STORAGE_KEYS.APP_MODE) as 'persistent' | 'ghost' | null;
       if (storedMode === 'persistent') {
-         setAuthStatus('needs_login'); // After logout in persistent, go back to login
+         setAuthStatus('needs_login'); 
       } else if (storedMode === 'ghost') { 
-        setCurrentUser({ id: 'ghost', username: 'GhostUser', role: 'guest' });
+        setCurrentUser({ id: 'ghost', username: 'GhostUser', role: 'guest', provider: 'credentials' });
         setAuthStatus('ghost_mode');
       } else { 
         setAuthStatus('needs_mode_selection');
@@ -192,8 +230,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const changePassword = async (oldPass: string, newPass: string): Promise<boolean> => {
-    if (!currentUser) {
-      toast({ title: "Error", description: "No user logged in.", variant: "destructive" });
+    if (!currentUser || currentUser.provider !== 'credentials') {
+      toast({ title: "Error", description: currentUser?.provider !== 'credentials' ? "Password change is not available for social logins." : "No user logged in.", variant: "destructive" });
       return false;
     }
 
@@ -232,7 +270,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ currentUser, authStatus, isLoading, appMode, login, logout, onboardUser, selectMode, changePassword, resetToModeSelection, switchToOnboarding }}>
+    <AuthContext.Provider value={{ currentUser, authStatus, isLoading, appMode, login, logout, onboardUser, selectMode, changePassword, resetToModeSelection, switchToOnboarding, signInWithProvider }}>
       {children}
     </AuthContext.Provider>
   );
@@ -245,3 +283,10 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
+
+// Make uuidv4 available on window for client-side use after dynamic import
+if (typeof window !== 'undefined') {
+  import('uuid').then(uuid => {
+    (window as any).uuidv4 = uuid.v4;
+  });
+}
