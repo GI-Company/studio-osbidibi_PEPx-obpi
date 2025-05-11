@@ -1,20 +1,22 @@
+
 "use client";
 
 import type * as React from 'react';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Globe, TerminalSquare, XIcon, HardDrive } from 'lucide-react';
+import { Globe, TerminalSquare, XIcon, HardDrive, Layers3 } from 'lucide-react';
 import { MiniBrowser } from './mini-browser';
 import { Separator } from './ui/separator';
 import { VirtualPartitionApp } from './virtual-partition-app';
+import { PixelStoreApp } from './pixel-store-app';
 
 interface DesktopEnvironmentProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type ActiveApp = 'browser' | 'terminal' | 'virtualPartition' | null;
+type ActiveApp = 'browser' | 'terminal' | 'virtualPartition' | 'pixelStore' | null;
 
 export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps) {
   const [activeApp, setActiveApp] = useState<ActiveApp>(null);
@@ -43,6 +45,8 @@ export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps)
         return 'Terminal';
       case 'virtualPartition':
         return 'Virtual Partition Environment';
+      case 'pixelStore':
+        return 'BBS PixelStore Interface';
       default:
         return '';
     }
@@ -62,7 +66,7 @@ export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps)
 
         <div className="flex flex-grow min-h-0">
           {/* App Launcher / Dock */}
-          <div className="w-20 p-3 border-r border-primary/20 flex flex-col items-center space-y-4 bg-black/20">
+          <div className="w-20 p-3 border-r border-primary/20 flex flex-col items-center space-y-4 bg-black/20 overflow-y-auto">
             <Button 
               variant="ghost" 
               size="lg"
@@ -96,6 +100,17 @@ export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps)
               <HardDrive className="w-8 h-8 text-accent" />
               <span className="text-xs">V-Partition</span>
             </Button>
+            <Button 
+              variant="ghost" 
+              size="lg"
+              className="flex flex-col items-center justify-center h-auto p-2 space-y-1 text-foreground hover:bg-primary/20"
+              onClick={() => openApp('pixelStore')}
+              aria-label="Launch PixelStore Interface"
+              data-ai-hint="data storage concept"
+            >
+              <Layers3 className="w-8 h-8 text-accent" />
+              <span className="text-xs">PixelStore</span>
+            </Button>
           </div>
 
           {/* App Display Area */}
@@ -125,6 +140,7 @@ export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps)
                             </div>
                         )}
                         {activeApp === 'virtualPartition' && <VirtualPartitionApp />}
+                        {activeApp === 'pixelStore' && <PixelStoreApp />}
                     </div>
                 </div>
             )}
@@ -132,9 +148,11 @@ export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps)
         </div>
         <Separator className="my-0 bg-primary/20" />
          <DialogDescription className="p-2 text-xs text-center text-muted-foreground/70">
-            BinaryBlocksphere GDE v0.3-alpha. Applications run in a sandboxed environment. Virtual Partition added.
+            BinaryBlocksphere GDE v0.4-alpha. PixelStore interface added. Applications run in a sandboxed environment.
           </DialogDescription>
       </DialogContent>
     </Dialog>
   );
 }
+
+    

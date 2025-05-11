@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Terminal } from "lucide-react";
@@ -15,16 +16,20 @@ interface CommandOutput {
 const initialWelcomeMessage: CommandOutput = {
   id: Date.now().toString(),
   type: "output",
-  text: "Welcome to BinaryBlocksphere v0.2.0\nType 'help' for a list of available commands.\nType 'desktop' to launch the Graphical Desktop Environment.",
+  text: "Welcome to BinaryBlocksphere v0.3.0\nType 'help' for a list of available commands.\nType 'desktop' to launch the Graphical Desktop Environment.",
 };
 
 const initialCoreFeatures = [
   "System Initialization", "Binary Fold", "Change Propagation", 
   "Virtual Driver (Z-plane)", "SHELL EMULATION", "PERSONAL ENV", "VIRTUAL RAM", 
-  "VIRTUAL DRIVER", "POWERSHELL LINUX AND DARWIN INTERPERATOR ALL IN WONE (simulated via pkg)", 
+  "VIRTUAL DRIVER", 
+  "Integrated Development Environment (C, C++, C#, ASM, PowerShell, Unix Shell - Simulated)",
+  "POWERSHELL LINUX AND DARWIN INTERPERATOR ALL IN WONE (simulated via pkg & direct commands)", 
   "OWN NATIVE ENV", 
   "Graphical Desktop Environment (GDE) with App Launcher (via 'desktop' command)",
   "Web Browser with multi-search engine support (in GDE)",
+  "Virtual Partition Manager (in GDE, with BIOS & boot sequence)",
+  "PixelStore Quantum Storage (Conceptual, in GDE)",
   "Actual Web Requests (curl/wget with browser fetch, CORS limitations apply)",
   "ISOLATED ROOT WITH FILESYSTEM DISGNED FOR ITS NATIVE COSS PATFORM ENV (simulated)", 
   "RUNS IN BROWSER OR OVER THE TOP OF OTHER OS WITH ITS OWN ISOLATED ROOT (conceptual)", 
@@ -36,7 +41,7 @@ const initialCoreFeatures = [
   "Factory Reset (factory-reset command)",
 ];
 
-const availablePackages = ["powershell", "darwin-tools", "linux-core", "web-utils", "bbs-dev-kit", "gui-tools"];
+const availablePackages = ["powershell", "darwin-tools", "linux-core", "web-utils", "bbs-dev-kit", "gui-tools", "c-compiler", "cpp-compiler", "csharp-sdk", "assembler-tools"];
 
 interface ShellEmulatorProps {
   onOpenDesktop: () => void;
@@ -45,7 +50,7 @@ interface ShellEmulatorProps {
 export function ShellEmulator({ onOpenDesktop }: ShellEmulatorProps) {
   const [history, setHistory] = useState<CommandOutput[]>([initialWelcomeMessage]);
   const [inputValue, setInputValue] = useState("");
-  const [installedPackages, setInstalledPackages] = useState<string[]>(["core-utils"]);
+  const [installedPackages, setInstalledPackages] = useState<string[]>(["core-utils", "c-compiler", "cpp-compiler", "csharp-sdk", "assembler-tools"]);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -79,7 +84,7 @@ export function ShellEmulator({ onOpenDesktop }: ShellEmulatorProps) {
 
     switch (cmd.toLowerCase()) {
       case "help":
-        outputText = "BinaryBlocksphere v0.2.0 - Available Commands:\n" +
+        outputText = "BinaryBlocksphere v0.3.0 - Available Commands:\n" +
           "  help                       - Show this help message\n" +
           "  clear                      - Clear the terminal screen\n" +
           "  date                       - Display the current system time\n" +
@@ -92,14 +97,21 @@ export function ShellEmulator({ onOpenDesktop }: ShellEmulatorProps) {
           "  curl <url>                 - Transfer data from a server (uses browser fetch)\n" +
           "  wget <url>                 - Download files from network (uses browser fetch, save simulated)\n" +
           "  connect <address>          - Connect to a network address (simulated)\n" +
-          "  pkg install <name>         - Install a package (e.g., powershell, darwin-tools, linux-core)\n" +
+          "  pkg install <name>         - Install a package (e.g., powershell, c-compiler)\n" +
           "  pkg remove <name>          - Remove an installed package\n" +
           "  pkg list                   - List installed packages\n" +
           "  pkg update                 - Update all packages (simulated)\n" +
           "  bbs-script \"<instruction>\" - Execute a natural language script (simulated)\n" +
           "  desktop                    - Initialize the Graphical Desktop Environment (GDE)\n" +
           "  launch <app_name>          - Launch an application (use GDE for app launching)\n" +
-          "  factory-reset              - Resets the shell to its initial state";
+          "  factory-reset              - Resets the shell to its initial state\n" +
+          "Development Commands (Simulated):\n" +
+          "  gcc <file.c> [options]     - Compile C code (e.g., gcc main.c -o main)\n" +
+          "  g++ <file.cpp> [options]   - Compile C++ code (e.g., g++ app.cpp -o app)\n" +
+          "  csharp <file.cs> [options] - Compile/Run C# code (e.g., csharp run main.cs)\n" +
+          "  asm <file.asm> [options]   - Assemble assembly code (e.g., asm boot.asm -f bin -o boot.bin)\n" +
+          "  pwsh [script.ps1]          - Run PowerShell command or script\n" +
+          "  unix_shell [command]       - Run a generic Unix shell command (e.g., unix_shell ls -la)";
         break;
       case "clear":
         setHistory([initialWelcomeMessage]);
@@ -135,7 +147,7 @@ export function ShellEmulator({ onOpenDesktop }: ShellEmulatorProps) {
         outputText = "guest";
         break;
       case "sysinit":
-        outputText = "Initializing Bidirectional Binary System...\nState Matrix constructed (3D)...\nVirtual drivers loaded...\nCore services (networking, pkg, bbs-script) started...\nSystem ready.";
+        outputText = "Initializing Bidirectional Binary System...\nState Matrix constructed (3D)...\nVirtual drivers loaded...\nCore services (networking, pkg, bbs-script, IDE tools) started...\nSystem ready.";
         break;
       case "fold":
         outputText = "Performing binary fold operation...\nError correction routines initiated...\nChange propagation to adjacent nodes pending...\nFold complete.";
@@ -149,7 +161,7 @@ export function ShellEmulator({ onOpenDesktop }: ShellEmulatorProps) {
           const url = args[0];
           outputText = `Attempting to fetch ${url} using browser's fetch API...\n`;
           try {
-            const response = await fetch(url, { mode: 'cors' });
+            const response = await fetch(url, { mode: 'cors' }); // Added mode: 'cors'
             if (!response.ok) {
               throw new Error(`HTTP error! status: ${response.status}`);
             }
@@ -162,7 +174,7 @@ export function ShellEmulator({ onOpenDesktop }: ShellEmulatorProps) {
             }
             if (cmd.toLowerCase() === "wget") {
               const fileName = url.substring(url.lastIndexOf('/') + 1) || "index.html";
-              outputText += `Simulated save to '${fileName}'. Content fetched.`;
+              outputText += `Simulated save to '/virtual_fs/downloads/${fileName}'. Content fetched.`;
             }
           } catch (error: any) {
             outputText += `Error fetching ${url}: ${error.message}\nThis might be due to CORS policy or network issues.`;
@@ -176,7 +188,7 @@ export function ShellEmulator({ onOpenDesktop }: ShellEmulatorProps) {
           outputType = "error";
         } else {
           const address = args[0];
-          if (address.includes("localhost:")) {
+          if (address.includes("localhost:") || address.match(/^(\d{1,3}\.){3}\d{1,3}:\d+$/)) { // Basic localhost or IP:port check
             outputText = `Attempting to connect to ${address}...\nSuccessfully connected to local service on ${address}. (Simulated)`;
           } else {
             outputText = `Establishing connection to ${address}...\nSecure connection established to ${address}. (Simulated)`;
@@ -200,7 +212,7 @@ export function ShellEmulator({ onOpenDesktop }: ShellEmulatorProps) {
                 outputType = "warning";
               } else if (availablePackages.includes(pkgName)) {
                 setInstalledPackages(prev => [...prev, pkgName]);
-                outputText = `Installing '${pkgName}'...\nPackage '${pkgName}' downloaded.\nConfiguring '${pkgName}'...\n'${pkgName}' installed successfully.`;
+                outputText = `Installing '${pkgName}'...\nPackage '${pkgName}' downloaded from BBS Central Repository.\nConfiguring '${pkgName}'...\n'${pkgName}' installed successfully.`;
               } else {
                 outputText = `Package '${pkgName}' not found in repositories. Available: ${availablePackages.join(', ')}`;
                 outputType = "error";
@@ -210,9 +222,12 @@ export function ShellEmulator({ onOpenDesktop }: ShellEmulatorProps) {
               if (!pkgName) {
                 outputText = "Usage: pkg remove <package_name>";
                 outputType = "error";
+              } else if (["core-utils", "c-compiler", "cpp-compiler", "csharp-sdk", "assembler-tools"].includes(pkgName) && args[2] !== "--force") {
+                outputText = `Warning: '${pkgName}' is a core development package. Removing it might impact system stability. Use 'pkg remove ${pkgName} --force' to proceed.`;
+                outputType = "warning";
               } else if (pkgName === "core-utils") {
-                outputText = `Error: Cannot remove essential package 'core-utils'.`;
-                outputType = "error";
+                outputText = `Error: Cannot remove essential package 'core-utils'. System integrity depends on it.`;
+                outputType = "error";  
               } else if (installedPackages.includes(pkgName)) {
                 setInstalledPackages(prev => prev.filter(p => p !== pkgName));
                 outputText = `Removing '${pkgName}'...\n'${pkgName}' removed successfully.`;
@@ -225,7 +240,7 @@ export function ShellEmulator({ onOpenDesktop }: ShellEmulatorProps) {
               outputText = "Installed packages:\n" + installedPackages.map(p => `  - ${p}`).join("\n");
               break;
             case "update":
-              outputText = "Checking for updates...\nAll packages are up to date. (Simulated)";
+              outputText = "Checking for updates via BBS Quantum Relay Network...\nAll packages are up to date. (Simulated)";
               break;
             default:
               outputText = `Unknown pkg command: ${subCmd}. Use 'install', 'remove', 'list', or 'update'.`;
@@ -236,31 +251,34 @@ export function ShellEmulator({ onOpenDesktop }: ShellEmulatorProps) {
       case "bbs-script":
         const scriptInput = args.join(" ");
         if (!scriptInput) {
-          outputText = "Usage: bbs-script \"<natural language instruction>\"";
+          outputText = "Usage: bbs-script \"<natural language instruction>\" (e.g., bbs-script \"create a pulsating blue sphere component\")";
           outputType = "error";
         } else {
-          outputText = `BBS-Script Engine v0.2 (Simulated)
+          outputText = `BBS-Script Engine v0.3 (Simulated)
 --------------------------------------
 Parsing: "${scriptInput}"
-Interpreted Intent: [Analyzing intent...]
+Interpreted Intent: [High-level intent: ${scriptInput.substring(0,30)}...]
 Generating BBS-IR (Intermediate Representation):
   LOAD_MODULE NaturalLanguageProcessor
   LOAD_MODULE HybridCompiler
-  PROCESS_INPUT "${scriptInput}" -> AST_Node
-  CONVERT AST_Node -> LowLevelOps
-  COMPILE LowLevelOps -> HybridBinary_bbs${Math.floor(Math.random()*1000)}
-  EXECUTE HybridBinary_bbs (Simulated)
-Execution Complete. Result: [Simulated output for "${scriptInput}"]`;
+  LOAD_MODULE SelfModificationCore (if applicable)
+  PROCESS_INPUT "${scriptInput}" -> AST_Node_BBS
+  CONVERT AST_Node_BBS -> LowLevelQuantumOps
+  COMPILE LowLevelQuantumOps -> HybridBinary_bbs${Math.floor(Math.random()*10000)}
+  TARGET_PLATFORM: Native_BinaryBlocksphere
+  SIM_EXECUTE HybridBinary_bbs${Math.floor(Math.random()*10000)} (Simulated)
+Execution Complete. Result: [Conceptual output for "${scriptInput}"]
+Note: For actual system modifications, elevated privileges and confirmation would be required.`;
         }
         break;
       case "desktop":
         onOpenDesktop();
         outputText = "Initializing Graphical Desktop Environment (GDE)...\n" +
-                     "GDE Version: 0.2-alpha\n" +
+                     "GDE Version: 0.3-alpha\n" +
                      "Welcome to BBS Desktop! Use the icons in the GDE to launch applications.";
         if (!installedPackages.includes("gui-tools")) {
             setInstalledPackages(prev => [...prev, "gui-tools"]);
-            outputText += "\n'gui-tools' package automatically installed for GDE.";
+            outputText += "\n'gui-tools' package automatically installed for GDE functionality.";
         }
         break;
       case "launch":
@@ -269,9 +287,51 @@ Execution Complete. Result: [Simulated output for "${scriptInput}"]`;
         break;
       case "factory-reset":
         setHistory([initialWelcomeMessage]);
-        setInstalledPackages(["core-utils"]);
-        outputText = "System has been reset to factory defaults.\nShell history and installed packages have been cleared.";
+        setInstalledPackages(["core-utils", "c-compiler", "cpp-compiler", "csharp-sdk", "assembler-tools"]);
+        outputText = "System integrity check initiated...\nPerforming factory reset of BinaryBlocksphere Environment...\nShell history, user configurations, and non-core packages cleared.\nVirtual file system reformatted to default state.\nCore development tools reinstalled.\nSystem has been reset to factory defaults.";
         outputType = "warning";
+        break;
+      // Simulated dev commands
+      case "gcc":
+        if (args.length === 0) { outputText = "Usage: gcc <file.c> [options]"; outputType = "error"; break; }
+        outputText = `Simulating C compilation with BBS-GCC...\nInput: ${args[0]}\nOptions: ${args.slice(1).join(" ")}\nQuantum pre-processing...\nStandard compilation...\nLinking with BBS CoreLib...\nOutput: ${args.includes("-o") ? args[args.indexOf("-o")+1] : 'a.out'} (simulated binary)\nCompilation successful.`;
+        break;
+      case "g++":
+        if (args.length === 0) { outputText = "Usage: g++ <file.cpp> [options]"; outputType = "error"; break; }
+        outputText = `Simulating C++ compilation with BBS-G++...\nInput: ${args[0]}\nOptions: ${args.slice(1).join(" ")}\nObject-oriented paradigm analysis...\nTemplate meta-programming expansion...\nLinking with BBS Standard Template Library++...\nOutput: ${args.includes("-o") ? args[args.indexOf("-o")+1] : 'a.out'} (simulated binary)\nCompilation successful.`;
+        break;
+      case "csharp":
+        if (args.length === 0) { outputText = "Usage: csharp [run|build] <file.cs> [options]"; outputType = "error"; break; }
+        const csAction = args[0];
+        const csFile = args[1];
+        if (!csFile) { outputText = "Usage: csharp [run|build] <file.cs> [options]"; outputType = "error"; break; }
+        outputText = `Simulating C# operations with BBS .NET Core Runtime...\nAction: ${csAction}\nFile: ${csFile}\nOptions: ${args.slice(2).join(" ")}\nJust-In-Time (JIT) Quantum Compilation (if 'run')...\nIntermediate Language (BBS-IL) generation (if 'build')...\nExecution/Build successful. (Simulated output for ${csFile})`;
+        break;
+      case "asm":
+        if (args.length === 0) { outputText = "Usage: asm <file.asm> [options]"; outputType = "error"; break; }
+        outputText = `Simulating Assembly with BBS Native Assembler (BNASM)...\nInput: ${args[0]}\nOptions: ${args.slice(1).join(" ")}\nLow-level instruction parsing...\nMacro expansion...\nGenerating machine code for BBS Virtual CPU...\nOutput: ${args.includes("-o") ? args[args.indexOf("-o")+1] : 'output.bin'} (simulated machine code)\nAssembly successful.`;
+        break;
+      case "pwsh":
+        if (!installedPackages.includes("powershell")) {
+             setInstalledPackages(prev => [...prev, "powershell"]);
+             outputText = "PowerShell tools not found. Installing 'powershell' package...\n'powershell' installed. Please re-run your command.\n";
+             outputType = "warning";
+             break;
+        }
+        if (args.length === 0) { outputText = "BBS PowerShell v7.x (simulated)\nType 'exit' to exit."; }
+        else { outputText = `Executing in BBS PowerShell: ${args.join(" ")}\n(Simulated PowerShell Output for: ${args.join(" ")})`; }
+        break;
+      case "unix_shell":
+         const unixToolPkgs = ["linux-core", "darwin-tools"];
+         const needsUnixInstall = !unixToolPkgs.some(pkg => installedPackages.includes(pkg));
+         if (needsUnixInstall) {
+             setInstalledPackages(prev => [...prev, "linux-core"]); // Default to installing linux-core
+             outputText = `Core Unix utilities not found. Installing 'linux-core' package...\n'linux-core' installed. You might also consider 'darwin-tools'. Please re-run your command.\n`;
+             outputType = "warning";
+             break;
+         }
+        if (args.length === 0) { outputText = "BBS Generic Unix Shell (simulating bash/zsh)\nType 'exit' to exit."; }
+        else { outputText = `Executing in BBS Unix Shell: ${args.join(" ")}\n(Simulated Unix Output for: ${args.join(" ")})`; }
         break;
       default:
         if (command.trim() === "") {
@@ -359,3 +419,5 @@ Execution Complete. Result: [Simulated output for "${scriptInput}"]`;
     </div>
   );
 }
+
+    
