@@ -4,7 +4,7 @@
 import type * as React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb, LayoutGrid, BotMessageSquare, LogOut, FolderOpen, Package, Loader2, Users, Activity } from 'lucide-react';
+import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb, LayoutGrid, BotMessageSquare, LogOut, FolderOpen, Package, Loader2, Users, Activity, Lock, PlaySquare, ScreenShare } from 'lucide-react';
 import { MiniBrowser } from './mini-browser';
 import { Separator } from './ui/separator';
 import { VirtualPartitionApp } from './virtual-partition-app';
@@ -20,6 +20,7 @@ import { Sparkles } from 'lucide-react';
 import { FileManagerApp } from './file-manager-app';
 import { UserManagementApp } from '@/components/admin/user-management-app';
 import { SessionLogsApp } from '@/components/admin/session-logs-app';
+import { MediaPlayerApp } from '@/components/media-player-app'; // Added MediaPlayerApp
 import { toast } from '@/hooks/use-toast';
 
 type ActiveApp = 
@@ -30,8 +31,9 @@ type ActiveApp =
   | 'codingAssistant' 
   | 'agenticTerminal' 
   | 'fileManager' 
-  | 'userManagement' // New Admin App
-  | 'sessionLogs'    // New Admin App
+  | 'userManagement'
+  | 'sessionLogs'
+  | 'mediaPlayer' // Added mediaPlayer
   | { type: 'pixelProject'; id: string; name: string } 
   | null;
 
@@ -50,6 +52,7 @@ export function DesktopEnvironment() {
   const [isLoadingProject, setIsLoadingProject] = useState(false);
   const [isBottomDockVisible, setIsBottomDockVisible] = useState(false);
   const dockHideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   const isAdmin = currentUser?.role === 'superuser';
 
@@ -61,6 +64,7 @@ export function DesktopEnvironment() {
     { id: 'virtualPartition', name: 'V-Partition', icon: HardDrive, action: () => openApp('virtualPartition'), dataAiHint: "virtual machine disk" },
     { id: 'pixelStore', name: 'PixelStore', icon: Layers3, action: () => openApp('pixelStore'), dataAiHint: "data storage concept" },
     { id: 'fileManager', name: 'File Manager', icon: FolderOpen, action: () => openApp('fileManager'), dataAiHint: "file system browser" },
+    { id: 'mediaPlayer', name: 'Media Hub', icon: PlaySquare, action: () => openApp('mediaPlayer'), dataAiHint: "media player video audio" },
   ];
 
   const adminAppsList = [
@@ -109,6 +113,32 @@ export function DesktopEnvironment() {
     logout();
   };
 
+  const toggleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => {
+        setIsFullScreen(true);
+        toast({ title: "Environment Locked", description: "Fullscreen mode activated. Press Esc to exit." });
+      }).catch(err => {
+        toast({ title: "Fullscreen Error", description: `Could not enter fullscreen: ${err.message}`, variant: "destructive" });
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().then(() => {
+          setIsFullScreen(false);
+          toast({ title: "Environment Unlocked", description: "Exited fullscreen mode." });
+        });
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullScreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
   const getAppTitle = () => {
     if (activeApp === null) return 'OSbidibi GDE Central';
     
@@ -118,7 +148,6 @@ export function DesktopEnvironment() {
     if (typeof activeApp === 'object' && activeApp.type === 'pixelProject') {
       return `PixelStore Project: ${activeApp.name}`;
     }
-    // Fallback for any other cases, though should be covered by appInfo
     switch (activeApp) {
       case 'browser': return 'Web Browser';
       case 'osbidibiShell': return 'OSbidibi-PEPX0.0.1 Shell (bidibi)';
@@ -129,6 +158,7 @@ export function DesktopEnvironment() {
       case 'fileManager': return 'File Manager';
       case 'userManagement': return 'User Management Console';
       case 'sessionLogs': return 'Session Activity Logs';
+      case 'mediaPlayer': return 'Multimedia Hub';
       default: return 'OSbidibi GDE Application';
     }
   };
@@ -181,6 +211,9 @@ export function DesktopEnvironment() {
         <div className="flex items-center space-x-2 md:space-x-3">
             {currentUser && (
               <div className="hidden sm:flex items-center text-xs text-muted-foreground space-x-2">
+                <Button variant="ghost" size="icon" onClick={toggleFullScreen} title={isFullScreen ? "Unlock Environment (Exit Fullscreen)" : "Lock Environment (Enter Fullscreen)"} className="button-3d-interactive mr-1 w-5 h-5 p-0">
+                  <Lock className={`w-3 h-3 md:w-4 md:h-4 ${isFullScreen ? 'text-primary' : 'text-muted-foreground hover:text-accent'}`} />
+                </Button>
                 <span className="radiant-text">User: <span className="font-medium text-accent">{currentUser.username} ({currentUser.role})</span></span>
                 {currentUser.isTrialActive && currentUser.role === 'user' && (
                     <Badge variant="default" className="text-xs font-normal px-1.5 py-0.5 bg-accent/80 text-accent-foreground">
@@ -189,6 +222,9 @@ export function DesktopEnvironment() {
                 )}
               </div>
             )}
+             <Button variant="ghost" size="icon" onClick={toggleFullScreen} title={isFullScreen ? "Unlock Environment (Exit Fullscreen)" : "Lock Environment (Enter Fullscreen)"} className="button-3d-interactive sm:hidden w-6 h-6 p-0">
+                  <Lock className={`w-4 h-4 ${isFullScreen ? 'text-primary' : 'text-muted-foreground hover:text-accent'}`} />
+            </Button>
             <Button variant="ghost" size="icon" onClick={handleFullLogout} title="Logout / Exit GDE" className="button-3d-interactive">
                 <LogOut className="w-4 h-4 md:w-5 md:h-5 text-destructive" />
             </Button>
@@ -240,6 +276,7 @@ export function DesktopEnvironment() {
               {activeApp === 'fileManager' && <FileManagerApp />}
               {isAdmin && activeApp === 'userManagement' && <UserManagementApp />}
               {isAdmin && activeApp === 'sessionLogs' && <SessionLogsApp />}
+              {activeApp === 'mediaPlayer' && <MediaPlayerApp />} 
           </div>
         </div>
         <div
