@@ -4,7 +4,7 @@
 import type * as React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb, LayoutGrid, BotMessageSquare, LogOut, FolderOpen, Package, Loader2, Users, Activity, Lock, PlaySquare, ScreenShare, Wifi } from 'lucide-react';
+import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb, LayoutGrid, BotMessageSquare, LogOut, FolderOpen, Package, Loader2, Users, Activity, Lock, PlaySquare, ScreenShare, Wifi, BookOpenText, FileSearch, NotebookText } from 'lucide-react';
 import { MiniBrowser } from './mini-browser';
 import { Separator } from './ui/separator';
 import { VirtualPartitionApp } from './virtual-partition-app';
@@ -22,8 +22,11 @@ import { UserManagementApp } from '@/components/admin/user-management-app';
 import { SessionLogsApp } from '@/components/admin/session-logs-app';
 import { MediaPlayerApp } from '@/components/media-player-app';
 import { ConnectivityCenterApp } from '@/components/connectivity-center-app';
+import { UserManualApp } from '@/components/user-manual-app';
+import { DocumentViewerApp } from '@/components/document-viewer-app';
+import { NotepadApp } from '@/components/notepad-app';
 import { toast } from '@/hooks/use-toast';
-import { useVFS } from '@/contexts/VFSContext'; // Import useVFS
+import { useVFS } from '@/contexts/VFSContext';
 
 
 type ActiveApp = 
@@ -38,7 +41,10 @@ type ActiveApp =
   | 'sessionLogs'
   | 'mediaPlayer'
   | 'connectivityCenter'
-  | { type: 'pixelProject'; id: string; name: string; path: string; } // Added path
+  | 'userManual'
+  | 'documentViewer'
+  | 'notepad'
+  | { type: 'pixelProject'; id: string; name: string; path: string; }
   | null;
 
 interface SavedProject {
@@ -50,7 +56,7 @@ interface SavedProject {
 
 export function DesktopEnvironment() {
   const { currentUser, logout } = useAuth();
-  const { getItem: getVFSItem } = useVFS(); // For checking project existence
+  const { getItem: getVFSItem } = useVFS();
   const [activeApp, setActiveApp] = useState<ActiveApp>(null);
   const [showWelcome, setShowWelcome] = useState(true);
   const [isLaunchpadOpen, setIsLaunchpadOpen] = useState(false);
@@ -72,6 +78,9 @@ export function DesktopEnvironment() {
     { id: 'fileManager', name: 'File Manager', icon: FolderOpen, action: () => openApp('fileManager'), dataAiHint: "file system browser" },
     { id: 'mediaPlayer', name: 'Media Hub', icon: PlaySquare, action: () => openApp('mediaPlayer'), dataAiHint: "media player video audio" },
     { id: 'connectivityCenter', name: 'Connectivity', icon: Wifi, action: () => openApp('connectivityCenter'), dataAiHint: "network wifi cast" },
+    { id: 'userManual', name: 'User Manual', icon: BookOpenText, action: () => openApp('userManual'), dataAiHint: "help documentation manual" },
+    { id: 'documentViewer', name: 'Doc Viewer', icon: FileSearch, action: () => openApp('documentViewer'), dataAiHint: "document viewer files" },
+    { id: 'notepad', name: 'Notepad', icon: NotebookText, action: () => openApp('notepad'), dataAiHint: "text editor notes" },
   ];
 
   const adminAppsList = [
@@ -85,11 +94,10 @@ export function DesktopEnvironment() {
     const newProject: SavedProject = {
       id: `project-${Date.now()}`,
       name: projectName,
-      icon: Package, // Standard icon for saved projects
+      icon: Package, 
       path: projectPath,
     };
     setSavedPixelStoreProjects(prev => {
-      // Avoid duplicates by path
       if (prev.find(p => p.path === projectPath)) return prev;
       return [...prev, newProject];
     });
@@ -110,14 +118,13 @@ export function DesktopEnvironment() {
     setActiveApp({type: 'pixelProject', id: project.id, name: project.name, path: project.path });
     setShowWelcome(false);
     
-    // Check if project files exist in VFS (conceptual check)
     const manifestFile = getVFSItem(`${project.path}/manifest.bbs-proj`);
     if (!manifestFile) {
         toast({ title: "Project Load Warning", description: `Manifest for "${project.name}" not found at ${project.path}. Proceeding with agent terminal.`, variant: "default"});
     }
 
-    await new Promise(resolve => setTimeout(resolve, 2500)); // Simulate loading
-    openApp('agenticTerminal'); // Open terminal for the project context
+    await new Promise(resolve => setTimeout(resolve, 2500)); 
+    openApp('agenticTerminal'); 
     toast({ title: "Project Context Active", description: `Project "${project.name}" loaded. Agent Terminal is active for this project.`});
     setIsLoadingProject(false);
   };
@@ -179,6 +186,9 @@ export function DesktopEnvironment() {
       case 'sessionLogs': return 'Session Activity Logs';
       case 'mediaPlayer': return 'Multimedia Hub';
       case 'connectivityCenter': return 'BBS Connectivity Center';
+      case 'userManual': return 'User Manual';
+      case 'documentViewer': return 'Document Viewer';
+      case 'notepad': return 'Notepad';
       default: return 'OSbidibi GDE Application';
     }
   };
@@ -298,6 +308,9 @@ export function DesktopEnvironment() {
               {isAdmin && activeApp === 'sessionLogs' && <SessionLogsApp />}
               {activeApp === 'mediaPlayer' && <MediaPlayerApp />} 
               {activeApp === 'connectivityCenter' && <ConnectivityCenterApp />}
+              {activeApp === 'userManual' && <UserManualApp />}
+              {activeApp === 'documentViewer' && <DocumentViewerApp />}
+              {activeApp === 'notepad' && <NotepadApp />}
           </div>
         </div>
         <div
@@ -332,10 +345,11 @@ export function DesktopEnvironment() {
 
         <Separator className="my-0 bg-primary/20" />
          <div className="p-1.5 text-xs text-center text-muted-foreground/70 radiant-text bg-black/40">
-            OSbidibi-PEPX0.0.1 GDE v0.9.3-alpha. Main entry point active. VFS operational.
+            OSbidibi-PEPX0.0.1 GDE v0.9.4-alpha. Main entry point active. VFS operational.
           </div>
       </div>
       <AppLaunchpad isOpen={isLaunchpadOpen} onClose={() => setIsLaunchpadOpen(false)} apps={allLaunchableItems} />
     </div>
   );
 }
+
