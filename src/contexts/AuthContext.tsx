@@ -3,17 +3,31 @@
 import type * as React from 'react';
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs for social users
+import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
 
 // Superuser credentials
 const SUPERUSER_USERNAME = "serpOS@GI";
-const SUPERUSER_INITIAL_PASSWORD = "12345678"; // In a real app, this would be handled securely
+const SUPERUSER_INITIAL_PASSWORD = "12345678";
+
+interface UserRegistrationDetails {
+  ipAddress?: string;
+  deviceId?: string;
+  registrationTimestamp?: string;
+  provider: 'google' | 'microsoft' | 'yahoo' | 'credentials';
+  projectInterest?: string; // Example of more detailed registration info
+  // Other relevant details for 'serpOS@GI' to see
+}
+
+interface StoredUserEntry {
+  password?: string; // Only for 'credentials' provider
+  details: UserRegistrationDetails;
+}
 
 interface User {
   id: string;
   username: string;
   role: 'superuser' | 'user' | 'guest';
-  provider?: 'google' | 'microsoft' | 'yahoo' | 'credentials';
+  details: UserRegistrationDetails; // Include full details here
 }
 
 type AuthStatus = 
@@ -33,12 +47,12 @@ interface AuthContextType {
   appMode: 'persistent' | 'ghost' | null;
   login: (username: string, pass: string) => Promise<boolean>;
   logout: () => void;
-  onboardUser: (username: string, pass: string) => Promise<boolean>;
+  onboardUser: (username: string, pass: string, projectInterest?: string) => Promise<boolean>;
   selectMode: (mode: 'persistent' | 'ghost') => void;
   changePassword: (oldPass: string, newPass: string) => Promise<boolean>;
   resetToModeSelection: () => void;
   switchToOnboarding: () => void;
-  signInWithProvider: (provider: SocialProvider) => Promise<boolean>; // New method for social login
+  signInWithProvider: (provider: SocialProvider, projectInterest?: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,10 +60,26 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const LOCAL_STORAGE_KEYS = {
   APP_MODE: 'binaryblocksphere_appMode',
   CURRENT_USER: 'binaryblocksphere_currentUser', 
-  USERS: 'binaryblocksphere_users', 
-  ONBOARDING_COMPLETE: 'binaryblocksphere_onboardingComplete',
+  USERS_DATA: 'binaryblocksphere_usersData', // Changed from USERS to USERS_DATA
+  ONBOARDING_COMPLETE: 'binaryblocksphere_onboardingComplete', // This might be redundant if currentUser implies onboarding
   SUPERUSER_PASSWORD: 'binaryblocksphere_superuserPassword'
 };
+
+// Helper function to simulate IP and Device ID
+const getSimulatedDeviceInfo = (): { ipAddress: string; deviceId: string } => {
+  if (typeof window !== 'undefined') {
+    let deviceId = localStorage.getItem('binaryblocksphere_deviceId');
+    if (!deviceId) {
+      deviceId = uuidv4();
+      localStorage.setItem('binaryblocksphere_deviceId', deviceId);
+    }
+    // IP simulation is very basic. Real IP needs server-side or external API.
+    const simulatedIp = `192.168.1.${Math.floor(Math.random() * 254) + 1}`;
+    return { ipAddress: simulatedIp, deviceId };
+  }
+  return { ipAddress: 'server_ip_placeholder', deviceId: 'server_device_id_placeholder' };
+};
+
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -70,26 +100,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loadUsers = (): Record<string, string> => {
+  const loadUsersData = (): Record<string, StoredUserEntry> => {
     if (typeof window !== 'undefined') {
-      const usersJson = localStorage.getItem(LOCAL_STORAGE_KEYS.USERS);
+      const usersJson = localStorage.getItem(LOCAL_STORAGE_KEYS.USERS_DATA);
       return usersJson ? JSON.parse(usersJson) : {};
     }
     return {};
   };
 
-  const saveUsers = (users: Record<string, string>) => {
+  const saveUsersData = (usersData: Record<string, StoredUserEntry>) => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem(LOCAL_STORAGE_KEYS.USERS, JSON.stringify(users));
+      localStorage.setItem(LOCAL_STORAGE_KEYS.USERS_DATA, JSON.stringify(usersData));
     }
   };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Ensure uuid is loaded on client
-      import('uuid').then(uuid => {
-        // console.log("UUID library loaded for client-side generation.");
-      });
+      import('uuid').then(uuid => { /* UUID loaded */ });
 
       setIsLoading(true);
       const storedMode = localStorage.getItem(LOCAL_STORAGE_KEYS.APP_MODE) as 'persistent' | 'ghost' | null;
@@ -105,7 +132,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setAuthStatus('needs_login');
         }
       } else if (storedMode === 'ghost') {
-        setCurrentUser({ id: 'ghost', username: 'GhostUser', role: 'guest', provider: 'credentials' });
+        const { ipAddress, deviceId } = getSimulatedDeviceInfo();
+        setCurrentUser({ 
+          id: 'ghost', 
+          username: 'GhostUser', 
+          role: 'guest', 
+          details: { 
+            provider: 'credentials', 
+            ipAddress, 
+            deviceId, 
+            registrationTimestamp: new Date().toISOString() 
+          } 
+        });
         setAuthStatus('ghost_mode');
       } else {
         setAuthStatus('needs_mode_selection');
@@ -119,55 +157,92 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem(LOCAL_STORAGE_KEYS.APP_MODE, mode);
       setAppMode(mode);
       if (mode === 'ghost') {
-        setCurrentUser({ id: 'ghost', username: 'GhostUser', role: 'guest', provider: 'credentials' });
+        const { ipAddress, deviceId } = getSimulatedDeviceInfo();
+        setCurrentUser({ 
+          id: 'ghost', 
+          username: 'GhostUser', 
+          role: 'guest', 
+          details: { 
+            provider: 'credentials', 
+            ipAddress, 
+            deviceId, 
+            registrationTimestamp: new Date().toISOString() 
+          } 
+        });
         setAuthStatus('ghost_mode');
         localStorage.removeItem(LOCAL_STORAGE_KEYS.CURRENT_USER);
       } else { 
-        localStorage.setItem(LOCAL_STORAGE_KEYS.ONBOARDING_COMPLETE, 'true'); 
-        setAuthStatus('needs_login');
+        setAuthStatus('needs_login'); // Persistent mode will require login or onboarding
       }
     }
   };
 
   const login = async (username: string, pass: string): Promise<boolean> => {
-    let user: User | null = null;
-    const users = loadUsers();
+    let userToLogin: User | null = null;
+    const usersData = loadUsersData();
     const superuserPassword = loadSuperuserPassword();
+    const { ipAddress, deviceId } = getSimulatedDeviceInfo();
 
     if (username === SUPERUSER_USERNAME && pass === superuserPassword) {
-      user = { id: SUPERUSER_USERNAME, username, role: 'superuser', provider: 'credentials' };
-    } else if (users[username] && users[username] === pass) {
-      user = { id: username, username, role: 'user', provider: 'credentials' };
+      userToLogin = { 
+        id: SUPERUSER_USERNAME, 
+        username, 
+        role: 'superuser', 
+        details: { 
+          provider: 'credentials', 
+          ipAddress, 
+          deviceId, 
+          registrationTimestamp: usersData[SUPERUSER_USERNAME]?.details.registrationTimestamp || new Date().toISOString() 
+        } 
+      };
+    } else if (usersData[username] && usersData[username].password === pass && usersData[username].details.provider === 'credentials') {
+      userToLogin = { 
+        id: username, 
+        username, 
+        role: 'user', 
+        details: { ...usersData[username].details, ipAddress, deviceId } // Update with current login info
+      };
     }
 
-    if (user) {
-      setCurrentUser(user);
+    if (userToLogin) {
+      setCurrentUser(userToLogin);
       setAuthStatus('authenticated');
       if (appMode === 'persistent') {
-        localStorage.setItem(LOCAL_STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+        localStorage.setItem(LOCAL_STORAGE_KEYS.CURRENT_USER, JSON.stringify(userToLogin));
       }
-      toast({ title: "Login Successful", description: `Welcome, ${user.username}!` });
+      toast({ title: "Login Successful", description: `Welcome, ${userToLogin.username}!` });
       return true;
     }
-    toast({ title: "Login Failed", description: "Invalid username or password.", variant: "destructive" });
+    toast({ title: "Login Failed", description: "Invalid username or password for credential-based login.", variant: "destructive" });
     return false;
   };
 
-  const onboardUser = async (username: string, pass: string): Promise<boolean> => {
-    const users = loadUsers();
+  const onboardUser = async (username: string, pass: string, projectInterest?: string): Promise<boolean> => {
+    const usersData = loadUsersData();
     if (username === SUPERUSER_USERNAME) {
       toast({ title: "Onboarding Failed", description: "This username is reserved.", variant: "destructive" });
       return false;
     }
-    if (users[username]) {
+    if (usersData[username]) {
       toast({ title: "Onboarding Failed", description: "Username already exists.", variant: "destructive" });
       return false;
     }
 
-    users[username] = pass;
-    saveUsers(users);
+    const { ipAddress, deviceId } = getSimulatedDeviceInfo();
+    const registrationTimestamp = new Date().toISOString();
+    
+    const newUserDetails: UserRegistrationDetails = {
+        provider: 'credentials',
+        ipAddress,
+        deviceId,
+        registrationTimestamp,
+        projectInterest: projectInterest || 'Not specified'
+    };
+
+    usersData[username] = { password: pass, details: newUserDetails };
+    saveUsersData(usersData);
         
-    const newUser: User = { id: username, username, role: 'user', provider: 'credentials' };
+    const newUser: User = { id: username, username, role: 'user', details: newUserDetails };
     setCurrentUser(newUser);
     setAuthStatus('authenticated');
     if (appMode === 'persistent') {
@@ -177,29 +252,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   };
 
-  const signInWithProvider = async (provider: SocialProvider): Promise<boolean> => {
-    // This is a STUBBED implementation for social login.
-    // In a real app, you would integrate with an OAuth library like NextAuth.js
-    // or directly with the provider's SDK.
-    toast({ title: `Simulating Sign-in`, description: `Attempting to sign in with ${provider}...` });
+  const signInWithProvider = async (provider: SocialProvider, projectInterest?: string): Promise<boolean> => {
+    toast({ title: `Simulating Sign-in with ${provider}`, description: `Processing... In a real app, this would involve OAuth SDKs.` });
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
 
-    // Check if uuid is available
-    if (typeof window === 'undefined' || !window.uuidv4) {
-        // Fallback or handle server-side, though this should ideally be client-side.
-        // For this stub, we'll just make a simpler ID.
-        console.warn("uuidv4 not available on window, using simpler ID for social user.");
-    }
-    const userId = typeof window !== 'undefined' && window.uuidv4 ? window.uuidv4() : `social-${provider}-${Date.now()}`;
+    const { ipAddress, deviceId } = getSimulatedDeviceInfo();
+    const registrationTimestamp = new Date().toISOString();
+    const socialUserId = uuidv4();
+    const username = `${provider.charAt(0).toUpperCase() + provider.slice(1)}User_${socialUserId.substring(0, 6)}`;
 
+    const newUserDetails: UserRegistrationDetails = {
+      provider,
+      ipAddress,
+      deviceId,
+      registrationTimestamp,
+      projectInterest: projectInterest || 'Via social signup'
+    };
+    
+    // Store social user data (no password)
+    const usersData = loadUsersData();
+    usersData[username] = { details: newUserDetails }; // Store by generated username
+    saveUsersData(usersData);
 
     const user: User = {
-      id: userId,
-      username: `${provider.charAt(0).toUpperCase() + provider.slice(1)}User_${userId.substring(0, 4)}`,
+      id: socialUserId, // Use the UUID as the primary ID
+      username,
       role: 'user',
-      provider: provider,
+      details: newUserDetails
     };
 
     setCurrentUser(user);
@@ -211,7 +291,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   };
 
-
   const logout = () => {
     setCurrentUser(null);
     if (typeof window !== 'undefined') {
@@ -220,7 +299,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (storedMode === 'persistent') {
          setAuthStatus('needs_login'); 
       } else if (storedMode === 'ghost') { 
-        setCurrentUser({ id: 'ghost', username: 'GhostUser', role: 'guest', provider: 'credentials' });
+        const { ipAddress, deviceId } = getSimulatedDeviceInfo();
+        setCurrentUser({ 
+          id: 'ghost', 
+          username: 'GhostUser', 
+          role: 'guest', 
+          details: { 
+            provider: 'credentials', 
+            ipAddress, 
+            deviceId, 
+            registrationTimestamp: new Date().toISOString() 
+          } 
+        });
         setAuthStatus('ghost_mode');
       } else { 
         setAuthStatus('needs_mode_selection');
@@ -230,12 +320,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const changePassword = async (oldPass: string, newPass: string): Promise<boolean> => {
-    if (!currentUser || currentUser.provider !== 'credentials') {
-      toast({ title: "Error", description: currentUser?.provider !== 'credentials' ? "Password change is not available for social logins." : "No user logged in.", variant: "destructive" });
+    if (!currentUser || currentUser.details.provider !== 'credentials') {
+      toast({ title: "Error", description: currentUser?.details.provider !== 'credentials' ? "Password change is not available for social logins or guest users." : "No user logged in.", variant: "destructive" });
       return false;
     }
 
-    const users = loadUsers();
+    const usersData = loadUsersData();
     const currentSuperuserPassword = loadSuperuserPassword();
 
     if (currentUser.role === 'superuser') {
@@ -244,9 +334,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toast({ title: "Password Changed", description: "Superuser password updated successfully." });
         return true;
       }
-    } else if (users[currentUser.username] && users[currentUser.username] === oldPass) {
-      users[currentUser.username] = newPass;
-      saveUsers(users);
+    } else if (usersData[currentUser.username] && usersData[currentUser.username].password === oldPass) {
+      usersData[currentUser.username].password = newPass;
+      saveUsersData(usersData);
       toast({ title: "Password Changed", description: "Your password has been updated successfully." });
       return true;
     }
@@ -261,6 +351,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setAppMode(null);
         setAuthStatus('needs_mode_selection');
         Object.values(LOCAL_STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
+        localStorage.removeItem('binaryblocksphere_deviceId'); // Also clear deviceId
     }
     toast({ title: "System Reset", description: "System state cleared. Please select an operating mode." });
   }, []);
@@ -268,6 +359,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const switchToOnboarding = () => {
     setAuthStatus('needs_onboarding');
   };
+
+  // Ensure superuser exists in usersData (primarily for registration timestamp)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && authStatus !== 'loading') {
+        const usersData = loadUsersData();
+        if (!usersData[SUPERUSER_USERNAME]) {
+            const { ipAddress, deviceId } = getSimulatedDeviceInfo();
+            usersData[SUPERUSER_USERNAME] = {
+                password: loadSuperuserPassword(), // It should use its own password mechanism
+                details: {
+                    provider: 'credentials',
+                    ipAddress,
+                    deviceId,
+                    registrationTimestamp: new Date().toISOString(),
+                    projectInterest: "System Administration"
+                }
+            };
+            saveUsersData(usersData);
+        }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authStatus]); // Run once after initial load
 
   return (
     <AuthContext.Provider value={{ currentUser, authStatus, isLoading, appMode, login, logout, onboardUser, selectMode, changePassword, resetToModeSelection, switchToOnboarding, signInWithProvider }}>

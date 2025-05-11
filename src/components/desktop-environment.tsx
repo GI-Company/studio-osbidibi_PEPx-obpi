@@ -5,18 +5,19 @@ import type * as React from 'react';
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Globe, TerminalSquare, XIcon, HardDrive, Layers3 } from 'lucide-react';
+import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb } from 'lucide-react';
 import { MiniBrowser } from './mini-browser';
 import { Separator } from './ui/separator';
 import { VirtualPartitionApp } from './virtual-partition-app';
 import { PixelStoreApp } from './pixel-store-app';
+import { CodingAssistantApp } from './coding-assistant-app'; // New App
 
 interface DesktopEnvironmentProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type ActiveApp = 'browser' | 'terminal' | 'virtualPartition' | 'pixelStore' | null;
+type ActiveApp = 'browser' | 'terminal' | 'virtualPartition' | 'pixelStore' | 'codingAssistant' | null; // Added codingAssistant
 
 export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps) {
   const [activeApp, setActiveApp] = useState<ActiveApp>(null);
@@ -47,6 +48,8 @@ export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps)
         return 'Virtual Partition Environment';
       case 'pixelStore':
         return 'BBS PixelStore Interface';
+      case 'codingAssistant':
+        return 'AI Coding Assistant'; // New Title
       default:
         return '';
     }
@@ -111,6 +114,17 @@ export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps)
               <Layers3 className="w-8 h-8 text-accent" />
               <span className="text-xs radiant-text">PixelStore</span>
             </Button>
+            <Button 
+              variant="ghost" 
+              size="lg"
+              className="flex flex-col items-center justify-center h-auto p-2 space-y-1 text-foreground hover:bg-primary/20 button-3d-interactive"
+              onClick={() => openApp('codingAssistant')}
+              aria-label="Launch AI Coding Assistant"
+              data-ai-hint="AI assistant code"
+            >
+              <Lightbulb className="w-8 h-8 text-accent" />
+              <span className="text-xs radiant-text">AI Assist</span>
+            </Button>
           </div>
 
           {/* App Display Area */}
@@ -141,6 +155,7 @@ export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps)
                         )}
                         {activeApp === 'virtualPartition' && <VirtualPartitionApp />}
                         {activeApp === 'pixelStore' && <PixelStoreApp />}
+                        {activeApp === 'codingAssistant' && <CodingAssistantApp />}
                     </div>
                 </div>
             )}
@@ -148,7 +163,7 @@ export function DesktopEnvironment({ isOpen, onClose }: DesktopEnvironmentProps)
         </div>
         <Separator className="my-0 bg-primary/20" />
          <DialogDescription className="p-2 text-xs text-center text-muted-foreground/70 radiant-text">
-            BinaryBlocksphere GDE v0.4.1-alpha. Visual enhancements applied. Applications run in a sandboxed environment.
+            BinaryBlocksphere GDE v0.5.0-alpha. AI Coding Assistant added. Applications run in a sandboxed environment.
           </DialogDescription>
       </DialogContent>
     </Dialog>

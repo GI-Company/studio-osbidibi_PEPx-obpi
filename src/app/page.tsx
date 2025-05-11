@@ -7,7 +7,7 @@ import { Preloader } from "@/components/preloader";
 import { StatusBar } from "@/components/status-bar";
 import { BinaryBlocksphereIcon } from '@/components/icons/BinaryBlocksphereIcon';
 import { DesktopEnvironment } from '@/components/desktop-environment';
-import { useIsMobile } from '@/hooks/use-mobile';
+// import { useIsMobile } from '@/hooks/use-mobile'; // Currently unused, can be re-enabled if needed
 import { useAuth } from '@/contexts/AuthContext';
 import LaunchModeSelector from '@/components/launch-mode-selector';
 import UserOnboarding from '@/components/user-onboarding';
@@ -16,7 +16,6 @@ import UserLogin from '@/components/user-login';
 function MainAppContent() {
   const [isDesktopOpen, setIsDesktopOpen] = useState(false);
   const { currentUser } = useAuth();
-  // isMobile could be used here for layout adjustments if needed
   // const isMobile = useIsMobile(); 
 
   return (
@@ -27,13 +26,16 @@ function MainAppContent() {
           <h1 className="text-lg md:text-xl font-semibold tracking-tight text-foreground radiant-text">BinaryBlocksphere</h1>
         </div>
          {currentUser && (
-          <div className="text-xs text-muted-foreground">
-            User: <span className="font-medium text-accent">{currentUser.username} ({currentUser.role})</span>
+          <div className="text-xs text-muted-foreground text-right">
+            <div>User: <span className="font-medium text-accent">{currentUser.username} ({currentUser.role})</span></div>
+            {currentUser.details?.provider && <div>Provider: <span className="font-medium text-accent">{currentUser.details.provider}</span></div>}
+            {currentUser.details?.ipAddress && <div className="hidden md:block">IP: <span className="font-medium text-accent">{currentUser.details.ipAddress}</span></div>}
+            {currentUser.details?.deviceId && <div className="hidden md:block">Device ID: <span className="font-medium text-accent truncate max-w-[100px] inline-block align-bottom" title={currentUser.details.deviceId}>{currentUser.details.deviceId.substring(0,8)}...</span></div>}
           </div>
         )}
       </header>
       
-      <div className="flex items-center justify-center flex-grow w-full pt-12 md:pt-16">
+      <div className="flex items-center justify-center flex-grow w-full pt-12 md:pt-16"> {/* Increased top padding for header */}
         <ShellEmulator onOpenDesktop={() => setIsDesktopOpen(true)} />
       </div>
       
@@ -69,6 +71,6 @@ export default function Home() {
     case 'ghost_mode':
       return <MainAppContent />;
     default:
-      return <Preloader />; // Fallback, should ideally not be reached if logic is correct
+      return <Preloader />; 
   }
 }
