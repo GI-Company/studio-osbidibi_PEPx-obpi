@@ -7,27 +7,17 @@ import { Preloader } from "@/components/preloader";
 import { StatusBar } from "@/components/status-bar";
 import { BinaryBlocksphereIcon } from '@/components/icons/BinaryBlocksphereIcon';
 import { DesktopEnvironment } from '@/components/desktop-environment';
-import { useIsMobile } from '@/hooks/use-mobile'; // Although not explicitly used for layout changes here, good to have for future.
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/contexts/AuthContext';
+import LaunchModeSelector from '@/components/launch-mode-selector';
+import UserOnboarding from '@/components/user-onboarding';
+import UserLogin from '@/components/user-login';
 
-export default function Home() {
-  const [isLoading, setIsLoading] = useState(true);
+function MainAppContent() {
   const [isDesktopOpen, setIsDesktopOpen] = useState(false);
-  const isMobile = useIsMobile(); // Example of using the hook
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1500); // Slightly reduced preloader time
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (isLoading) {
-    return <Preloader />;
-  }
-
-  // The current layout is inherently responsive due to flexbox and percentage/viewport units.
-  // ShellEmulator uses max-w-4xl, so it will be full-width on smaller screens.
-  // DesktopEnvironment is a dialog that should also adapt.
-  // No specific layout changes based on `isMobile` are made here for now,
-  // as the components themselves should handle their responsiveness.
+  const { currentUser } = useAuth();
+  // isMobile could be used here for layout adjustments if needed
+  // const isMobile = useIsMobile(); 
 
   return (
     <div className="flex flex-col items-center justify-center flex-grow w-full min-h-full p-2 md:p-4 overflow-hidden bg-gradient-to-br from-background via-secondary/10 to-background">
@@ -36,9 +26,14 @@ export default function Home() {
           <BinaryBlocksphereIcon className="w-7 h-7 md:w-8 md:h-8 text-primary" />
           <h1 className="text-lg md:text-xl font-semibold tracking-tight text-foreground radiant-text">BinaryBlocksphere</h1>
         </div>
+         {currentUser && (
+          <div className="text-xs text-muted-foreground">
+            User: <span className="font-medium text-accent">{currentUser.username} ({currentUser.role})</span>
+          </div>
+        )}
       </header>
       
-      <div className="flex items-center justify-center flex-grow w-full pt-12 md:pt-16"> {/* Adjusted padding top slightly */}
+      <div className="flex items-center justify-center flex-grow w-full pt-12 md:pt-16">
         <ShellEmulator onOpenDesktop={() => setIsDesktopOpen(true)} />
       </div>
       
@@ -49,4 +44,31 @@ export default function Home() {
   );
 }
 
-    
+
+export default function Home() {
+  const [isLoadingApp, setIsLoadingApp] = useState(true);
+  const { authStatus, isLoading: isAuthLoading } = useAuth();
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoadingApp(false), 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isAuthLoading || (authStatus !== 'ghost_mode' && authStatus !== 'authenticated' && isLoadingApp)) {
+    return <Preloader />;
+  }
+  
+  switch (authStatus) {
+    case 'needs_mode_selection':
+      return <LaunchModeSelector />;
+    case 'needs_onboarding':
+      return <UserOnboarding />;
+    case 'needs_login':
+      return <UserLogin />;
+    case 'authenticated':
+    case 'ghost_mode':
+      return <MainAppContent />;
+    default:
+      return <Preloader />; // Fallback, should ideally not be reached if logic is correct
+  }
+}
