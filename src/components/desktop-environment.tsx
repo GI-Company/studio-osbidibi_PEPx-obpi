@@ -4,7 +4,7 @@
 import type * as React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb, LayoutGrid, BotMessageSquare, LogOut, FolderOpen, Package, Loader2 } from 'lucide-react';
+import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb, LayoutGrid, BotMessageSquare, LogOut, FolderOpen, Package, Loader2, Users, Activity } from 'lucide-react';
 import { MiniBrowser } from './mini-browser';
 import { Separator } from './ui/separator';
 import { VirtualPartitionApp } from './virtual-partition-app';
@@ -18,9 +18,22 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles } from 'lucide-react';
 import { FileManagerApp } from './file-manager-app';
+import { UserManagementApp } from '@/components/admin/user-management-app';
+import { SessionLogsApp } from '@/components/admin/session-logs-app';
 import { toast } from '@/hooks/use-toast';
 
-type ActiveApp = 'browser' | 'osbidibiShell' | 'virtualPartition' | 'pixelStore' | 'codingAssistant' | 'agenticTerminal' | 'fileManager' | { type: 'pixelProject'; id: string; name: string } | null;
+type ActiveApp = 
+  | 'browser' 
+  | 'osbidibiShell' 
+  | 'virtualPartition' 
+  | 'pixelStore' 
+  | 'codingAssistant' 
+  | 'agenticTerminal' 
+  | 'fileManager' 
+  | 'userManagement' // New Admin App
+  | 'sessionLogs'    // New Admin App
+  | { type: 'pixelProject'; id: string; name: string } 
+  | null;
 
 interface SavedProject {
   id: string;
@@ -38,6 +51,8 @@ export function DesktopEnvironment() {
   const [isBottomDockVisible, setIsBottomDockVisible] = useState(false);
   const dockHideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const isAdmin = currentUser?.role === 'superuser';
+
   const coreAppsList = [
     { id: 'osbidibiShell', name: 'OSbidibi Shell', icon: TerminalSquare, action: () => openApp('osbidibiShell'), dataAiHint: "OS command line" },
     { id: 'browser', name: 'Browser', icon: Globe, action: () => openApp('browser'), dataAiHint: "web browser" },
@@ -47,6 +62,13 @@ export function DesktopEnvironment() {
     { id: 'pixelStore', name: 'PixelStore', icon: Layers3, action: () => openApp('pixelStore'), dataAiHint: "data storage concept" },
     { id: 'fileManager', name: 'File Manager', icon: FolderOpen, action: () => openApp('fileManager'), dataAiHint: "file system browser" },
   ];
+
+  const adminAppsList = [
+    { id: 'userManagement', name: 'User Mgmt', icon: Users, action: () => openApp('userManagement'), dataAiHint: "admin user management" },
+    { id: 'sessionLogs', name: 'Session Logs', icon: Activity, action: () => openApp('sessionLogs'), dataAiHint: "admin session logs" },
+  ];
+
+  const availableApps = isAdmin ? [...coreAppsList, ...adminAppsList] : coreAppsList;
 
   const handleAddSavedProject = (projectName: string) => {
     const newProject: SavedProject = {
@@ -58,7 +80,7 @@ export function DesktopEnvironment() {
   };
 
   const openApp = (app: ActiveApp | string) => {
-    if (typeof app === 'string' && coreAppsList.find(a => a.id === app)) {
+    if (typeof app === 'string' && availableApps.find(a => a.id === app)) {
       setActiveApp(app as any);
     } else {
       setActiveApp(app);
@@ -89,13 +111,14 @@ export function DesktopEnvironment() {
 
   const getAppTitle = () => {
     if (activeApp === null) return 'OSbidibi GDE Central';
-    if (typeof activeApp === 'string') {
-      const appInfo = coreAppsList.find(app => app.id === activeApp);
-      if (appInfo) return appInfo.name;
-    }
+    
+    const appInfo = availableApps.find(app => typeof activeApp === 'string' && app.id === activeApp);
+    if (appInfo) return appInfo.name;
+    
     if (typeof activeApp === 'object' && activeApp.type === 'pixelProject') {
       return `PixelStore Project: ${activeApp.name}`;
     }
+    // Fallback for any other cases, though should be covered by appInfo
     switch (activeApp) {
       case 'browser': return 'Web Browser';
       case 'osbidibiShell': return 'OSbidibi-PEPX0.0.1 Shell (bidibi)';
@@ -104,12 +127,14 @@ export function DesktopEnvironment() {
       case 'codingAssistant': return 'AI Coding Assistant / Chat';
       case 'agenticTerminal': return 'Agentic Coding Terminal';
       case 'fileManager': return 'File Manager';
+      case 'userManagement': return 'User Management Console';
+      case 'sessionLogs': return 'Session Activity Logs';
       default: return 'OSbidibi GDE Application';
     }
   };
 
-  const allLaunchableApps = [
-    ...coreAppsList,
+  const allLaunchableItems = [
+    ...availableApps,
     ...savedPixelStoreProjects.map(p => ({
       id: p.id,
       name: p.name,
@@ -125,10 +150,9 @@ export function DesktopEnvironment() {
         clearTimeout(dockHideTimeoutRef.current);
         dockHideTimeoutRef.current = null;
       }
-      if (event.clientY > window.innerHeight - 50) { // 50px activation zone at the bottom
+      if (event.clientY > window.innerHeight - 50) { 
         setIsBottomDockVisible(true);
       } else {
-        // Delay hiding if mouse moves out of the zone but not over the dock
         if(isBottomDockVisible) {
          dockHideTimeoutRef.current = setTimeout(() => {
             setIsBottomDockVisible(false);
@@ -174,7 +198,6 @@ export function DesktopEnvironment() {
       <div className="flex flex-col flex-grow min-h-0">
         <div className="p-1.5 md:p-2 border-b border-primary/20 flex items-center justify-between space-x-2 bg-black/40 shrink-0">
             <div className="flex items-center space-x-1">
-                {/* Replaced dock toggle with launchpad */}
                 <Button variant="ghost" size="icon" onClick={() => setIsLaunchpadOpen(true)} className="button-3d-interactive w-8 h-8 md:w-9 md:h-9" aria-label="Open Launchpad">
                     <LayoutGrid className="w-4 h-4 md:w-5 md:h-5"/>
                 </Button>
@@ -191,7 +214,6 @@ export function DesktopEnvironment() {
             </div>
         </div>
 
-        {/* Main Content Area */}
         <div className="flex-grow p-1 md:p-2 overflow-hidden bg-background/40 relative">
           {showWelcome && activeApp === null && (
             <div className="flex flex-col items-center justify-center h-full text-center p-4">
@@ -216,9 +238,10 @@ export function DesktopEnvironment() {
               {activeApp === 'codingAssistant' && <CodingAssistantApp />}
               {activeApp === 'agenticTerminal' && <AgenticTerminalApp onSaveProjectToPixelStore={handleAddSavedProject} />}
               {activeApp === 'fileManager' && <FileManagerApp />}
+              {isAdmin && activeApp === 'userManagement' && <UserManagementApp />}
+              {isAdmin && activeApp === 'sessionLogs' && <SessionLogsApp />}
           </div>
         </div>
-        {/* Bottom Dock */}
         <div
             className={`fixed bottom-0 left-0 right-0 h-[70px] md:h-[80px] bg-black/50 backdrop-blur-md border-t border-primary/20 flex items-center justify-center 
                         px-2 md:px-4 space-x-2 md:space-x-3 overflow-x-auto transition-transform duration-300 ease-in-out z-20
@@ -233,7 +256,7 @@ export function DesktopEnvironment() {
               }, 300);
             }}
         >
-            {allLaunchableApps.map(app => (
+            {allLaunchableItems.map(app => (
             <Button
                 key={app.id}
                 variant="ghost"
@@ -251,10 +274,10 @@ export function DesktopEnvironment() {
 
         <Separator className="my-0 bg-primary/20" />
          <div className="p-1.5 text-xs text-center text-muted-foreground/70 radiant-text bg-black/40">
-            OSbidibi-PEPX0.0.1 GDE v0.9.0-alpha. Main entry point active.
+            OSbidibi-PEPX0.0.1 GDE v0.9.1-alpha. Main entry point active.
           </div>
       </div>
-      <AppLaunchpad isOpen={isLaunchpadOpen} onClose={() => setIsLaunchpadOpen(false)} apps={allLaunchableApps} />
+      <AppLaunchpad isOpen={isLaunchpadOpen} onClose={() => setIsLaunchpadOpen(false)} apps={allLaunchableItems} />
     </div>
   );
 }

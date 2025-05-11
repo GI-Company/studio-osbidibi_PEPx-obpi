@@ -21,7 +21,8 @@ interface UserRegistrationDetails {
   projectInterest?: string;
 }
 
-interface StoredUserEntry {
+// Exporting for admin apps
+export interface StoredUserEntry {
   password?: string; 
   details: UserRegistrationDetails;
   subscriptionTier: SubscriptionTier;
@@ -61,9 +62,10 @@ interface AuthContextType {
   resetToModeSelection: () => void;
   switchToOnboarding: () => void;
   signInWithProvider: (provider: SocialProvider, projectInterest?: string) => Promise<boolean>;
-  // New methods for subscription/trial - stubs for now
   endUserTrial: (username: string) => void; 
   upgradeSubscription: (username: string, newTier: 'paid_weekly' | 'paid_monthly') => void;
+  // Conceptual: Add function to manage timed ghost mode if implemented
+  // manageGhostSession: (action: 'start' | 'check') => void; 
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -162,6 +164,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setAuthStatus('needs_login');
         }
       } else if (storedMode === 'ghost') {
+        // Conceptual: Implement timed ghost mode based on tier here if required.
+        // For now, ghost mode is unlimited.
+        // If user had a tier, you might fetch it.
+        // if (currentUser && currentUser.role !== 'superuser') { /* apply time limits */ }
+
         const { ipAddress, deviceId } = getSimulatedDeviceInfo();
         setCurrentUser(deriveUserProperties({ 
           id: 'ghost', 
@@ -237,19 +244,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (userToLoginData) {
       let fullUser = deriveUserProperties({
-        id: username, // Use username as ID for credential users if not otherwise set
+        id: username, 
         username,
         role,
-        details: { ...userToLoginData.details, ipAddress, deviceId }, // Update with current login info
+        details: { ...userToLoginData.details, ipAddress, deviceId }, 
         subscriptionTier: userToLoginData.subscriptionTier,
         trialEndDate: userToLoginData.trialEndDate
       });
 
-      // Check trial status on login
       if (fullUser.subscriptionTier === 'trial' && fullUser.trialEndDate && isPast(new Date(fullUser.trialEndDate))) {
           fullUser.subscriptionTier = 'free_limited';
           fullUser.isTrialActive = false;
-          usersData[username].subscriptionTier = 'free_limited'; // Update stored data
+          usersData[username].subscriptionTier = 'free_limited'; 
           saveUsersData(usersData);
           toast({ title: "Trial Expired", description: "Your free trial has ended. You are now on the limited free tier."});
       }
@@ -414,12 +420,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setAppMode(null);
         setAuthStatus('needs_mode_selection');
         Object.values(LOCAL_STORAGE_KEYS).forEach(key => {
-            if (key !== LOCAL_STORAGE_KEYS.USERS_DATA && key !== LOCAL_STORAGE_KEYS.SUPERUSER_PASSWORD) { // Preserve users and superuser pass
+            if (key !== LOCAL_STORAGE_KEYS.USERS_DATA && key !== LOCAL_STORAGE_KEYS.SUPERUSER_PASSWORD) { 
                 localStorage.removeItem(key);
             }
         });
-        // Don't clear deviceId or all users data on simple mode reset
-        // localStorage.removeItem('binaryblocksphere_deviceId'); 
     }
     toast({ title: "Mode Reset", description: "Returned to mode selection. User accounts are preserved." });
   }, []);
@@ -432,7 +436,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const usersData = loadUsersData();
     if (usersData[username] && usersData[username].subscriptionTier === 'trial') {
         usersData[username].subscriptionTier = 'free_limited';
-        usersData[username].trialEndDate = undefined; // Clear trial end date
+        usersData[username].trialEndDate = undefined; 
         saveUsersData(usersData);
         if (currentUser?.username === username) {
             setCurrentUser(prev => prev ? deriveUserProperties({...prev, subscriptionTier: 'free_limited', trialEndDate: undefined }) : null);
@@ -445,7 +449,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const usersData = loadUsersData();
      if (usersData[username]) {
         usersData[username].subscriptionTier = newTier;
-        usersData[username].trialEndDate = undefined; // Clear trial end date if any
+        usersData[username].trialEndDate = undefined; 
         saveUsersData(usersData);
         if (currentUser?.username === username) {
             setCurrentUser(prev => prev ? deriveUserProperties({...prev, subscriptionTier: newTier, trialEndDate: undefined }) : null);
@@ -461,7 +465,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!usersData[SUPERUSER_USERNAME]) {
             const { ipAddress, deviceId } = getSimulatedDeviceInfo();
             usersData[SUPERUSER_USERNAME] = {
-                password: loadSuperuserPassword(),
+                password: loadSuperuserPassword(), // Ensure superuser password is set if not already
                 details: {
                     provider: 'credentials',
                     ipAddress,
@@ -469,7 +473,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     registrationTimestamp: new Date().toISOString(),
                     projectInterest: "System Administration"
                 },
-                subscriptionTier: 'admin', // Superuser is always admin tier
+                subscriptionTier: 'admin', 
             };
             saveUsersData(usersData);
         }
