@@ -109,5 +109,3 @@ Type 'bbs_connect <service_uri>' to link services.`}
 
   return null; 
 }
-
-```
