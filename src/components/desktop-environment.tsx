@@ -2,13 +2,13 @@
 "use client";
 
 import type * as React from 'react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
-import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb, LayoutGrid, BotMessageSquare, LogOut, FolderOpen, Package, Loader2, Users, Activity, Lock, PlaySquare, ScreenShare, Wifi, BookOpenText, FileSearch, NotebookText, CreditCard, Phone, ShieldQuestion } from 'lucide-react'; // Added Phone, ShieldQuestion
+import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb, LayoutGrid, BotMessageSquare, LogOut, FolderOpen, Package, Loader2, Users, Activity, Lock, PlaySquare, ScreenShare, Wifi, BookOpenText, FileSearch, NotebookText, CreditCard, Phone, ShieldQuestion, Settings, ChevronLeft, ChevronRight } from 'lucide-react'; // Added Phone, ShieldQuestion, Settings, Chevrons
 import { MiniBrowser } from './mini-browser';
 import { Separator } from './ui/separator';
 import { VirtualPartitionApp } from './virtual-partition-app';
-import { PEPxApp } from './PEPxApp'; // Renamed from PixelStoreApp, Corrected casing
+import { PEPxApp } from './PEPxApp';
 import { CodingAssistantApp } from './coding-assistant-app';
 import { AppLaunchpad } from './app-launchpad';
 import { AgenticTerminalApp } from './agentic-terminal-app';
@@ -26,16 +26,17 @@ import { UserManualApp } from '@/components/user-manual-app';
 import { DocumentViewerApp } from '@/components/document-viewer-app';
 import { NotepadApp } from '@/components/notepad-app';
 import { PaymentTerminalApp } from '@/components/payment-terminal-app'; 
-import { DataIntelligenceApp } from '@/components/data-intelligence-app'; // New Data Intelligence App
+import { DataIntelligenceApp } from '@/components/data-intelligence-app';
 import { toast } from '@/hooks/use-toast';
 import { useVFS } from '@/contexts/VFSContext';
+import { cn } from '@/lib/utils';
 
 
 type ActiveApp = 
   | 'browser' 
   | 'osbidibiShell' 
   | 'virtualPartition' 
-  | 'pepxApp' // Updated from pixelStore
+  | 'pepxApp' 
   | 'codingAssistant' 
   | 'agenticTerminal' 
   | 'fileManager' 
@@ -47,16 +48,25 @@ type ActiveApp =
   | 'documentViewer'
   | 'notepad'
   | 'paymentTerminal'
-  | 'dataIntelligenceApp' // New app
+  | 'dataIntelligenceApp'
+  | 'dockSettings' // New app for dock configuration
   | { type: 'pixelProject'; id: string; name: string; path: string; }
   | null;
 
-interface SavedProject {
+interface AppLauncherItem {
   id: string;
   name: string;
   icon: React.ElementType;
-  path: string; // VFS path to the project
+  action: () => void;
+  dataAiHint?: string;
 }
+
+interface SavedProject extends AppLauncherItem {
+  path: string; 
+}
+
+const DOCK_PAGE_SIZE = 5;
+const DOCK_HIDE_TIMEOUT_MS = 3000;
 
 export function DesktopEnvironment() {
   const { currentUser, logout } = useAuth();
@@ -64,15 +74,15 @@ export function DesktopEnvironment() {
   const [activeApp, setActiveApp] = useState<ActiveApp>(null);
   const [showWelcome, setShowWelcome] = useState(true);
   const [isLaunchpadOpen, setIsLaunchpadOpen] = useState(false);
-  const [savedPixelStoreProjects, setSavedPixelStoreProjects] = useState<SavedProject[]>([]);
   const [isLoadingProject, setIsLoadingProject] = useState(false);
   const [isBottomDockVisible, setIsBottomDockVisible] = useState(false);
   const dockHideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const dockRef = useRef<HTMLDivElement>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
 
   const isAdmin = currentUser?.role === 'superuser';
 
-  const coreAppsList = [
+  const coreAppsList: AppLauncherItem[] = [
     { id: 'osbidibiShell', name: 'OSbidibi Shell', icon: TerminalSquare, action: () => openApp('osbidibiShell'), dataAiHint: "OS command line" },
     { id: 'browser', name: 'Browser', icon: Globe, action: () => openApp('browser'), dataAiHint: "web browser" },
     { id: 'agenticTerminal', name: 'Agent Terminal', icon: BotMessageSquare, action: () => openApp('agenticTerminal'), dataAiHint: "AI agent terminal" },
@@ -89,12 +99,63 @@ export function DesktopEnvironment() {
     { id: 'dataIntelligenceApp', name: 'Data Intel', icon: ShieldQuestion, action: () => openApp('dataIntelligenceApp'), dataAiHint: "data lookup intelligence" },
   ];
 
-  const adminAppsList = [
+  const adminAppsList: AppLauncherItem[] = [
     { id: 'userManagement', name: 'User Mgmt', icon: Users, action: () => openApp('userManagement'), dataAiHint: "admin user management" },
     { id: 'sessionLogs', name: 'Session Logs', icon: Activity, action: () => openApp('sessionLogs'), dataAiHint: "admin session logs" },
   ];
+  
+  const utilityAppsList: AppLauncherItem[] = [
+     { id: 'dockSettings', name: 'Dock Settings', icon: Settings, action: () => openApp('dockSettings'), dataAiHint: "configure application dock" }
+  ];
 
-  const availableApps = isAdmin ? [...coreAppsList, ...adminAppsList] : coreAppsList;
+  const availableAppsForLaunchpad = isAdmin ? [...coreAppsList, ...adminAppsList, ...utilityAppsList] : [...coreAppsList, ...utilityAppsList];
+  const allPossibleItemsMap = new Map<string, AppLauncherItem>(
+    [...coreAppsList, ...adminAppsList, ...utilityAppsList].map(app => [app.id, app])
+  );
+
+
+  const [savedPixelStoreProjects, setSavedPixelStoreProjects] = useState<SavedProject[]>(() => {
+     if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('binaryblocksphere_savedProjects');
+        return saved ? JSON.parse(saved) : [];
+      }
+      return [];
+  });
+  
+  useEffect(() => {
+     if (typeof window !== 'undefined') {
+        localStorage.setItem('binaryblocksphere_savedProjects', JSON.stringify(savedPixelStoreProjects));
+        // Update allPossibleItemsMap when projects change
+        savedPixelStoreProjects.forEach(p => allPossibleItemsMap.set(p.id, p));
+      }
+  }, [savedPixelStoreProjects, allPossibleItemsMap]);
+
+
+  const [dockedAppIds, setDockedAppIds] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const savedDock = localStorage.getItem('binaryblocksphere_dockedAppIds');
+      if (savedDock) return JSON.parse(savedDock);
+    }
+    return coreAppsList.slice(0, DOCK_PAGE_SIZE).map(app => app.id);
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('binaryblocksphere_dockedAppIds', JSON.stringify(dockedAppIds));
+    }
+  }, [dockedAppIds]);
+  
+  const currentDockItems = dockedAppIds.map(id => {
+    return allPossibleItemsMap.get(id) || savedPixelStoreProjects.find(p => p.id === id);
+  }).filter(item => item !== undefined) as AppLauncherItem[];
+
+
+  const [visibleDockRange, setVisibleDockRange] = useState<{ start: number; end: number }>({ start: 0, end: Math.min(DOCK_PAGE_SIZE, currentDockItems.length) });
+  const [focusedDockItemIndex, setFocusedDockItemIndex] = useState<number | null>(null); // Relative to `currentDockItems`
+
+  useEffect(() => {
+    setVisibleDockRange({ start: 0, end: Math.min(DOCK_PAGE_SIZE, currentDockItems.length) });
+  }, [currentDockItems.length]);
 
   const handleAddSavedProject = (projectName: string, projectPath: string) => {
     const newProject: SavedProject = {
@@ -102,18 +163,27 @@ export function DesktopEnvironment() {
       name: projectName,
       icon: Package, 
       path: projectPath,
+      action: () => openPixelStoreProject(newProject), // Ensure action is set
+      dataAiHint: `project ${projectName.toLowerCase()}`
     };
     setSavedPixelStoreProjects(prev => {
-      if (prev.find(p => p.path === projectPath)) return prev; // Avoid duplicates
-      return [...prev, newProject];
+      if (prev.find(p => p.path === projectPath)) return prev; 
+      const updatedProjects = [...prev, newProject];
+      allPossibleItemsMap.set(newProject.id, newProject); // Update map
+      return updatedProjects;
     });
   };
 
-  const openApp = (app: ActiveApp | string) => {
-    if (typeof app === 'string' && availableApps.find(a => a.id === app)) {
-      setActiveApp(app as any);
+  const openApp = (appId: ActiveApp | string) => {
+    const appToOpen = typeof appId === 'string' ? allPossibleItemsMap.get(appId) : null;
+    if (typeof appId === 'string' && appToOpen) {
+      setActiveApp(appId as any);
+    } else if (typeof appId === 'object' && appId !== null) { // For pixelProject type
+        setActiveApp(appId);
     } else {
-      setActiveApp(app);
+        // If string ID not in map, it could be a dynamic project ID not yet in map.
+        // This case might need re-evaluation if project opening logic changes.
+        setActiveApp(appId as any);
     }
     setShowWelcome(false);
   };
@@ -121,6 +191,9 @@ export function DesktopEnvironment() {
   const openPixelStoreProject = async (project: SavedProject) => {
     setIsLoadingProject(true);
     toast({ title: "Loading Project from VFS", description: `Opening "${project.name}" from ${project.path}...`});
+    
+    // This will set activeApp to a specific structure for pixel projects
+    // To display the project name in the title bar, we can use this structure
     setActiveApp({type: 'pixelProject', id: project.id, name: project.name, path: project.path });
     setShowWelcome(false);
     
@@ -129,12 +202,13 @@ export function DesktopEnvironment() {
         toast({ title: "Project Load Warning", description: `Manifest for "${project.name}" not found at ${project.path}. Proceeding with agent terminal.`, variant: "default"});
     }
 
-    // Simulate loading time
     await new Promise(resolve => setTimeout(resolve, 2500)); 
-    openApp('agenticTerminal'); // Open agent terminal in context of this project
+    // The actual app being opened is the agentic terminal, but in the context of the project
+    openApp('agenticTerminal'); 
     toast({ title: "Project Context Active", description: `Project "${project.name}" loaded. Agent Terminal is active for this project.`});
     setIsLoadingProject(false);
   };
+
 
   const closeApp = () => {
     setActiveApp(null);
@@ -175,19 +249,21 @@ export function DesktopEnvironment() {
   const getAppTitle = () => {
     if (activeApp === null) return 'OSbidibi GDE Central';
     
-    const appInfo = availableApps.find(app => typeof activeApp === 'string' && app.id === activeApp);
+    if (typeof activeApp === 'object' && activeApp.type === 'pixelProject') {
+      return `Project: ${activeApp.name}`; // Display project name if it's a pixelProject context
+    }
+
+    const appInfo = allPossibleItemsMap.get(activeApp as string);
     if (appInfo) return appInfo.name;
     
-    if (typeof activeApp === 'object' && activeApp.type === 'pixelProject') {
-      return `Project: ${activeApp.name} (VFS: ${activeApp.path})`;
-    }
+    // Fallback for other string-based activeApp values if needed, though typically they should be in the map.
     switch (activeApp) {
       case 'browser': return 'Web Browser';
       case 'osbidibiShell': return 'OSbidibi-PEPX0.0.1 Shell (bidibi)';
       case 'virtualPartition': return 'Virtual Partition Environment';
       case 'pepxApp': return 'PEPx Storage Interface';
       case 'codingAssistant': return 'AI Coding Assistant / Chat';
-      case 'agenticTerminal': return 'Agentic Coding Terminal';
+      case 'agenticTerminal': return 'Agentic Coding Terminal'; // Default title if no project context
       case 'fileManager': return 'File Manager';
       case 'userManagement': return 'User Management Console';
       case 'sessionLogs': return 'Session Activity Logs';
@@ -198,20 +274,77 @@ export function DesktopEnvironment() {
       case 'notepad': return 'Notepad';
       case 'paymentTerminal': return 'Payment Terminal';
       case 'dataIntelligenceApp': return 'Data Intelligence Suite';
+      case 'dockSettings': return 'Dock Configuration';
       default: return 'OSbidibi GDE Application';
     }
   };
 
-  const allLaunchableItems = [
-    ...availableApps,
-    ...savedPixelStoreProjects.map(p => ({
-      id: p.id,
-      name: p.name,
-      icon: p.icon,
-      action: () => openPixelStoreProject(p),
-      dataAiHint: `project ${p.name.toLowerCase()}`
-    }))
-  ];
+  const allLaunchpadItems = [...availableAppsForLaunchpad, ...savedPixelStoreProjects];
+
+
+  const scrollDock = useCallback((direction: 'left' | 'right') => {
+      setVisibleDockRange(prev => {
+        let newStart = prev.start;
+        if (direction === 'left') {
+          newStart = Math.max(0, prev.start - 1); // Scroll one by one for wheel
+        } else {
+          newStart = Math.min(prev.start + 1, Math.max(0, currentDockItems.length - DOCK_PAGE_SIZE));
+        }
+        if (newStart === prev.start && currentDockItems.length <= DOCK_PAGE_SIZE) return prev; // No change if not scrollable
+        return { start: newStart, end: Math.min(newStart + DOCK_PAGE_SIZE, currentDockItems.length) };
+      });
+      setFocusedDockItemIndex(null);
+    }, [currentDockItems.length]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!isBottomDockVisible || !dockRef.current?.contains(document.activeElement)) return;
+
+      if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        setFocusedDockItemIndex(prev => {
+          const currentVisibleItems = currentDockItems.slice(visibleDockRange.start, visibleDockRange.end);
+          if (prev === null) return visibleDockRange.start;
+          
+          const currentDockRelativeIndex = prev - visibleDockRange.start;
+          let newRelativeIndex = Math.max(0, currentDockRelativeIndex - 1);
+
+          if (newRelativeIndex < 0 && visibleDockRange.start > 0) { // Scrolled past beginning of current page
+            scrollDock('left');
+            // After scroll, focus last item of new page
+            return Math.min(visibleDockRange.start + DOCK_PAGE_SIZE -1, currentDockItems.length -1);
+          }
+          return visibleDockRange.start + newRelativeIndex;
+        });
+      } else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+        event.preventDefault();
+         setFocusedDockItemIndex(prev => {
+          const currentVisibleItems = currentDockItems.slice(visibleDockRange.start, visibleDockRange.end);
+          if (prev === null) return visibleDockRange.start;
+
+          const currentDockRelativeIndex = prev - visibleDockRange.start;
+          let newRelativeIndex = Math.min(currentVisibleItems.length - 1, currentDockRelativeIndex + 1);
+          
+          if (newRelativeIndex >= DOCK_PAGE_SIZE && visibleDockRange.end < currentDockItems.length) { // Scrolled past end of current page
+            scrollDock('right');
+             // After scroll, focus first item of new page
+            return visibleDockRange.start + DOCK_PAGE_SIZE; // This will be the new visibleDockRange.start
+          }
+          return visibleDockRange.start + newRelativeIndex;
+        });
+      } else if (event.key === 'Enter' && focusedDockItemIndex !== null && currentDockItems[focusedDockItemIndex]) {
+        event.preventDefault();
+        currentDockItems[focusedDockItemIndex].action();
+      }
+    };
+
+    if (isBottomDockVisible) {
+      document.addEventListener('keydown', handleKeyDown);
+    } else {
+      setFocusedDockItemIndex(null); 
+    }
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isBottomDockVisible, focusedDockItemIndex, currentDockItems, visibleDockRange, scrollDock]);
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
@@ -219,26 +352,38 @@ export function DesktopEnvironment() {
         clearTimeout(dockHideTimeoutRef.current);
         dockHideTimeoutRef.current = null;
       }
-      if (event.clientY > window.innerHeight - 50) { 
+      const dockElement = dockRef.current;
+      const isOverDock = dockElement && dockElement.contains(event.target as Node);
+
+      if (event.clientY > window.innerHeight - 80 || isOverDock) { 
         setIsBottomDockVisible(true);
       } else {
-        if(isBottomDockVisible) {
-         dockHideTimeoutRef.current = setTimeout(() => {
-            setIsBottomDockVisible(false);
-          }, 300);
+        if (isBottomDockVisible) {
+          dockHideTimeoutRef.current = setTimeout(() => {
+            const stillOverDock = dockRef.current && dockRef.current.matches(':hover');
+            if (!stillOverDock && !isLaunchpadOpen && activeApp !== 'dockSettings') { // Don't hide if launchpad or settings open
+              setIsBottomDockVisible(false);
+            }
+          }, DOCK_HIDE_TIMEOUT_MS);
         }
       }
     };
-
     window.addEventListener('mousemove', handleMouseMove);
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
-      if (dockHideTimeoutRef.current) {
-        clearTimeout(dockHideTimeoutRef.current);
-      }
+      if (dockHideTimeoutRef.current) clearTimeout(dockHideTimeoutRef.current);
     };
-  }, [isBottomDockVisible]);
-
+  }, [isBottomDockVisible, isLaunchpadOpen, activeApp]);
+  
+  const handleWheelScrollDock = (event: React.WheelEvent<HTMLDivElement>) => {
+     if (currentDockItems.length <= DOCK_PAGE_SIZE) return;
+     event.preventDefault();
+     if (event.deltaY > 0 || event.deltaX > 0) { // Scroll right or down
+        scrollDock('right');
+     } else { // Scroll left or up
+        scrollDock('left');
+     }
+  };
 
   return (
     <div className="flex flex-col w-full h-full overflow-hidden bg-card/70 backdrop-blur-lg shadow-xl border border-primary/20">
@@ -250,7 +395,7 @@ export function DesktopEnvironment() {
         <div className="flex items-center space-x-2 md:space-x-3">
             {currentUser && (
               <div className="hidden sm:flex items-center text-xs text-muted-foreground space-x-2">
-                <Button variant="ghost" size="icon" onClick={toggleFullScreen} title={isFullScreen ? "Unlock Environment (Exit Fullscreen)" : "Lock Environment (Enter Fullscreen)"} className="button-3d-interactive mr-1 w-5 h-5 p-0">
+                 <Button variant="ghost" size="icon" onClick={toggleFullScreen} title={isFullScreen ? "Unlock Environment (Exit Fullscreen)" : "Lock Environment (Enter Fullscreen)"} className="button-3d-interactive mr-1 w-5 h-5 p-0">
                   <Lock className={`w-3 h-3 md:w-4 md:h-4 ${isFullScreen ? 'text-primary' : 'text-muted-foreground hover:text-accent'}`} />
                 </Button>
                 <span className="radiant-text">User: <span className="font-medium text-accent">{currentUser.username} ({currentUser.role})</span></span>
@@ -322,44 +467,80 @@ export function DesktopEnvironment() {
               {activeApp === 'notepad' && <NotepadApp />}
               {activeApp === 'paymentTerminal' && <PaymentTerminalApp />} 
               {activeApp === 'dataIntelligenceApp' && <DataIntelligenceApp />}
+              {activeApp === 'dockSettings' && (
+                <div className="p-4 text-foreground radiant-text">
+                  <h2 className="text-xl mb-2">Dock Settings (Conceptual)</h2>
+                  <p>This area would allow users to add, remove, and reorder applications in the dock.</p>
+                  <p className="mt-2">Current Docked App IDs: {dockedAppIds.join(', ')}</p>
+                  {/* Placeholder for actual settings UI */}
+                </div>
+              )}
           </div>
         </div>
         <div
-            className={`fixed bottom-0 left-0 right-0 h-[70px] md:h-[80px] bg-black/50 backdrop-blur-md border-t border-primary/20 flex items-center justify-center 
-                        px-2 md:px-4 space-x-2 md:space-x-3 overflow-x-auto transition-transform duration-300 ease-in-out z-20
-                        ${isBottomDockVisible ? 'translate-y-0' : 'translate-y-full'}`}
+            ref={dockRef}
+            className={cn(
+                `fixed bottom-0 left-1/2 -translate-x-1/2 h-[70px] md:h-[80px] bg-black/60 backdrop-blur-md border-t border-primary/30 
+                flex items-center justify-center px-2 md:px-4 space-x-1 md:space-x-1.5 overflow-hidden transition-all duration-300 ease-in-out z-20
+                rounded-t-lg shadow-2xl`,
+                isBottomDockVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
+            )}
             onMouseEnter={() => {
               if (dockHideTimeoutRef.current) clearTimeout(dockHideTimeoutRef.current);
               setIsBottomDockVisible(true);
             }}
             onMouseLeave={() => {
                dockHideTimeoutRef.current = setTimeout(() => {
-                setIsBottomDockVisible(false);
-              }, 300);
+                 if (!isLaunchpadOpen && activeApp !== 'dockSettings') setIsBottomDockVisible(false);
+               }, DOCK_HIDE_TIMEOUT_MS);
             }}
+            onWheel={handleWheelScrollDock}
         >
-            {allLaunchableItems.map(app => (
-            <Button
-                key={app.id}
-                variant="ghost"
-                className={`flex flex-col items-center justify-center h-[55px] w-[55px] md:h-[65px] md:w-[65px] p-1 space-y-0.5 text-foreground hover:bg-primary/20 button-3d-interactive
-                            ${(typeof activeApp === 'string' && activeApp === app.id) || (typeof activeApp === 'object' && activeApp?.type === 'pixelProject' && activeApp.id === app.id) ? 'bg-primary/40' : 'bg-card/30'}`}
-                onClick={app.action}
-                aria-label={`Launch ${app.name}`}
-                data-ai-hint={app.dataAiHint || app.name.toLowerCase().replace(' ', '')}
-            >
-                <app.icon className="w-5 h-5 md:w-6 md:h-6 text-accent" />
-                <span className="text-[8px] md:text-[10px] text-center radiant-text truncate w-full">{app.name}</span>
-            </Button>
-            ))}
+            {currentDockItems.length > DOCK_PAGE_SIZE && visibleDockRange.start > 0 && (
+              <Button variant="ghost" size="icon" onClick={() => scrollDock('left')} className="h-full w-8 text-primary hover:bg-primary/20 absolute left-0 top-0 bottom-0 my-auto rounded-none rounded-l-lg z-10">
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+            )}
+            <div className="flex items-center justify-center space-x-1 md:space-x-1.5 transition-transform duration-300 ease-in-out" style={{ transform: `translateX(-${(visibleDockRange.start % DOCK_PAGE_SIZE) * (60)}px)` }}> {/* Approx 60px per item */}
+              {currentDockItems.map((app, index) => (
+              <Button
+                  key={app.id}
+                  variant="ghost"
+                  className={cn(
+                      `flex flex-col items-center justify-center h-[55px] w-[55px] md:h-[65px] md:w-[65px] p-1 space-y-0.5 text-foreground 
+                      transition-all duration-150 ease-out focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background`,
+                      (typeof activeApp === 'string' && activeApp === app.id) || 
+                      (typeof activeApp === 'object' && activeApp?.type === 'pixelProject' && activeApp.id === app.id) 
+                        ? 'bg-primary/40 scale-105 shadow-lg' 
+                        : 'bg-card/30 hover:bg-primary/20 hover:scale-110 hover:shadow-md',
+                      index >= visibleDockRange.start && index < visibleDockRange.end ? 'opacity-100' : 'opacity-0 w-0 h-0 p-0 m-0 pointer-events-none', // Hide non-visible items smoothly
+                      focusedDockItemIndex === index && 'ring-2 ring-accent ring-offset-2 ring-offset-background scale-110 shadow-lg'
+                  )}
+                  onClick={app.action}
+                  onFocus={() => setFocusedDockItemIndex(index)}
+                  onBlur={() => { if(focusedDockItemIndex === index) setFocusedDockItemIndex(null);}}
+                  aria-label={`Launch ${app.name}`}
+                  data-ai-hint={app.dataAiHint || app.name.toLowerCase().replace(' ', '')}
+                  tabIndex={isBottomDockVisible && index >= visibleDockRange.start && index < visibleDockRange.end ? 0 : -1} // Make focusable only when visible
+              >
+                  <app.icon className="w-5 h-5 md:w-6 md:h-6 text-accent" />
+                  <span className="text-[8px] md:text-[10px] text-center radiant-text truncate w-full">{app.name}</span>
+              </Button>
+              ))}
+            </div>
+            {currentDockItems.length > DOCK_PAGE_SIZE && visibleDockRange.end < currentDockItems.length && (
+               <Button variant="ghost" size="icon" onClick={() => scrollDock('right')} className="h-full w-8 text-primary hover:bg-primary/20 absolute right-0 top-0 bottom-0 my-auto rounded-none rounded-r-lg z-10">
+                <ChevronRight className="w-5 h-5" />
+              </Button>
+            )}
         </div>
 
         <Separator className="my-0 bg-primary/20" />
          <div className="p-1.5 text-xs text-center text-muted-foreground/70 radiant-text bg-black/40">
-            OSbidibi-PEPX0.0.1 GDE v0.9.5-alpha. Main entry point active. VFS & PEPx operational.
+            OSbidibi-PEPX0.0.1 GDE v0.9.8-alpha. Main entry point active. VFS & PEPx operational.
           </div>
       </div>
-      <AppLaunchpad isOpen={isLaunchpadOpen} onClose={() => setIsLaunchpadOpen(false)} apps={allLaunchableItems} />
+      <AppLaunchpad isOpen={isLaunchpadOpen} onClose={() => setIsLaunchpadOpen(false)} apps={allLaunchpadItems} />
     </div>
   );
 }
