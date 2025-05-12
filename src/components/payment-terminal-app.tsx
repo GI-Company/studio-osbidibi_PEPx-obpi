@@ -1,4 +1,3 @@
-
 "use client";
 import type * as React from 'react';
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -72,15 +71,19 @@ const WALLET_PROVIDERS: Record<WalletProviderKey, { name: string; icon: React.Re
   samsung: { name: 'Samsung Pay', icon: <Smartphone className="w-full h-full" />, format: 'json' }
 };
 
+const DEFAULT_SERVICE_CODE = '101';
+const DEFAULT_AMOUNT = '100.00';
+const DEFAULT_CARDHOLDER_NAME = 'DOE/JOHN';
+
 
 export function PaymentTerminalApp() {
-  const { currentUser } = useAuth(); // For potential admin functionalities
+  const { currentUser } = useAuth(); 
   const [cardType, setCardType] = useState<CardType>('visa');
   const [pan, setPan] = useState('');
-  const [cardholderName, setCardholderName] = useState('DOE/JOHN');
+  const [cardholderName, setCardholderName] = useState(DEFAULT_CARDHOLDER_NAME);
   const [expirationDate, setExpirationDate] = useState('');
-  const [serviceCode, setServiceCode] = useState('101');
-  const [amount, setAmount] = useState('100.00');
+  const [serviceCode, setServiceCode] = useState(DEFAULT_SERVICE_CODE);
+  const [amount, setAmount] = useState(DEFAULT_AMOUNT);
   const [paymentMetadata, setPaymentMetadata] = useState('');
   const [autoGenerate, setAutoGenerate] = useState(true);
   const [qrDataContent, setQrDataContent] = useState('');
@@ -90,7 +93,6 @@ export function PaymentTerminalApp() {
   const qrCanvasRef = useRef<HTMLCanvasElement>(null);
   const qrPreviewRef = useRef<HTMLImageElement>(null);
 
-  // Simulated API/DB Status
   const [apiStatus, setApiStatus] = useState('Offline');
   const [dbStatus, setDbStatus] = useState('Offline');
   const [simulatedAccountId, setSimulatedAccountId] = useState('');
@@ -135,16 +137,15 @@ export function PaymentTerminalApp() {
     setExpirationDate(newExpDate);
     return newExpDate;
   }, []);
-
+  
   const generatePaymentMetadata = useCallback(() => {
-    if (!pan || !expirationDate || !serviceCode || !amount) return '';
+    if (!pan || !expirationDate || !serviceCode || !amount || !simulatedAccountId) return ''; 
     const cardTypeCode = cardType === 'visa' ? 'V' : cardType === 'mastercard' ? 'M' : 'A';
     const transactionId = Math.floor(Math.random() * 10000000).toString().padStart(7, '0');
     const transactionType = 'P';
     const today = new Date();
     const transactionDate = `${today.getFullYear()}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}`;
-    const accId = simulatedAccountId || Math.floor(Math.random() * 100000000).toString().padStart(8, '0');
-    if(!simulatedAccountId) setSimulatedAccountId(accId);
+    const accId = simulatedAccountId; // Use existing simulatedAccountId
     const amountValue = parseFloat(amount).toFixed(2);
     const amountWhole = Math.floor(parseFloat(amountValue)).toString().padStart(5, '0');
     const amountDecimal = (amountValue.split('.')[1] || '00').padStart(2, '0');
@@ -154,46 +155,35 @@ export function PaymentTerminalApp() {
   }, [pan, expirationDate, serviceCode, amount, cardType, simulatedAccountId]);
 
 
-  const initializeForm = useCallback(() => {
-    setServiceCode('101');
-    setAmount('100.00');
-    setCardholderName('DOE/JOHN');
-    if (autoGenerate) {
-      const newPan = generatePAN();
-      const newExpDate = generateExpirationDate();
-      setPan(newPan); // Ensure state is updated before metadata generation
-      setExpirationDate(newExpDate); // Ensure state is updated
-      // Use a timeout to ensure state updates before generating metadata
-      setTimeout(() => {
-         generatePaymentMetadata();
-      },0);
-    }
-  }, [autoGenerate, generatePAN, generateExpirationDate, generatePaymentMetadata]);
-
-
+  // Initial setup effect (runs once)
   useEffect(() => {
-    initializeForm();
-    // Simulate API/DB connection
+    setServiceCode(DEFAULT_SERVICE_CODE);
+    setAmount(DEFAULT_AMOUNT);
+    setCardholderName(DEFAULT_CARDHOLDER_NAME);
+    setSimulatedAccountId(Math.floor(Math.random() * 100000000).toString().padStart(8, '0'));
+
     setTimeout(() => setApiStatus('Online'), 500);
     setTimeout(() => setDbStatus('Connected - COBOL-SQLite Bridge Active'), 1000);
-  }, [initializeForm]);
+  }, []);
 
+  // Effect for auto-generating PAN and Expiration Date
   useEffect(() => {
-    if (autoGenerate && cardType) {
-        const newPan = generatePAN();
-        const newExpDate = generateExpirationDate();
-         // Update dependent state directly if needed for metadata generation
-        setPan(newPan);
-        setExpirationDate(newExpDate);
-        // Defer metadata generation to ensure PAN and ExpDate are set
-        setTimeout(() => generatePaymentMetadata(), 0);
+    if (autoGenerate) {
+      generatePAN(); 
+      generateExpirationDate(); 
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoGenerate, cardType]); // Removed generatePAN, generateExpirationDate from dependencies to avoid infinite loop. They are called inside.
+  }, [autoGenerate, cardType, generatePAN, generateExpirationDate]);
 
+  // Effect for generating Payment Metadata
+  useEffect(() => {
+    generatePaymentMetadata();
+  }, [pan, expirationDate, serviceCode, amount, cardType, simulatedAccountId, generatePaymentMetadata]);
+
+  // Effect for generating QR Code Data
   const generateQRCodeData = useCallback(() => {
     if (!pan || !cardholderName || !expirationDate || !serviceCode || !paymentMetadata) {
-      toast({ title: "Missing Information", description: "Please ensure all card details are filled or generated.", variant: "destructive" });
+      // toast({ title: "Missing Information", description: "Please ensure all card details are filled or generated.", variant: "destructive" });
+      // Avoid toast spamming if this runs frequently before all data is ready.
       return;
     }
     
@@ -214,7 +204,8 @@ export function PaymentTerminalApp() {
           console.error('Error generating QR code:', error);
           toast({ title: "QR Generation Error", description: "Could not generate QR code.", variant: "destructive" });
         } else {
-          toast({ title: "QR Code Generated", description: "Payment QR code is ready." });
+          // Toasting here might be too frequent if data changes often. Consider toasting only on explicit actions.
+          // toast({ title: "QR Code Generated", description: "Payment QR code is ready." });
           if(qrPreviewRef.current && qrCanvasRef.current) {
             qrPreviewRef.current.src = qrCanvasRef.current.toDataURL('image/png');
           }
@@ -222,23 +213,20 @@ export function PaymentTerminalApp() {
       });
     }
   }, [pan, cardholderName, expirationDate, serviceCode, paymentMetadata, amount, simulatedAccountId]);
-
+  
   useEffect(() => {
-    if(pan && expirationDate && paymentMetadata && autoGenerate){ // Generate QR when dependent auto-generated fields are ready
-        generateQRCodeData();
+    if (pan && expirationDate && paymentMetadata) { 
+      generateQRCodeData();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pan, expirationDate, paymentMetadata, autoGenerate]); // Do not add generateQRCodeData here to avoid loop
+  }, [pan, expirationDate, paymentMetadata, generateQRCodeData]);
 
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    generateQRCodeData();
-    // Simulate payment processing
+    generateQRCodeData(); // Ensure QR is up-to-date before processing
     if(simulatedAccountId && amount) {
         toast({title: "Processing Payment", description: "Simulating transaction..."});
         setTimeout(async () => {
-            // Simulate API call
             const currentBalance = parseFloat(simulatedAccountBalance);
             const transactionAmount = parseFloat(amount);
             const newBalance = currentBalance - transactionAmount;
@@ -247,6 +235,33 @@ export function PaymentTerminalApp() {
         }, 1500);
     }
   };
+
+  const handleResetForm = () => {
+    // Reset to initial state values from the first useEffect, or re-trigger auto-generation.
+    setCardType('visa'); // Default card type
+    setServiceCode(DEFAULT_SERVICE_CODE);
+    setAmount(DEFAULT_AMOUNT);
+    setCardholderName(DEFAULT_CARDHOLDER_NAME);
+    // Auto-generate will kick in if autoGenerate is true via its useEffect
+    if (autoGenerate) {
+        const newPan = generatePAN();
+        const newExpDate = generateExpirationDate();
+        // Metadata and QR will update via their respective useEffects
+    } else {
+        // If not auto-generating, clear fields that would be auto-generated
+        setPan('');
+        setExpirationDate('');
+        setPaymentMetadata('');
+        setQrDataContent('');
+        if (qrCanvasRef.current) {
+            const ctx = qrCanvasRef.current.getContext('2d');
+            ctx?.clearRect(0,0, qrCanvasRef.current.width, qrCanvasRef.current.height);
+        }
+        if(qrPreviewRef.current) qrPreviewRef.current.src = '';
+    }
+    toast({title: "Form Reset", description: "Payment form has been reset."});
+  };
+
 
   const handleSaveQr = () => {
     if (qrCanvasRef.current) {
@@ -272,7 +287,7 @@ export function PaymentTerminalApp() {
       cardType,
       scheme: cardType.charAt(0).toUpperCase() + cardType.slice(1),
       pan,
-      formattedPan: pan, // Simplified, real formatting would be more complex
+      formattedPan: pan, 
       cardholderName: cardholderName.replace('/', ' '),
       expMonth: expirationDate.substring(2,4),
       expYear: '20' + expirationDate.substring(0,2),
@@ -284,13 +299,13 @@ export function PaymentTerminalApp() {
     let walletUrl = '';
     switch(walletType) {
       case 'apple':
-        walletUrl = `applewallet://addpaymentpass?cardData=${encodeURIComponent(JSON.stringify(cardData))}`; // Placeholder URL
+        walletUrl = `applewallet://addpaymentpass?cardData=${encodeURIComponent(JSON.stringify(cardData))}`; 
         break;
       case 'google':
-        walletUrl = `googlepay://savepass?cardData=${encodeURIComponent(JSON.stringify(cardData))}`; // Placeholder URL
+        walletUrl = `googlepay://savepass?cardData=${encodeURIComponent(JSON.stringify(cardData))}`; 
         break;
       case 'samsung':
-        walletUrl = `samsungpay://addcard?cardData=${encodeURIComponent(JSON.stringify(cardData))}`; // Placeholder URL
+        walletUrl = `samsungpay://addcard?cardData=${encodeURIComponent(JSON.stringify(cardData))}`; 
         break;
     }
 
@@ -322,7 +337,7 @@ export function PaymentTerminalApp() {
           <CardTitle className="text-2xl radiant-text">Payment Terminal</CardTitle>
         </div>
         <CardDescription className="radiant-text">
-          Generate Payment QR Codes & Manage Simulated Transactions
+          Generate Payment QR Codes &amp; Manage Simulated Transactions
         </CardDescription>
       </CardHeader>
 
@@ -370,7 +385,7 @@ export function PaymentTerminalApp() {
 
           {/* Transaction & QR Column */}
           <div className="space-y-3 p-3 rounded-md glassmorphic !bg-background/30">
-            <h4 className="text-lg font-semibold mb-2 text-accent radiant-text">Transaction & QR</h4>
+            <h4 className="text-lg font-semibold mb-2 text-accent radiant-text">Transaction &amp; QR</h4>
             <div>
               <Label htmlFor="amount" className="radiant-text">Amount</Label>
               <Input id="amount" type="number" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} className="mt-1 bg-input/70 focus:bg-input" placeholder="0.00" />
@@ -383,7 +398,7 @@ export function PaymentTerminalApp() {
               <Switch id="auto-generate-toggle" checked={autoGenerate} onCheckedChange={setAutoGenerate} />
               <Label htmlFor="auto-generate-toggle" className="radiant-text">Auto-generate Details</Label>
             </div>
-            <Button type="submit" className="w-full button-3d-interactive">Generate QR & Process (Simulated)</Button>
+            <Button type="submit" className="w-full button-3d-interactive">Generate QR &amp; Process (Simulated)</Button>
             
             <div id="qr-container" className="mt-3 p-3 border border-primary/30 rounded-md text-center bg-card/50">
                 <h5 className="text-md font-medium mb-2 text-primary radiant-text">Payment QR Code</h5>
@@ -394,7 +409,7 @@ export function PaymentTerminalApp() {
                     <Button id="save-qr-button" type="button" onClick={handleSaveQr} variant="outline" size="sm" className="button-3d-interactive"><Save className="w-3.5 h-3.5 mr-1.5"/>Save QR</Button>
                     <Button id="copy-qr-data-button" type="button" onClick={copyQrDataToClipboard} variant="outline" size="sm" className="button-3d-interactive"><ClipboardCopy className="w-3.5 h-3.5 mr-1.5"/>Copy Data</Button>
                     <Button id="add-to-wallet" type="button" onClick={() => setShowWalletOptions(true)} className="wallet-button button-3d-interactive" size="sm"><Wallet className="w-3.5 h-3.5 mr-1.5"/>Add to Wallet</Button>
-                    <Button id="reset-form-button" type="button" onClick={initializeForm} variant="destructive" size="sm" className="button-3d-interactive">Reset Form</Button>
+                    <Button id="reset-form-button" type="button" onClick={handleResetForm} variant="destructive" size="sm" className="button-3d-interactive">Reset Form</Button>
                 </div>
                 <div className="qr-wallet-info">
                     <p>On mobile? Scan this QR code with your banking app or wallet app to add this payment card.</p>
