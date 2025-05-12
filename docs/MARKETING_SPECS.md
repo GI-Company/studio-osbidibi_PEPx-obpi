@@ -1,4 +1,3 @@
-
 # OSbidibi-PEPX0.0.1: Feature Marketing Specifications
 
 ## Experience the Future of Digital Interaction & Development
@@ -85,19 +84,22 @@ Welcome to OSbidibi-PEPX0.0.1, a revolutionary virtual operating system and deve
     *   **Master Your Environment:** Become an OSbidibi expert with the comprehensive built-in User Manual. Access detailed 'man pages' for system commands, core framework concepts, and application-specific guides, ensuring you can leverage the full, unparalleled power of the BinaryBlocksphere.
     *   **Keywords:** Help System, Documentation, Man Pages, User Guides, System Knowledge.
 
+17. **Bidibi Timesense Adapter:**
+    *   **Synchronize Across Dimensions:** Ensure seamless operational integrity with the Bidibi Timesense Adapter. This core component intelligently compiles and synchronizes OSbidibi's native bidirectional operations for execution on platforms with conventional single binary processing. It guarantees proper load sequencing and real-time adaptation, bridging temporal and operational paradigms.
+    *   **Keywords:** Time Synchronization, Bidirectional Computing, Cross-Paradigm Compilation, Operational Integrity, Load Sequence.
 ---
 
 ### Operational Modes & Security
 
-17. **Persistent & Ghost Operating Modes:**
+18. **Persistent & Ghost Operating Modes:**
     *   **Choose Your Experience:** Tailor OSbidibi to your needs. Opt for 'Persistent Mode' to save your sessions, data, and customizations, creating a personalized and evolving virtual environment. Select 'Ghost Mode' for temporary, fingerprint-free operation where all changes are ephemeral, ensuring privacy and a clean slate every time.
     *   **Keywords:** Session Management, Data Privacy, Secure Operation, Ephemeral Computing.
 
-18. **Tiered User Access & Superuser (`serpOS@GI`) Control:**
+19. **Tiered User Access & Superuser (`serpOS@GI`) Control:**
     *   **Flexible & Powerful Administration:** OSbidibi implements a robust, tiered access model. Standard users can explore full capabilities with a 7-day trial, followed by flexible subscription options. The `serpOS@GI` superuser account wields unrestricted access to all system levels, including advanced administrative consoles for user and session management, and the unique ability to generate new, deployable OSbidibi instances.
     *   **Keywords:** User Roles, Access Control, Admin Privileges, Subscription Tiers, System Administration.
 
-19. **Cross-Platform Design & Immersive Experience:**
+20. **Cross-Platform Design & Immersive Experience:**
     *   **Universally Accessible, Uniquely Engaging:** OSbidibi is engineered for ultimate versatility. Enjoy a consistent, responsive, and visually rich experience across all major desktop platforms (Mac, Windows, Linux via browser) and conceptual mobile interfaces (Android, iOS via PWA or native-like experience). The innovative 'Environment Lock' feature provides an immersive, distraction-free fullscreen mode.
     *   **Keywords:** Cross-Platform, Responsive Design, Mobile Compatible, Fullscreen Mode, Immersive UI.
 

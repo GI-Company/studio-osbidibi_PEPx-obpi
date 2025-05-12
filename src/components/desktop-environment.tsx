@@ -1,10 +1,9 @@
-
 "use client";
 
 import type * as React from 'react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
-import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb, LayoutGrid, BotMessageSquare, LogOut, FolderOpen, Package, Loader2, Users, Activity, Lock, PlaySquare, ScreenShare, Wifi, BookOpenText, FileSearch, NotebookText, CreditCard, Phone, ShieldQuestion, Settings, ChevronLeft, ChevronRight } from 'lucide-react'; // Added Phone, ShieldQuestion, Settings, Chevrons
+import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb, LayoutGrid, BotMessageSquare, LogOut, FolderOpen, Package, Loader2, Users, Activity, Lock, PlaySquare, ScreenShare, Wifi, BookOpenText, FileSearch, NotebookText, CreditCard, Phone, ShieldQuestion, Settings, ChevronLeft, ChevronRight, Zap } from 'lucide-react'; // Added Zap for Timesense
 import { MiniBrowser } from './mini-browser';
 import { Separator } from './ui/separator';
 import { VirtualPartitionApp } from './virtual-partition-app';
@@ -25,21 +24,22 @@ import { ConnectivityCenterApp } from '@/components/connectivity-center-app';
 import { UserManualApp } from '@/components/user-manual-app';
 import { DocumentViewerApp } from '@/components/document-viewer-app';
 import { NotepadApp } from '@/components/notepad-app';
-import { PaymentTerminalApp } from '@/components/payment-terminal-app'; 
+import { PaymentTerminalApp } from '@/components/payment-terminal-app';
 import { DataIntelligenceApp } from '@/components/data-intelligence-app';
+import { TimesenseAdapterApp } from './timesense-adapter-app'; // Import TimesenseAdapterApp
 import { toast } from '@/hooks/use-toast';
 import { useVFS } from '@/contexts/VFSContext';
 import { cn } from '@/lib/utils';
 
 
-type ActiveApp = 
-  | 'browser' 
-  | 'osbidibiShell' 
-  | 'virtualPartition' 
-  | 'pepxApp' 
-  | 'codingAssistant' 
-  | 'agenticTerminal' 
-  | 'fileManager' 
+type ActiveApp =
+  | 'browser'
+  | 'osbidibiShell'
+  | 'virtualPartition'
+  | 'pepxApp'
+  | 'codingAssistant'
+  | 'agenticTerminal'
+  | 'fileManager'
   | 'userManagement'
   | 'sessionLogs'
   | 'mediaPlayer'
@@ -49,7 +49,8 @@ type ActiveApp =
   | 'notepad'
   | 'paymentTerminal'
   | 'dataIntelligenceApp'
-  | 'dockSettings' // New app for dock configuration
+  | 'timesenseAdapter' // Added Timesense Adapter
+  | 'dockSettings'
   | { type: 'pixelProject'; id: string; name: string; path: string; }
   | null;
 
@@ -62,7 +63,7 @@ interface AppLauncherItem {
 }
 
 interface SavedProject extends AppLauncherItem {
-  path: string; 
+  path: string;
 }
 
 const DOCK_PAGE_SIZE = 5;
@@ -92,6 +93,7 @@ export function DesktopEnvironment() {
     { id: 'fileManager', name: 'File Manager', icon: FolderOpen, action: () => openApp('fileManager'), dataAiHint: "file system browser" },
     { id: 'mediaPlayer', name: 'Media Hub', icon: PlaySquare, action: () => openApp('mediaPlayer'), dataAiHint: "media player video audio" },
     { id: 'connectivityCenter', name: 'Connectivity', icon: Wifi, action: () => openApp('connectivityCenter'), dataAiHint: "network wifi cast" },
+    { id: 'timesenseAdapter', name: 'Timesense Adapter', icon: Zap, action: () => openApp('timesenseAdapter'), dataAiHint: "time synchronization adapter" }, // Added Timesense Adapter
     { id: 'userManual', name: 'User Manual', icon: BookOpenText, action: () => openApp('userManual'), dataAiHint: "help documentation manual" },
     { id: 'documentViewer', name: 'Doc Viewer', icon: FileSearch, action: () => openApp('documentViewer'), dataAiHint: "document viewer files" },
     { id: 'notepad', name: 'Notepad', icon: NotebookText, action: () => openApp('notepad'), dataAiHint: "text editor notes" },
@@ -103,7 +105,7 @@ export function DesktopEnvironment() {
     { id: 'userManagement', name: 'User Mgmt', icon: Users, action: () => openApp('userManagement'), dataAiHint: "admin user management" },
     { id: 'sessionLogs', name: 'Session Logs', icon: Activity, action: () => openApp('sessionLogs'), dataAiHint: "admin session logs" },
   ];
-  
+
   const utilityAppsList: AppLauncherItem[] = [
      { id: 'dockSettings', name: 'Dock Settings', icon: Settings, action: () => openApp('dockSettings'), dataAiHint: "configure application dock" }
   ];
@@ -121,7 +123,7 @@ export function DesktopEnvironment() {
       }
       return [];
   });
-  
+
   useEffect(() => {
      if (typeof window !== 'undefined') {
         localStorage.setItem('binaryblocksphere_savedProjects', JSON.stringify(savedPixelStoreProjects));
@@ -144,7 +146,7 @@ export function DesktopEnvironment() {
       localStorage.setItem('binaryblocksphere_dockedAppIds', JSON.stringify(dockedAppIds));
     }
   }, [dockedAppIds]);
-  
+
   const currentDockItems = dockedAppIds.map(id => {
     return allPossibleItemsMap.get(id) || savedPixelStoreProjects.find(p => p.id === id);
   }).filter(item => item !== undefined) as AppLauncherItem[];
@@ -161,13 +163,13 @@ export function DesktopEnvironment() {
     const newProject: SavedProject = {
       id: `project-${Date.now()}`,
       name: projectName,
-      icon: Package, 
+      icon: Package,
       path: projectPath,
       action: () => openPixelStoreProject(newProject), // Ensure action is set
       dataAiHint: `project ${projectName.toLowerCase()}`
     };
     setSavedPixelStoreProjects(prev => {
-      if (prev.find(p => p.path === projectPath)) return prev; 
+      if (prev.find(p => p.path === projectPath)) return prev;
       const updatedProjects = [...prev, newProject];
       allPossibleItemsMap.set(newProject.id, newProject); // Update map
       return updatedProjects;
@@ -191,20 +193,20 @@ export function DesktopEnvironment() {
   const openPixelStoreProject = async (project: SavedProject) => {
     setIsLoadingProject(true);
     toast({ title: "Loading Project from VFS", description: `Opening "${project.name}" from ${project.path}...`});
-    
+
     // This will set activeApp to a specific structure for pixel projects
     // To display the project name in the title bar, we can use this structure
     setActiveApp({type: 'pixelProject', id: project.id, name: project.name, path: project.path });
     setShowWelcome(false);
-    
+
     const manifestFile = getVFSItem(`${project.path}/manifest.bbs-proj`);
     if (!manifestFile) {
         toast({ title: "Project Load Warning", description: `Manifest for "${project.name}" not found at ${project.path}. Proceeding with agent terminal.`, variant: "default"});
     }
 
-    await new Promise(resolve => setTimeout(resolve, 2500)); 
+    await new Promise(resolve => setTimeout(resolve, 2500));
     // The actual app being opened is the agentic terminal, but in the context of the project
-    openApp('agenticTerminal'); 
+    openApp('agenticTerminal');
     toast({ title: "Project Context Active", description: `Project "${project.name}" loaded. Agent Terminal is active for this project.`});
     setIsLoadingProject(false);
   };
@@ -248,14 +250,14 @@ export function DesktopEnvironment() {
 
   const getAppTitle = () => {
     if (activeApp === null) return 'OSbidibi GDE Central';
-    
+
     if (typeof activeApp === 'object' && activeApp.type === 'pixelProject') {
       return `Project: ${activeApp.name}`; // Display project name if it's a pixelProject context
     }
 
     const appInfo = allPossibleItemsMap.get(activeApp as string);
     if (appInfo) return appInfo.name;
-    
+
     // Fallback for other string-based activeApp values if needed, though typically they should be in the map.
     switch (activeApp) {
       case 'browser': return 'Web Browser';
@@ -269,6 +271,7 @@ export function DesktopEnvironment() {
       case 'sessionLogs': return 'Session Activity Logs';
       case 'mediaPlayer': return 'Multimedia Hub';
       case 'connectivityCenter': return 'BBS Connectivity Center';
+      case 'timesenseAdapter': return 'Bidibi Timesense Adapter'; // Added Timesense Adapter
       case 'userManual': return 'User Manual';
       case 'documentViewer': return 'Document Viewer';
       case 'notepad': return 'Notepad';
@@ -305,7 +308,7 @@ export function DesktopEnvironment() {
         setFocusedDockItemIndex(prev => {
           const currentVisibleItems = currentDockItems.slice(visibleDockRange.start, visibleDockRange.end);
           if (prev === null) return visibleDockRange.start;
-          
+
           const currentDockRelativeIndex = prev - visibleDockRange.start;
           let newRelativeIndex = Math.max(0, currentDockRelativeIndex - 1);
 
@@ -324,7 +327,7 @@ export function DesktopEnvironment() {
 
           const currentDockRelativeIndex = prev - visibleDockRange.start;
           let newRelativeIndex = Math.min(currentVisibleItems.length - 1, currentDockRelativeIndex + 1);
-          
+
           if (newRelativeIndex >= DOCK_PAGE_SIZE && visibleDockRange.end < currentDockItems.length) { // Scrolled past end of current page
             scrollDock('right');
              // After scroll, focus first item of new page
@@ -341,7 +344,7 @@ export function DesktopEnvironment() {
     if (isBottomDockVisible) {
       document.addEventListener('keydown', handleKeyDown);
     } else {
-      setFocusedDockItemIndex(null); 
+      setFocusedDockItemIndex(null);
     }
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isBottomDockVisible, focusedDockItemIndex, currentDockItems, visibleDockRange, scrollDock]);
@@ -355,7 +358,7 @@ export function DesktopEnvironment() {
       const dockElement = dockRef.current;
       const isOverDock = dockElement && dockElement.contains(event.target as Node);
 
-      if (event.clientY > window.innerHeight - 80 || isOverDock) { 
+      if (event.clientY > window.innerHeight - 80 || isOverDock) {
         setIsBottomDockVisible(true);
       } else {
         if (isBottomDockVisible) {
@@ -374,7 +377,7 @@ export function DesktopEnvironment() {
       if (dockHideTimeoutRef.current) clearTimeout(dockHideTimeoutRef.current);
     };
   }, [isBottomDockVisible, isLaunchpadOpen, activeApp]);
-  
+
   const handleWheelScrollDock = (event: React.WheelEvent<HTMLDivElement>) => {
      if (currentDockItems.length <= DOCK_PAGE_SIZE) return;
      event.preventDefault();
@@ -460,12 +463,13 @@ export function DesktopEnvironment() {
               {activeApp === 'fileManager' && <FileManagerApp />}
               {isAdmin && activeApp === 'userManagement' && <UserManagementApp />}
               {isAdmin && activeApp === 'sessionLogs' && <SessionLogsApp />}
-              {activeApp === 'mediaPlayer' && <MediaPlayerApp />} 
+              {activeApp === 'mediaPlayer' && <MediaPlayerApp />}
               {activeApp === 'connectivityCenter' && <ConnectivityCenterApp />}
+              {activeApp === 'timesenseAdapter' && <TimesenseAdapterApp />}
               {activeApp === 'userManual' && <UserManualApp />}
               {activeApp === 'documentViewer' && <DocumentViewerApp />}
               {activeApp === 'notepad' && <NotepadApp />}
-              {activeApp === 'paymentTerminal' && <PaymentTerminalApp />} 
+              {activeApp === 'paymentTerminal' && <PaymentTerminalApp />}
               {activeApp === 'dataIntelligenceApp' && <DataIntelligenceApp />}
               {activeApp === 'dockSettings' && (
                 <div className="p-4 text-foreground radiant-text">
@@ -480,7 +484,7 @@ export function DesktopEnvironment() {
         <div
             ref={dockRef}
             className={cn(
-                `fixed bottom-0 left-1/2 -translate-x-1/2 h-[70px] md:h-[80px] bg-black/60 backdrop-blur-md border-t border-primary/30 
+                `fixed bottom-0 left-1/2 -translate-x-1/2 h-[70px] md:h-[80px] bg-black/60 backdrop-blur-md border-t border-primary/30
                 flex items-center justify-center px-2 md:px-4 space-x-1 md:space-x-1.5 overflow-hidden transition-all duration-300 ease-in-out z-20
                 rounded-t-lg shadow-2xl`,
                 isBottomDockVisible ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
@@ -507,11 +511,11 @@ export function DesktopEnvironment() {
                   key={app.id}
                   variant="ghost"
                   className={cn(
-                      `flex flex-col items-center justify-center h-[55px] w-[55px] md:h-[65px] md:w-[65px] p-1 space-y-0.5 text-foreground 
+                      `flex flex-col items-center justify-center h-[55px] w-[55px] md:h-[65px] md:w-[65px] p-1 space-y-0.5 text-foreground
                       transition-all duration-150 ease-out focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background`,
-                      (typeof activeApp === 'string' && activeApp === app.id) || 
-                      (typeof activeApp === 'object' && activeApp?.type === 'pixelProject' && activeApp.id === app.id) 
-                        ? 'bg-primary/40 scale-105 shadow-lg' 
+                      (typeof activeApp === 'string' && activeApp === app.id) ||
+                      (typeof activeApp === 'object' && activeApp?.type === 'pixelProject' && activeApp.id === app.id)
+                        ? 'bg-primary/40 scale-105 shadow-lg'
                         : 'bg-card/30 hover:bg-primary/20 hover:scale-110 hover:shadow-md',
                       index >= visibleDockRange.start && index < visibleDockRange.end ? 'opacity-100' : 'opacity-0 w-0 h-0 p-0 m-0 pointer-events-none', // Hide non-visible items smoothly
                       focusedDockItemIndex === index && 'ring-2 ring-accent ring-offset-2 ring-offset-background scale-110 shadow-lg'
@@ -544,4 +548,3 @@ export function DesktopEnvironment() {
     </div>
   );
 }
-
