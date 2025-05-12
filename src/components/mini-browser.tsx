@@ -12,7 +12,8 @@ const searchEngines = {
   google: "https://www.google.com/search?q=",
   duckduckgo: "https://duckduckgo.com/?q=",
   bing: "https://www.bing.com/search?q=",
-  startpage: "https://www.startpage.com/sp/search?query=", // Added Startpage
+  yahoo: "https://search.yahoo.com/search?p=", // Yahoo uses 'p' query parameter
+  firefox: "https://www.mozilla.org/en-US/search/?q=", // Mozilla's search page
 };
 
 type SearchEngineKey = keyof typeof searchEngines;
@@ -21,10 +22,10 @@ interface MiniBrowserProps {
   initialUrl?: string;
 }
 
-export function MiniBrowser({ initialUrl = "https://www.startpage.com/" }: MiniBrowserProps) { // Default to Startpage
+export function MiniBrowser({ initialUrl = "https://www.google.com/" }: MiniBrowserProps) { 
   const [addressBarInput, setAddressBarInput] = useState(initialUrl);
   const [searchBarInput, setSearchBarInput] = useState("");
-  const [selectedSearchEngine, setSelectedSearchEngine] = useState<SearchEngineKey>("startpage"); // Default search engine
+  const [selectedSearchEngine, setSelectedSearchEngine] = useState<SearchEngineKey>("google"); 
   const [iframeSrc, setIframeSrc] = useState(initialUrl);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -52,6 +53,7 @@ export function MiniBrowser({ initialUrl = "https://www.startpage.com/" }: MiniB
     try {
       if (iframeRef.current && iframeRef.current.contentWindow) {
         const currentLoc = iframeRef.current.contentWindow.location.href;
+        // Only update address bar if it's not a search engine result page or about:blank
         if (currentLoc !== 'about:blank' && currentLoc !== iframeSrc) {
            if (!Object.values(searchEngines).some(engineBase => currentLoc.startsWith(engineBase)) ) {
              setAddressBarInput(currentLoc);
@@ -60,12 +62,15 @@ export function MiniBrowser({ initialUrl = "https://www.startpage.com/" }: MiniB
       }
     } catch (error) {
       console.warn("Cannot access iframe location due to security restrictions:", error);
+      // Potentially set a placeholder or a message in the address bar if access is denied.
+      // setAddressBarInput("Blocked by cross-origin policy");
     }
   };
 
   const handleRefresh = () => {
     if (iframeRef.current) {
-      iframeRef.current.src = iframeSrc; 
+      // Reload the current iframe source
+      iframeRef.current.src = iframeSrc; // Or iframeRef.current.contentWindow.location.reload(); if access is permitted
     }
   };
 
@@ -95,10 +100,11 @@ export function MiniBrowser({ initialUrl = "https://www.startpage.com/" }: MiniB
               <SelectValue placeholder="Search Engine" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="startpage">Startpage</SelectItem>
               <SelectItem value="google">Google</SelectItem>
               <SelectItem value="duckduckgo">DuckDuckGo</SelectItem>
               <SelectItem value="bing">Bing</SelectItem>
+              <SelectItem value="yahoo">Yahoo</SelectItem>
+              <SelectItem value="firefox">Firefox (Mozilla)</SelectItem> 
             </SelectContent>
           </Select>
           <Input
@@ -121,7 +127,8 @@ export function MiniBrowser({ initialUrl = "https://www.startpage.com/" }: MiniB
         className="flex-grow w-full h-full border-0"
         title="Mini Web Browser"
         sandbox="allow-forms allow-modals allow-pointer-lock allow-popups allow-presentation allow-same-origin allow-scripts allow-top-navigation allow-top-navigation-by-user-activation"
-        referrerPolicy="no-referrer" 
+        // Removed referrerpolicy="no-referrer" as it might break some sites if they rely on referrer for functionality.
+        // If privacy is paramount and breakage is acceptable, it can be re-added.
         onLoad={handleIframeLoad}
         data-ai-hint="web content display"
       >
@@ -130,3 +137,4 @@ export function MiniBrowser({ initialUrl = "https://www.startpage.com/" }: MiniB
     </div>
   );
 }
+
