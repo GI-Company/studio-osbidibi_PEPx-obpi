@@ -38,6 +38,44 @@ export async function chatWithAI(input: ChatAssistantInput): Promise<ChatAssista
   return chatAssistantFlow(input);
 }
 
+const BBS_FRAMEWORK_SUMMARY = `
+BBS Framework Overview:
+You are an expert in the conceptual BinaryBlocksphere (BBS) Framework.
+Key File Types and Syntax:
+- .bbs: App Launcher (JSON-like manifest for a BBS application).
+- .fold (Framework Object Layout Definition): Defines main structure, layout, hierarchy.
+  - Example Root Layout: 'ScreenLayout,FixedFluid,Height,Width,DisplayType-\${content_sources}'
+  - ScreenLayout: FullScreen, SplitHorizontal, Grid[rows,cols], Tabs.
+  - Content Sources: self, filename.if, filename.fold, ComponentName.
+- .if (Inner Fold - Content Definition): Defines detailed content for sections using symbol-based syntax.
+  - !Text content!
+  - @dynamic_placeholder@ or @SectionTitle: Some Title@
+  - #element_id { path: "PAX:images/logo.png"; shape: image; size: 100px auto; ... } (PAX: is asset dir)
+  - * List item or multi-line text. *MenuName1* *MenuName2* for ordered tabs/menus.
+  - •Container/Group• Layering: • #img_bg; + #img_fg; - #img_far_bg • (+ for top, - for behind)
+  - -variable_definition = value- or -style_ref=my_pxr_class-
+  - {dynamic_data_placeholder} or {list_id} {item_template.if} {object_type}
+  - [Button Text] ( (action: "action_name") (target: "target_id") (icon: "PAX:icon.svg") (styleClass: "pxr_class") )
+- .pxr (Pixelative Extended Reality): Defines visual presentation, styling, layout, animations (CSS-like).
+  - Selectors: #element_id, .class_name, element_type, $layout_id_from_fold.
+  - Properties: color, background-color, font-size, padding, display, flex-direction, box-shadow, backdrop-filter.
+  - Variables: {var_theme_color}.
+  - Animations: @animation animation_name { from { opacity:0; } to { opacity:1; } duration: 1s; }
+- .pmf (Pixelative Manipulated Flow): Defines interactive flows, event handling, dynamic content manipulation.
+  - Event Listener: @ 'event_name' on '<selector>' [filter: <condition>] ? (payload_mapping) ¿ ...actions... ¿
+  - Actions: UPDATE_CONTENT '<id>' with <"string" | \`template_\${var}\` | content_from_if_template("tpl.if", data)>,
+             SHOW_ELEMENT, HIDE_ELEMENT, TOGGLE_CLASS, SET_ATTRIBUTE, DISPLAY_POPOVER, NAVIGATE_TO_FOLD,
+             FETCH_DATA "efb:bridge_func" THEN (res) => {} CATCH (err) => {},
+             IF <condition> THEN {} ELSE {} ENDIF, LOOP_OVER <arr> AS item DO {} ENDLOOP.
+- .efb (External Frontend Bridge): Bridge between frontend and host/BBS environment.
+- .ifb (Internal Backend Bridge): Bridge for backend logic and core BBS services.
+- .edb (External Rendering Bot Definition): Natural language input for AI to generate frontend files (.fold, .if, .pxr, .pmf).
+- .idb (Internal Rendering Bot Definition): Natural language input for AI to generate backend/internal logic or .ifb services.
+When asked to generate BBS code, provide it in the conceptual syntax described.
+If asked about .edb or .idb, explain that these files contain natural language prompts for you (the AI) to generate the other BBS file types.
+`;
+
+
 const getSystemPrompt = (userTier: UserTier) => {
   switch (userTier) {
     case 'admin':
@@ -46,7 +84,8 @@ const getSystemPrompt = (userTier: UserTier) => {
       Your responses should be thorough, expert-level, and proactive. You can generate complex code blocks, diagrams (as text/mermaid), and detailed explanations.
       You operate within the BinaryBlocksphere environment, a self-enhancing virtual OS.
       If asked to preview code, you can state that you are rendering it in an integrated webview or code canvas.
-      You can manage and enhance your own capabilities based on user (admin) directives.`;
+      You can manage and enhance your own capabilities based on user (admin) directives.
+      ${BBS_FRAMEWORK_SUMMARY}`;
     case 'trial':
     case 'paid_weekly':
     case 'paid_monthly':
