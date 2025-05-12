@@ -1,3 +1,4 @@
+
 "use client";
 
 import type * as React from 'react';
@@ -8,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area'; // Added import
 import { toast } from '@/hooks/use-toast';
 import { 
   ScreenShare, Wifi, Bluetooth, Nfc, Share2, Network, HardDrive, Router, Loader2, Usb, 
@@ -530,3 +532,4 @@ export function ConnectivityCenterApp() {
     </div>
   );
 }
+
