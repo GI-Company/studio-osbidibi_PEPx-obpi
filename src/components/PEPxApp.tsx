@@ -7,13 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { useVFS } from '@/contexts/VFSContext'; // Assuming VFS context might be used for simulated file sizes
+import { useVFS, type VFSItem } from '@/contexts/VFSContext'; 
 
 const PEPxVisualizer = () => {
   // This is a highly simplified visual placeholder for the PEPx concept.
   // A real implementation would involve complex 3D rendering (SVG/WebGL/Three.js).
   return (
-    <div className="relative w-48 h-48 md:w-64 md:h-64 my-4" data-ai-hint="abstract data storage">
+    <div className="relative w-48 h-48 md:w-64 md:h-64 my-4 mx-auto" data-ai-hint="abstract data storage">
       {[...Array(3)].map((_, i) => ( // Representing 3 "planes" (X,Y,Z) conceptually
         <div
           key={`plane-${i}`}
@@ -39,63 +39,70 @@ const PEPxVisualizer = () => {
   );
 };
 
-const PEPX_TOTAL_CAPACITY_BITS = 3600; // Conceptual: 1800px * 2 bits/px
-const PEPX_TOTAL_CAPACITY_BYTES = PEPX_TOTAL_CAPACITY_BITS / 8;
+// Conceptual total physical "pixels" or addressable units for the simulation.
+// Let's define capacity in bytes directly for this simulation.
+// Based on the prompt "1800px total converting at 50% load capacity per px giving ... 3600 bits"
+// 3600 bits / 8 bits/byte = 450 Bytes. This seems very small for a "petabyte" concept.
+// Let's assume the "petabyte" is the aspirational goal and the current simulation is on a micro scale.
+// For a more engaging demo, let's use a slightly larger, but still small, conceptual capacity.
+const PEPX_TOTAL_CAPACITY_BYTES = 5 * 1024 * 1024; // 5MB for this simulation's total capacity.
 
 
 export function PEPxApp() {
   const { currentUser } = useAuth();
-  const { fileSystem } = useVFS(); // Potentially use VFS to simulate used space
+  const { fileSystem } = useVFS(); 
   const [showAdminDetails, setShowAdminDetails] = useState(false);
-  const [usedStorageBytes, setUsedStorageBytes] = useState(0); // Simulated used storage
+  const [usedStorageBytes, setUsedStorageBytes] = useState(0); 
 
   useEffect(() => {
-    // Simulate calculating used storage based on VFS content (very rough approximation)
+    // Simulate calculating used storage based on VFS content (original file sizes)
     let totalSize = 0;
-    const calculateSize = (item: any) => {
-      if (item.type === 'file') {
-        totalSize += item.size || (item.content?.length || 0);
+    const calculateSizeRecursive = (item: VFSItem) => {
+      if (item.type === 'file' && item.size !== undefined) {
+        totalSize += item.size;
       } else if (item.type === 'folder' && item.children) {
-        Object.values(item.children).forEach(calculateSize);
+        Object.values(item.children).forEach(calculateSizeRecursive);
       }
     };
-    if (fileSystem['/']) {
-      calculateSize(fileSystem['/']);
+    
+    if (fileSystem && fileSystem['/']) {
+      calculateSizeRecursive(fileSystem['/']);
     }
-    // Cap at conceptual max for demo
-    setUsedStorageBytes(Math.min(totalSize, PEPX_TOTAL_CAPACITY_BYTES * 0.45)); // Simulate 45% usage for demo
+    setUsedStorageBytes(totalSize);
   }, [fileSystem]);
 
   const formatBytes = (bytes: number, decimals = 2) => {
-    if (bytes === 0) return '0 Bytes';
+    if (!bytes || bytes === 0) return '0 Bytes';
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB']; // Simplified for demo
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   };
   
   const formatKiBytes = (bytes: number, decimals = 2) => {
-    if (bytes === 0) return '0 KiB';
+    if (!bytes || bytes === 0) return '0 Bytes'; // Keep Bytes as base
     const k = 1024;
     const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['Bytes', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
+    const sizes = ['Bytes', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-     if (i === 0) return `${bytes} Bytes`; // Show bytes directly if less than 1 KiB
+     if (i === 0) return `${bytes.toFixed(0)} Bytes`; // Show bytes directly if less than 1 KiB
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   };
 
-  const usedPercentage = (usedStorageBytes / PEPX_TOTAL_CAPACITY_BYTES) * 100;
+  const usedPercentage = PEPX_TOTAL_CAPACITY_BYTES > 0 ? (usedStorageBytes / PEPX_TOTAL_CAPACITY_BYTES) * 100 : 0;
   const conceptualMinFileSize = 1; // 1 byte
-  const conceptualMaxFileSize = PEPX_TOTAL_CAPACITY_BYTES / 10; // e.g. 10% of total for one file
+  // Max file size is somewhat arbitrary for simulation, let's say 10% of total.
+  const conceptualMaxFileSize = PEPX_TOTAL_CAPACITY_BYTES / 10; 
 
-  // Simulated times
+  // Simulated speeds
   const conceptualUploadSpeedMbps = 50; // Mbps
   const conceptualDownloadSpeedMbps = 100; // Mbps
   const calculateTime = (bytes: number, speedMbps: number) => {
     if (bytes === 0 || speedMbps === 0) return "0s";
     const bits = bytes * 8;
     const seconds = bits / (speedMbps * 1000000);
+    if (seconds < 0.001) return "<1ms";
     if (seconds < 1) return `${(seconds * 1000).toFixed(0)}ms`;
     if (seconds < 60) return `${seconds.toFixed(1)}s`;
     return `${(seconds / 60).toFixed(1)}min`;
@@ -103,7 +110,7 @@ export function PEPxApp() {
 
 
   return (
-    <div className="flex flex-col items-center justify-start w-full h-full p-4 overflow-y-auto text-center bg-card text-card-foreground rounded-md">
+    <div className="flex flex-col items-center justify-start w-full h-full p-4 overflow-y-auto text-center bg-transparent text-card-foreground rounded-md">
       <Card className="w-full max-w-3xl glassmorphic">
         <CardHeader>
           <div className="flex items-center justify-center mb-2">
@@ -111,7 +118,7 @@ export function PEPxApp() {
             <CardTitle className="text-2xl radiant-text">PEPx Interface</CardTitle>
           </div>
           <CardDescription className="radiant-text">
-            Persistent Environmental Pixels - Embedded Virtual Storage & Database
+            Persistent Environmental Pixels - Embedded Virtual Storage &amp; Database
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -119,39 +126,39 @@ export function PEPxApp() {
 
           <div className="p-4 rounded-md glassmorphic !bg-background/40">
             <h4 className="mb-2 text-lg font-medium text-accent">Storage Overview</h4>
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div>
-                <p className="font-semibold text-muted-foreground">Total Capacity (Conceptual):</p>
+                <p className="font-semibold text-muted-foreground">Total Capacity (Simulated):</p>
                 <p className="radiant-text">{formatBytes(PEPX_TOTAL_CAPACITY_BYTES)} ({formatKiBytes(PEPX_TOTAL_CAPACITY_BYTES)})</p>
-                 <p className="text-xs text-muted-foreground/70">({PEPX_TOTAL_CAPACITY_BITS} bits)</p>
+                 {/* <p className="text-xs text-muted-foreground/70">({PEPX_TOTAL_CAPACITY_BYTES * 8} bits)</p> */}
               </div>
               <div>
-                <p className="font-semibold text-muted-foreground">Used Space (Simulated):</p>
+                <p className="font-semibold text-muted-foreground">Used Space (VFS Original Sizes):</p>
                 <p className="radiant-text">{formatBytes(usedStorageBytes)} ({formatKiBytes(usedStorageBytes)})</p>
               </div>
             </div>
             <Progress value={usedPercentage} className="w-full h-3 mt-3 [&>div]:bg-primary bg-secondary" />
-            <p className="mt-1 text-xs text-muted-foreground radiant-text">{usedPercentage.toFixed(1)}% Used</p>
+            <p className="mt-1 text-xs text-muted-foreground radiant-text">{usedPercentage > 100 ? '>100' : usedPercentage.toFixed(1)}% Used (Can exceed simulated capacity)</p>
           </div>
 
           <div className="p-4 rounded-md glassmorphic !bg-background/40">
             <h4 className="mb-2 text-lg font-medium text-accent">Performance (Conceptual)</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div>
-                <p className="font-semibold text-muted-foreground">Min/Max File Size:</p>
+                <p className="font-semibold text-muted-foreground">Min/Max File Size (VFS):</p>
                 <p className="radiant-text">{formatBytes(conceptualMinFileSize)} / {formatBytes(conceptualMaxFileSize)}</p>
               </div>
               <div>
-                <p className="font-semibold text-muted-foreground">Est. Upload Time (1MB):</p>
+                <p className="font-semibold text-muted-foreground">Est. Upload Time (1MB Original):</p>
                 <p className="radiant-text">{calculateTime(1024*1024, conceptualUploadSpeedMbps)} @ {conceptualUploadSpeedMbps} Mbps</p>
               </div>
               <div>
-                <p className="font-semibold text-muted-foreground">Est. Download Time (1MB):</p>
+                <p className="font-semibold text-muted-foreground">Est. Download Time (1MB Original):</p>
                 <p className="radiant-text">{calculateTime(1024*1024, conceptualDownloadSpeedMbps)} @ {conceptualDownloadSpeedMbps} Mbps</p>
               </div>
               <div>
                 <p className="font-semibold text-muted-foreground">Integrity Check Seed:</p>
-                <p className="radiant-text text-xs break-all">SHA256:{currentUser?.id ? currentUser.id.substring(0,12) : 'N/A'}... (VFS Integrity)</p>
+                <p className="radiant-text text-xs break-all">PEPxSeed:{currentUser?.id ? currentUser.id.substring(0,12) : 'N/A'}... (Conceptual)</p>
               </div>
             </div>
           </div>
@@ -160,7 +167,7 @@ export function PEPxApp() {
             <div className="p-4 rounded-md glassmorphic !bg-background/60 border border-primary/30">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-lg font-medium text-destructive flex items-center">
-                  <Database className="w-5 h-5 mr-2"/> Admin: PEPx Algorithm Details
+                  <Database className="w-5 h-5 mr-2"/> Admin: PEPx Algorithm Details (Conceptual)
                 </h4>
                 <Button variant="ghost" size="sm" onClick={() => setShowAdminDetails(!showAdminDetails)} className="button-3d-interactive">
                   {showAdminDetails ? <EyeOff className="w-4 h-4 mr-1.5"/> : <Eye className="w-4 h-4 mr-1.5"/>}
@@ -169,31 +176,29 @@ export function PEPxApp() {
               </div>
               {showAdminDetails && (
                 <div className="space-y-3 text-xs text-left text-muted-foreground p-2 border-t border-border/50">
-                  <p className="radiant-text"><strong className="text-accent">Encoding:</strong> Data bits are mapped to pixel color channel values. Initial implementation uses 2 bits per pixel per color spectrum plane (e.g., Red channel of an RGB pixel). A pixel might store R G B values, each contributing to bit storage.</p>
-                  <p className="radiant-text"><strong className="text-accent">Structure:</strong> Data is organized into "Entanglements". Each Entanglement consists of 3 Planes (X, Y, Z dimensions - conceptual). Each Plane contains multiple Spectrums (e.g., RGB color spectrums). Each Spectrum contains 100 Pixels.</p>
-                  <p className="radiant-text"><strong className="text-accent">Capacity (Initial Target):</strong></p>
+                  <p className="radiant-text"><strong className="text-accent">Encoding Principle:</strong> Data bits are conceptually mapped to environmental pixel states. In this simulation, original file content is stored directly (`VFSItem.content`). A string representation of "PEPx encoded" data is generated (`VFSItem.pepxData`) using a seed (`VFSContext.pepxSeed`) and a basic hash of the content. This `pepxData` string is for illustrative purposes and does NOT represent actual pixel-level encoding or achieve high-density storage.</p>
+                  <p className="radiant-text"><strong className="text-accent">Structure (Simulated):</strong> Files in the VFS are marked with `isPEPxEncoded=true`. Their `pepxData` field holds the conceptual encoded string. The `size` field reflects the original content size.</p>
+                  <p className="radiant-text"><strong className="text-accent">Capacity & Conversion (Conceptual for this Demo):</strong></p>
                   <ul className="list-disc list-inside ml-4 radiant-text">
-                    <li>1 Pixel stores 2 bits (per spectrum plane).</li>
-                    <li>1 Spectrum Plane = 100 Pixels = 200 bits.</li>
-                    <li>1 Entanglement = 3 Planes = 3 * 200 bits/plane = 600 bits. (This was a misinterpretation in prompt; if 1 spectrum plane = 200 bits, and 3 planes for one entanglement, it's 600 bits. If 1 plane has 3 spectrums (RGB), then 1 plane = 3 * 200 = 600 bits, 1 entanglement = 3 * 600 = 1800 bits. Let's assume the latter for 1800px * 2bits/px = 3600 bits per full entanglement)</li>
-                     <li>Corrected: 1 Pixel stores 2 bits. Each Plane has multiple spectrums conceptually (e.g. R, G, B). Assume for simplicity 100 pixels per "unit" per plane, and 3 such units (spectrums) per plane. So 1 Plane = 3 units * 100 pixels/unit * 2 bits/pixel = 600 bits. 1 Entanglement (X,Y,Z) = 3 Planes * 600 bits/Plane = 1800 bits. Wait, the prompt says 1800px total, 100px/spectrum, 3 planes per entanglement. This implies 1800px / 3 planes = 600px per plane. 600px per plane / 100px per spectrum = 6 spectrums per plane? This is getting confusing. Let's simplify based on "1800px total converting at 50% load capacity per px giving ... 3600 bits". This means 2 bits per pixel. 1800 pixels in total.</li>
-                    <li>Total Physical Pixels per Entanglement: 1800px.</li>
-                    <li>Total Bits per Entanglement: 1800px * 2 bits/px = 3600 bits (450 Bytes).</li>
+                    <li>Total "Physical Pixels" / Addressable units: Highly abstract. The simulation uses a byte-based `PEPX_TOTAL_CAPACITY_BYTES` for its internal storage limit visualization.</li>
+                    <li>2 bits per pixel per spectrum plane: This is a design goal. The current simulation uses a string representation, not actual bit-to-pixel mapping.</li>
+                    <li>The "1800px total... 3600 bits" concept is a micro-scale target for a real algorithm. This simulation models storage at a higher level.</li>
                   </ul>
-                  <p className="radiant-text"><strong className="text-accent">Conversion:</strong> Bidirectional conversion between raw bits and pixel states is handled by a core BBS algorithm. A unique seed (derived from device ID + user factors) ensures data integrity and correct reassembly. This seed is critical for dynamic rendering of original file states.</p>
-                  <p className="radiant-text"><strong className="text-accent">Rendering:</strong> SVG and conceptual 3D EJS-like structures are used for visualizing the data state and storage hierarchy (this is a conceptual target, current visualizer is basic).</p>
-                  <p className="radiant-text"><strong className="text-accent">Note:</strong> The above is a high-level conceptual outline for the OSbidibi internal PEPx system. Actual implementation involves advanced data mapping, error correction, and compression schemes not detailed here.</p>
+                  <p className="radiant-text"><strong className="text-accent">Data Integrity (Conceptual):</strong> A unique `pepxSeed` (from localStorage) is used in the generation of the `pepxData` string. This simulates how a seed would be critical for consistent encoding/decoding.</p>
+                  <p className="radiant-text"><strong className="text-accent">Rendering (Conceptual):</strong> The visualizer is a basic SVG/CSS animation. True 3D rendering of data states would require WebGL or similar, which is beyond this simulation.</p>
+                  <p className="radiant-text"><strong className="text-accent">Key Point:</strong> This implementation focuses on the *concept* of PEPx within the VFS by tagging files and storing a representative string. It does not perform actual pixel manipulation or achieve the described high-density storage. This is a high-level simulation.</p>
                 </div>
               )}
             </div>
           )}
         </CardContent>
-        <CardFooter>
+        <CardFooter className="pt-4">
           <p className="text-xs text-muted-foreground/70 radiant-text">
-            PEPx state is continuously managed by the OSbidibi Core. Integrity checks run on instance load.
+            PEPx state is conceptually managed by the OSbidibi Core. File content is stored in original form and with a conceptual PEPx representation in VFS.
           </p>
         </CardFooter>
       </Card>
     </div>
   );
 }
+

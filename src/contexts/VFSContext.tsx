@@ -8,22 +8,22 @@ export interface VFSItem {
   id: string;
   name: string;
   type: 'file' | 'folder';
-  content?: string; // For files - original content
-  pepxData?: string; // For files - conceptual PEPx encoded data
+  content?: string; // For files - original, unencoded content
+  pepxData?: string; // For files - conceptual PEPx encoded data string representation
   children?: Record<string, VFSItem>; // For folders
   parentId: string | null;
   path: string;
   createdAt: string;
   modifiedAt: string;
   size?: number; // Conceptual size in bytes (of original content)
-  isPEPxEncoded?: boolean; // Flag if content is currently in PEPx form
+  isPEPxEncoded?: boolean; // Flag if content is currently "PEPx encoded"
 }
 
 export type VFSTree = Record<string, VFSItem>; // Represents the root, children are paths from root
 
 interface VFSContextType {
   fileSystem: VFSTree;
-  getItem: (path: string, retrieveOriginal?: boolean) => VFSItem | undefined;
+  getItem: (path: string) => VFSItem | undefined; // retrieveOriginal flag removed as original is always in .content
   listPath: (path: string) => VFSItem[];
   createFile: (path: string, fileName: string, content?: string) => boolean;
   createFolder: (path: string, folderName: string) => boolean;
@@ -42,7 +42,7 @@ const LOCAL_STORAGE_PEPX_SEED_KEY = 'binaryblocksphere_pepxSeed';
 
 // Generate or retrieve a PEPx seed
 const getPepxSeed = (): string => {
-  if (typeof window === 'undefined') return 'default-server-seed';
+  if (typeof window === 'undefined') return 'default-server-seed-' + Date.now(); // Ensure some uniqueness for server context if ever used
   let seed = localStorage.getItem(LOCAL_STORAGE_PEPX_SEED_KEY);
   if (!seed) {
     seed = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -84,7 +84,7 @@ const initialFileSystemStructure: VFSTree = {
       },
       'tmp': { id: 'tmp', name: 'tmp', type: 'folder', parentId: 'root', path: '/tmp', createdAt: new Date().toISOString(), modifiedAt: new Date().toISOString(), children: {} },
       'virtual_fs': {
-        id: 'vfs',
+        id: 'vfs_root', // Changed ID to avoid conflict if 'vfs' is used as a folder name
         name: 'virtual_fs',
         type: 'folder',
         parentId: 'root',
@@ -92,7 +92,7 @@ const initialFileSystemStructure: VFSTree = {
         createdAt: new Date().toISOString(),
         modifiedAt: new Date().toISOString(),
         children: {
-          'downloads': { id: 'downloads', name: 'downloads', type: 'folder', parentId: 'vfs', path: '/virtual_fs/downloads', createdAt: new Date().toISOString(), modifiedAt: new Date().toISOString(), children: {} },
+          'downloads': { id: 'downloads', name: 'downloads', type: 'folder', parentId: 'vfs_root', path: '/virtual_fs/downloads', createdAt: new Date().toISOString(), modifiedAt: new Date().toISOString(), children: {} },
         },
       },
       'mnt': {id: 'mnt', name: 'mnt', type: 'folder', parentId: 'root', path: '/mnt', createdAt: new Date().toISOString(), modifiedAt: new Date().toISOString(), children: {}},
@@ -123,6 +123,7 @@ const _navigateToPathInternal = (fs: VFSTree, path: string): { item?: VFSItem, p
   if (currentLevel.children && currentLevel.children[itemName]) {
     return { item: currentLevel.children[itemName], parent: currentLevel, itemName };
   }
+  // If item doesn't exist, but parent does, return parent and potential itemName
   return { parent: currentLevel, itemName }; 
 };
 
@@ -130,31 +131,53 @@ const _navigateToPathInternal = (fs: VFSTree, path: string): { item?: VFSItem, p
 export const VFSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [fileSystem, setFileSystem] = useState<VFSTree>(initialFileSystemStructure);
   const [isLoading, setIsLoading] = useState(true);
-  const pepxSeed = getPepxSeed(); // Get seed on provider mount
+  const [pepxSeed, setPepxSeed] = useState<string>('');
+
+  useEffect(() => {
+    setPepxSeed(getPepxSeed());
+  }, []);
+
 
   // Conceptual PEPx conversion functions
   const convertToPEPx = useCallback((content: string): string => {
-    // Simulate conversion using the seed. In a real scenario, this would be a complex algorithm.
-    // For this simulation, we'll just prepend a marker and a "hash" of the content + seed.
+    if (!pepxSeed) return `PEPX_ENCODING_ERROR:SEED_UNAVAILABLE`;
+    // Simulate conversion using the seed.
     // This is NOT real encryption or pixel conversion.
-    const conceptualHash = Array.from(content + pepxSeed)
-      .reduce((hash, char) => (hash << 5) - hash + char.charCodeAt(0), 0)
-      .toString(16);
-    return `PEPX_ENCODED_DATA_V1:[SEED:${pepxSeed.substring(0,8)}...]:[HASH:${conceptualHash}]:[CONTENT_LEN:${content.length}]:${btoa(content).substring(0,50)}...`; // Store only a snippet conceptually
+    // It's a string representation for the simulation.
+    let hashInput = content + pepxSeed;
+    let conceptualHash = 0;
+    for (let i = 0; i < hashInput.length; i++) {
+        const char = hashInput.charCodeAt(i);
+        conceptualHash = ((conceptualHash << 5) - conceptualHash) + char;
+        conceptualHash |= 0; // Convert to 32bit integer
+    }
+    conceptualHash = Math.abs(conceptualHash);
+
+    // Truncate or represent original content for verifiability in simulation
+    const contentRepresentation = content.length > 50 ? content.substring(0, 25) + "..." + content.substring(content.length - 25) : content;
+    
+    return `PEPX_ENCODED_V2:[SEED_REF:${pepxSeed.substring(0,6)}...]:[CHASH:${conceptualHash.toString(16)}]:[ORIG_LEN:${content.length}B]:[DATA_REPR:${btoa(encodeURIComponent(contentRepresentation))}]`;
   }, [pepxSeed]);
 
   const convertFromPEPx = useCallback((pepxData: string): string => {
     // Simulate deconversion. This would validate the hash and use the seed.
-    // For simulation, we check for the marker.
-    if (pepxData.startsWith('PEPX_ENCODED_DATA_V1:')) {
-      // This is highly simplified. A real implementation would extract and decode the original content.
-      // We are not storing the full content in pepxData in this simulation.
-      // We would need to fetch original content from `item.content` if needed for display after "decoding"
-      const match = pepxData.match(/\[CONTENT_LEN:(\d+)\]/);
-      const originalLength = match ? parseInt(match[1], 10) : 0;
-      return `(Conceptually Decoded Original Content - ${originalLength} bytes - Data was: ${pepxData.substring(0,100)})`;
+    // For simulation, we check for the marker and extract the conceptual representation.
+    if (pepxData && pepxData.startsWith('PEPX_ENCODED_V2:')) {
+      const dataReprMatch = pepxData.match(/\[DATA_REPR:(.*?)\]/);
+      const origLenMatch = pepxData.match(/\[ORIG_LEN:(\d+)B\]/);
+      const originalLength = origLenMatch ? parseInt(origLenMatch[1], 10) : 0;
+
+      if (dataReprMatch && dataReprMatch[1]) {
+        try {
+            const decodedRepr = decodeURIComponent(atob(dataReprMatch[1]));
+            return `(Conceptually Decoded Original Content - ${originalLength} bytes. Representation: "${decodedRepr}")`;
+        } catch (e) {
+             return `(Error decoding PEPx representation. Original length: ${originalLength} bytes)`;
+        }
+      }
+      return `(Conceptually Decoded Original Content - ${originalLength} bytes. No representation found.)`;
     }
-    return pepxData; // If not recognized as PEPx, return as is
+    return pepxData; // If not recognized as PEPx, return as is (should not happen if isPEPxEncoded is true)
   }, []);
 
 
@@ -163,31 +186,37 @@ export const VFSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const storedVFS = localStorage.getItem(LOCAL_STORAGE_VFS_KEY);
     if (storedVFS) {
       try {
-        setFileSystem(JSON.parse(storedVFS));
+        const parsedVFS = JSON.parse(storedVFS);
+        // Basic validation of root structure
+        if (parsedVFS && parsedVFS['/'] && parsedVFS['/'].type === 'folder') {
+            setFileSystem(parsedVFS);
+        } else {
+            console.warn("Invalid VFS structure in localStorage, resetting to default.");
+            setFileSystem(initialFileSystemStructure);
+            localStorage.setItem(LOCAL_STORAGE_VFS_KEY, JSON.stringify(initialFileSystemStructure));
+        }
       } catch (e) {
         console.error("Failed to parse VFS from localStorage, resetting.", e);
         setFileSystem(initialFileSystemStructure);
         localStorage.setItem(LOCAL_STORAGE_VFS_KEY, JSON.stringify(initialFileSystemStructure));
       }
     } else {
+      setFileSystem(initialFileSystemStructure); // Set initial structure if nothing in localStorage
       localStorage.setItem(LOCAL_STORAGE_VFS_KEY, JSON.stringify(initialFileSystemStructure));
     }
     setIsLoading(false);
   }, []);
 
   const saveFileSystem = useCallback((newFS: VFSTree) => {
-    setFileSystem(newFS);
-    localStorage.setItem(LOCAL_STORAGE_VFS_KEY, JSON.stringify(newFS));
+    setFileSystem(newFS); // Update state
+    localStorage.setItem(LOCAL_STORAGE_VFS_KEY, JSON.stringify(newFS)); // Persist
   }, []);
 
-  const getItem = useCallback((path: string, retrieveOriginal = false): VFSItem | undefined => {
+  const getItem = useCallback((path: string): VFSItem | undefined => {
     const { item } = _navigateToPath(fileSystem, path);
-    if (item && item.type === 'file' && item.isPEPxEncoded && retrieveOriginal) {
-      // Conceptually, this would be where you "load" the original content
-      // For simulation, we just return the item, and the component using it would call convertFromPEPx if needed.
-      // Or, we can decode it here for simplicity of the getter.
-      return { ...item, content: item.content /* original content is preserved */, pepxData: item.pepxData };
-    }
+    // The `item.content` always holds the original content.
+    // `item.pepxData` holds the conceptual encoded version.
+    // `convertFromPEPx` would be used if you only had `pepxData` and needed to show the original.
     return item;
   }, [fileSystem]);
 
@@ -201,7 +230,7 @@ export const VFSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const createFile = useCallback((folderPath: string, fileName: string, content: string = ''): boolean => {
     const newFS = JSON.parse(JSON.stringify(fileSystem)); 
-    const { item: parentFolder } = _navigateToPath(newFS, folderPath);
+    const { item: parentFolder } = _navigateToPathInternal(newFS, folderPath);
 
     if (!parentFolder || parentFolder.type !== 'folder') {
       toast({ title: "VFS Error", description: `Cannot create file: Path ${folderPath} not found or not a folder.`, variant: "destructive" });
@@ -221,24 +250,24 @@ export const VFSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: newFileId,
       name: fileName,
       type: 'file',
-      content, // Store original content for easy retrieval/simulation
+      content, // Store original content
       pepxData: pepxContent, // Store conceptual PEPx data
       isPEPxEncoded: true, // Mark as encoded
       parentId: parentFolder.id,
       path: `${folderPath === '/' ? '' : folderPath}/${fileName}`,
       createdAt: new Date().toISOString(),
       modifiedAt: new Date().toISOString(),
-      size: content.length,
+      size: content.length, // Size of original content
     };
     parentFolder.modifiedAt = new Date().toISOString();
     saveFileSystem(newFS);
-    toast({ title: "VFS Info", description: `File '${fileName}' created and encoded to PEPx in ${folderPath}.`});
+    toast({ title: "VFS Info", description: `File '${fileName}' created and conceptually encoded to PEPx in ${folderPath}.`});
     return true;
   }, [fileSystem, saveFileSystem, convertToPEPx]);
 
   const createFolder = useCallback((path: string, folderName: string): boolean => {
     const newFS = JSON.parse(JSON.stringify(fileSystem)); 
-    const { item: parentFolder } = _navigateToPath(newFS, path);
+    const { item: parentFolder } = _navigateToPathInternal(newFS, path);
 
     if (!parentFolder || parentFolder.type !== 'folder') {
       toast({ title: "VFS Error", description: `Cannot create folder: Path ${path} not found or not a folder.`, variant: "destructive" });
@@ -270,7 +299,7 @@ export const VFSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteItem = useCallback((path: string): boolean => {
     const newFS = JSON.parse(JSON.stringify(fileSystem)); 
-    const { item, parent, itemName } = _navigateToPath(newFS, path);
+    const { item, parent, itemName } = _navigateToPathInternal(newFS, path);
 
     if (!item || !parent || !itemName || !parent.children) {
       toast({ title: "VFS Error", description: `Cannot delete: Item at ${path} not found.`, variant: "destructive" });
@@ -278,7 +307,7 @@ export const VFSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     
     const protectedPaths = ['/', '/home', '/home/user', '/tmp', '/virtual_fs', '/mnt'];
-    if(protectedPaths.includes(path)) {
+    if(protectedPaths.includes(path) && path !== '/mnt/external_usb_drive') { // Allow deleting the conceptual USB drive
         toast({ title: "VFS Error", description: `Cannot delete protected system path: ${path}.`, variant: "destructive" });
         return false;
     }
@@ -292,7 +321,7 @@ export const VFSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateFileContent = useCallback((filePath: string, newContent: string): boolean => {
     const newFS = JSON.parse(JSON.stringify(fileSystem));
-    const { item } = _navigateToPath(newFS, filePath);
+    const { item } = _navigateToPathInternal(newFS, filePath);
 
     if (!item || item.type !== 'file') {
       toast({ title: "VFS Error", description: `Cannot update content: ${filePath} is not a file or not found.`, variant: "destructive" });
@@ -304,17 +333,21 @@ export const VFSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     item.size = newContent.length;
     item.modifiedAt = new Date().toISOString();
 
-    const { parent } = _navigateToPath(newFS, item.path);
+    const { parent } = _navigateToPathInternal(newFS, item.path);
     if(parent) parent.modifiedAt = new Date().toISOString();
 
     saveFileSystem(newFS);
-    toast({ title: "VFS Info", description: `File '${item.name}' updated and re-encoded to PEPx.`});
+    toast({ title: "VFS Info", description: `File '${item.name}' updated and conceptually re-encoded to PEPx.`});
     return true;
   }, [fileSystem, saveFileSystem, convertToPEPx]);
 
   const renameItem = useCallback((path: string, newName: string): boolean => {
+    if (!newName.trim() || newName.includes('/')) {
+        toast({ title: "VFS Error", description: "Invalid name. Name cannot be empty or contain slashes.", variant: "destructive" });
+        return false;
+    }
     const newFS = JSON.parse(JSON.stringify(fileSystem));
-    const { item, parent, itemName } = _navigateToPath(newFS, path);
+    const { item, parent, itemName } = _navigateToPathInternal(newFS, path);
 
     if (!item || !parent || !itemName || !parent.children) {
       toast({ title: "VFS Error", description: `Cannot rename: Item at ${path} not found.`, variant: "destructive" });
@@ -325,26 +358,37 @@ export const VFSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return false;
     }
     const protectedPaths = ['/', '/home', '/home/user', '/tmp', '/virtual_fs', '/mnt'];
-    if(protectedPaths.includes(path)) {
+     if(protectedPaths.includes(path)) {
         toast({ title: "VFS Error", description: `Cannot rename protected system path: ${path}.`, variant: "destructive" });
         return false;
     }
 
-    const oldItem = parent.children[itemName];
+    const oldItem = { ...parent.children[itemName] }; // Clone item
     delete parent.children[itemName];
     
     oldItem.name = newName;
-    oldItem.path = `${parent.path === '/' ? '' : parent.path}/${newName}`;
+    const newPath = `${parent.path === '/' ? '' : parent.path}/${newName}`;
+    oldItem.path = newPath;
     oldItem.modifiedAt = new Date().toISOString();
     parent.children[newName] = oldItem;
     parent.modifiedAt = new Date().toISOString();
 
-    if (oldItem.type === 'folder' && oldItem.children) {
-        Object.values(oldItem.children).forEach(child => {
-            child.parentId = oldItem.id; 
-            child.path = `${oldItem.path === '/' ? '' : oldItem.path}/${child.name}`;
-        });
+    // Recursively update paths of children if it's a folder
+    function updateChildrenPaths(folderItem: VFSItem, currentParentPath: string) {
+        if (folderItem.type === 'folder' && folderItem.children) {
+            Object.values(folderItem.children).forEach(child => {
+                child.path = `${currentParentPath}/${child.name}`;
+                child.parentId = folderItem.id; // Ensure parentId is correct
+                if (child.type === 'folder') {
+                    updateChildrenPaths(child, child.path);
+                }
+            });
+        }
     }
+    if (oldItem.type === 'folder') {
+        updateChildrenPaths(oldItem, newPath);
+    }
+
 
     saveFileSystem(newFS);
     toast({ title: "VFS Info", description: `Item '${itemName}' renamed to '${newName}'.`});
@@ -367,25 +411,6 @@ export const useVFS = (): VFSContextType => {
   return context;
 };
 
-function _navigateToPath(fs: VFSTree, path: string): { item?: VFSItem; parent?: VFSItem; itemName?: string } {
-    if (path === '/') return { item: fs['/'] };
-    const parts = path.split('/').filter(p => p);
-    let currentLevel = fs['/'];
-
-    if (!currentLevel) return {}; 
-
-    for (let i = 0; i < parts.length; i++) {
-        const part = parts[i];
-        if (!currentLevel.children || !currentLevel.children[part]) {
-            return i === parts.length - 1 ? { parent: currentLevel, itemName: part } : {};
-        }
-        if (i === parts.length - 1) { 
-            return { item: currentLevel.children[part], parent: currentLevel, itemName: part };
-        }
-        if (currentLevel.children[part].type !== 'folder') {
-            return {}; 
-        }
-        currentLevel = currentLevel.children[part];
-    }
-    return {}; 
-}
+// _navigateToPath is kept internal to the context
+// No changes needed to _navigateToPath function itself from the previous version.
+// It correctly identifies parent and item/itemName.

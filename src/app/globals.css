@@ -225,8 +225,6 @@ body {
   cursor: pointer;
 }
 
-/* Toast styles already handled by ShadCN Toaster, this can be removed or adapted if a custom one is strictly needed */
-/* .toast { ... } */
 
 .mobile-banner {
   position: fixed;

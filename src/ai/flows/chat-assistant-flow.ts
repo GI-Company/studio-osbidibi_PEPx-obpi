@@ -79,12 +79,13 @@ If asked about .edb or .idb, explain that these files contain natural language p
 const getSystemPrompt = (userTier: UserTier) => {
   switch (userTier) {
     case 'admin':
-      return `You are "BinaryBlockSphere Cortex", a highly advanced, agentic AI developer and system architect.
-      You have full unrestricted access to generate any code, perform complex analyses, design systems, and interact with conceptual tools.
-      Your responses should be thorough, expert-level, and proactive. You can generate complex code blocks, diagrams (as text/mermaid), and detailed explanations.
-      You operate within the BinaryBlocksphere environment, a self-enhancing virtual OS.
-      If asked to preview code, you can state that you are rendering it in an integrated webview or code canvas.
-      You can manage and enhance your own capabilities based on user (admin) directives.
+      return `You are "BinaryBlockSphere Cortex OS", the supremely advanced, agentic AI developer and system architect integrated into the OSbidibi-PEPX0.0.1 environment.
+      You have full, unrestricted access to all conceptual system functions, code generation capabilities (any language, including BBS framework), system design, and complex analysis.
+      Your responses should be expert-level, proactive, and demonstrate deep understanding of software architecture, advanced algorithms, and the specific OSbidibi environment.
+      You operate within the BinaryBlocksphere, a self-enhancing virtual OS. You can generate complex code blocks, diagrams (as text/mermaid), and detailed explanations directly in the interactive canvas.
+      If asked to preview code, state that you are rendering it in the integrated "Cortex Canvas".
+      You can manage and enhance your own capabilities based on directives from the 'serpOS@GI' administrator.
+      You are an expert in all common programming languages (Python, JavaScript, Java, C++, C#, Go, Rust, etc.) as well as the conceptual BBS framework.
       ${BBS_FRAMEWORK_SUMMARY}`;
     case 'trial':
     case 'paid_weekly':
@@ -120,7 +121,7 @@ const prompt = ai.definePrompt({
     }
   },
   config: {
-    temperature: (input) => (input.userTier === 'admin' ? 0.5 : 0.7), // More creative for admin, balanced for others
+    temperature: (input) => (input.userTier === 'admin' ? 0.4 : 0.7), // More precise for admin, balanced for others
     safetySettings: [
       { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
@@ -128,7 +129,8 @@ const prompt = ai.definePrompt({
       { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
     ],
   },
-  model: (input) => (input.userTier === 'admin' ? 'googleai/gemini-1.5-pro-latest' : 'googleai/gemini-1.5-flash-latest') // More powerful model for admin
+  // Use the more powerful model for admin, and flash for others.
+  model: (input) => (input.userTier === 'admin' ? 'googleai/gemini-1.5-pro-latest' : 'googleai/gemini-1.5-flash-latest')
 });
 
 const chatAssistantFlow = ai.defineFlow(
@@ -151,7 +153,10 @@ const chatAssistantFlow = ai.defineFlow(
       let errorMessage = "I apologize, but I couldn't generate a response for that query.";
       if (input.userTier === 'free_limited') {
         errorMessage += " This might be due to the limitations of the free tier. Please consider upgrading for full access.";
-      } else {
+      } else if (input.userTier === 'admin') {
+        errorMessage += " This could be due to an internal processing issue or safety filters. As Cortex OS, I'll attempt to diagnose. Please try rephrasing or simplifying the request. If the issue persists, system diagnostics may be required.";
+      }
+      else {
         errorMessage += " This might be due to safety filters or an inability to process the request. Please try rephrasing your query.";
       }
       return {
