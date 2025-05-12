@@ -1,0 +1,110 @@
+// BBS Framework Example: example.idb
+// Purpose: Defines instructions for an "Internal Rendering Bot".
+// Similar to EDB, but focused on generating backend logic, internal service interfaces,
+// or IFB (Internal Backend Bridge) endpoint definitions based on natural language.
+// This facilitates AI-assisted development of the application's backend/internal components.
+
+// --- IDB Task Definition ---
+// TaskID: create_user_project_service_endpoint
+// BotVersion: "LogicForge-Service-Gen-v0.6" // Conceptual bot name
+
+// --- Natural Language Input ---
+// Describe the internal service or backend logic you want to create:
+
+"Develop a new service endpoint within the IFB (Internal Backend Bridge)
+called 'project/manageUserProject'. This endpoint should handle three actions
+based on a provided 'action' parameter: 'create', 'update', 'delete'.
+
+For 'create':
+  - Expect parameters: 'userId', 'projectName', 'projectTemplateId' (optional).
+  - Logic:
+    1. Validate user 'userId' has permission to create projects.
+    2. Generate a unique 'projectId'.
+    3. If 'projectTemplateId' is provided, fetch the template.
+    4. Create a new project structure in VFS under '/home/{userId}/projects/{projectId}'.
+       (Use VFS functions like createFolder, createFile).
+    5. Initialize project files based on template or default structure.
+    6. Store project metadata (projectId, name, ownerId, createdAt) in a conceptual
+       'projects_metadata_table' (simulated via a JSON file in VFS for now: '/system/db/projects.json').
+    7. Return { success: true, projectId: newProjectId } or { success: false, error: "message" }.
+
+For 'update':
+  - Expect parameters: 'userId', 'projectId', 'updatedName' (optional), 'updatedDescription' (optional).
+  - Logic:
+    1. Validate 'userId' is the owner of 'projectId' or has admin rights.
+    2. Update project metadata in 'projects_metadata_table'.
+    3. If 'updatedName' involves renaming the VFS folder, handle that carefully.
+    4. Return { success: true } or { success: false, error: "message" }.
+
+For 'delete':
+  - Expect parameters: 'userId', 'projectId'.
+  - Logic:
+    1. Validate 'userId' is the owner or admin.
+    2. Remove project files from VFS.
+    3. Remove project metadata from 'projects_metadata_table'.
+    4. Return { success: true } or { success: false, error: "message" }.
+
+The IFB should expose this endpoint so it can be called from a PMF file (e.g., from an admin panel or user dashboard)."
+
+// --- Bot Directives & Constraints (Optional) ---
+{
+  "outputTarget": "index.ifb", // File to modify or append to, or a new service file
+  "functionName": "handleManageUserProject", // Suggested function name for the bot
+  "dataModels": [ // Conceptual data models involved
+    { "name": "ProjectMetadata", "fields": ["projectId", "projectName", "ownerUserId", "createdAt", "description"] },
+    { "name": "UserPermissions", "fields": ["canCreateProjects", "isAdmin"] }
+  ],
+  "dependencies": [ // Conceptual services or modules the bot might need to use
+    "BBS_VFS_Service",
+    "BBS_Auth_Service",
+    "BBS_JSON_DB_Service (for /system/db/projects.json)"
+  ],
+  "errorHandling": "return_json_response_with_success_flag_and_error_message",
+  "loggingLevel": "detailed_for_actions_and_errors",
+  "securityConsiderations": [
+    "Input validation for all parameters.",
+    "Strict permission checks for 'update' and 'delete' actions.",
+    "Sanitize paths for VFS operations to prevent traversal attacks."
+  ]
+}
+
+// --- Expected Output Snippet (Conceptual - what the bot aims to generate for index.ifb) ---
+/*
+  // In index.ifb or a new project_service.ifb included by it:
+
+  async function handleManageUserProject(params: {
+    action: 'create' | 'update' | 'delete',
+    userId: string,
+    projectName?: string,
+    projectTemplateId?: string,
+    projectId?: string,
+    updatedName?: string,
+    updatedDescription?: string
+  }): Promise<{success: boolean, projectId?: string, error?: string}> {
+    const { action, userId, ...data } = params;
+    const authService = getAuthService(); // Conceptual
+    const vfsService = getVFSService(); // Conceptual
+    const projectDb = getJSONDBService('/system/db/projects.json'); // Conceptual
+
+    // ... (Generated logic for create, update, delete based on natural language input) ...
+
+    if (action === 'create') {
+      // ... generated creation logic ...
+      // Example: if (vfsService.createFolder(...)) { projectDb.insert(...); return {success: true, projectId: newId}; }
+    } else if (action === 'update') {
+      // ... generated update logic ...
+    } else if (action === 'delete') {
+      // ... generated delete logic ...
+    }
+    return { success: false, error: "Invalid action or not implemented." }; // Fallback
+  }
+
+  // Register in apiHandlers for IFB:
+  // 'project/manageUserProject': (params) => handleManageUserProject(params),
+*/
+
+// Notes:
+// - The .idb file is input to an AI bot focused on backend/internal logic generation.
+// - The bot would parse this and attempt to generate functional code (e.g., TypeScript/JavaScript)
+//   that integrates with the conceptual BBS services (VFS, Auth, DB).
+// - This represents an AI-assisted backend development capability within the BBS framework.

@@ -1,0 +1,79 @@
+// BBS Framework Example: example.edb
+// Purpose: Defines instructions for an "External Rendering Bot".
+// This bot takes natural language descriptions and translates them into
+// .fold, .if, and .pxr file structures for the frontend/public-facing UI.
+// This is a highly conceptual AI-driven development assistant feature.
+
+// --- EDB Task Definition ---
+// TaskID: create_new_dashboard_widget
+// BotVersion: "PixelWeaver-UI-Gen-v0.8" // Conceptual bot name and version
+
+// --- Natural Language Input ---
+// Describe the UI component or view you want to create:
+
+"Create a new dashboard widget titled 'Real-time System Load'.
+It should display a line chart showing CPU usage percentage over the last 60 seconds.
+The chart should have a Y-axis from 0% to 100% and an X-axis showing time.
+Use a vibrant green line for CPU usage.
+Below the chart, show the current average CPU usage as text, like 'Avg CPU: 35%'.
+The widget should have a refresh button with a refresh icon.
+When the refresh button is clicked, the chart and average CPU text should update.
+The overall widget should have a glassmorphic card style with a subtle shadow.
+Data for the chart will come from an IFB endpoint 'ifb:system/getCpuLoadHistory'.
+The average CPU data comes from 'ifb:system/getCurrentAvgCpuLoad'.
+Widget dimensions should be approximately 300px wide and 250px tall."
+
+// --- Bot Directives & Constraints (Optional) ---
+// These provide more specific guidance to the rendering bot.
+
+{
+  "outputFiles": {
+    "fold": "widgets/system_load_widget.fold", // Where to generate the .fold file
+    "if": "widgets/content/system_load_content.if",   // Where to generate the .if file
+    "pxr": "widgets/styles/system_load_styles.pxr",  // Where to generate the .pxr file
+    "pmf": "widgets/flow/system_load_flow.pmf"    // Where to generate the .pmf file
+  },
+  "preferredLayoutEngine": "Flexbox", // Hint for the bot
+  "colorPaletteHint": "use_primary_greens_and_neutrals", // Theme hint
+  "animationStyle": "subtle_fade_in_on_load",
+  "accessibilityLevel": "AA_standard",
+  "targetBBSFrameworkVersion": "PEPX0.0.1",
+  "codeGenerationStyle": { // How the bot should structure the generated code
+    "comments": "verbose",
+    "variableNaming": "camelCase",
+    "pxrClassPrefix": "slw_" // system_load_widget prefix
+  },
+  "existingComponentsToReuse": [ // If the bot can reuse existing PXR classes or .if templates
+    "global_card_style.pxr_class",
+    "standard_button_template.if"
+  ]
+}
+
+// --- Expected Output Structure (Conceptual - what the bot aims to generate) ---
+// This section might not be in the .edb itself but represents the bot's goal.
+/*
+  widgets/system_load_widget.fold:
+    'WidgetContainer,Fluid,250px,300px,FlexColumn-${self, system_load_content.if}'
+    #widget_frame { styleRef: "system_load_styles.pxr#slw_widget_frame" }
+
+  widgets/content/system_load_content.if:
+    !Real-time System Load! -style_ref=slw_title-
+    #cpu_chart_container { type: line_chart_placeholder; data_source_pmf: "get_cpu_data"; size: 100% 150px; }
+    @avg_cpu_text_content@ -style_ref=slw_avg_text-
+    [Refresh] ( (action: "refresh_widget_data") (icon: "PAX:icons/refresh.svg") (styleClass: "slw_refresh_button") )
+
+  widgets/styles/system_load_styles.pxr:
+    #slw_widget_frame { @extend .global_card_style; width:300px; height:250px; ... }
+    .slw_title { font-size:18px; color:{var_text_color}; ... }
+    // ... other styles for chart, text, button
+
+  widgets/flow/system_load_flow.pmf:
+    @ 'load' on 'widget_frame' ? event ¿ FETCH_DATA "ifb:system/getCpuLoadHistory" THEN ... UPDATE_CHART ... ¿
+    @ 'click' on 'slw_refresh_button' ? event ¿ FETCH_DATA ... UPDATE_CHART ... ¿
+*/
+
+// Notes:
+// - The .edb file is an input to a conceptual AI bot.
+// - The bot parses the natural language and directives to generate the actual .fold, .if, .pxr, .pmf files.
+// - This represents a powerful, AI-assisted UI development paradigm within the BBS framework.
+// - The "Expected Output Structure" is just for illustration of the bot's task.

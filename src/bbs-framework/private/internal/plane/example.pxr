@@ -1,0 +1,79 @@
+// BBS Framework Example: private/internal/plane/example.pxr
+// Purpose: Defines styling specific to internal or administrative interfaces.
+// These styles might be more utilitarian or use a distinct theme variant.
+
+// --- PXR Header ---
+// TargetScope: admin_panel_styles // A specific scope for admin interfaces
+// Version: 1.0
+// BaseThemeImport: "global_styles.pxr" // Can inherit from global styles
+
+// --- Style Definitions for Admin Components ---
+
+#admin_users_table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+
+  th, td {
+    border: 1px solid {var_admin_border_color, default: #444};
+    padding: 8px 12px;
+    text-align: left;
+  }
+
+  th {
+    background-color: {var_admin_header_bg, default: #333};
+    color: {var_admin_header_text, default: #eee};
+    font-weight: bold;
+  }
+
+  tr:nth-child(even) {
+    background-color: {var_admin_row_even_bg, default: #2a2a2a};
+  }
+  tr:hover {
+    background-color: {var_admin_row_hover_bg, default: #383838};
+  }
+}
+
+.admin_action_button {
+  background-color: {var_admin_button_bg, default: #555};
+  color: {var_admin_button_text, default: #fff};
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: {lighten(var_admin_button_bg, 10%)};
+  }
+}
+
+.admin_input_field {
+  background-color: {var_admin_input_bg, default: #2c2c2c};
+  color: {var_admin_input_text, default: #ddd};
+  border: 1px solid {var_admin_input_border, default: #555};
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 14px;
+
+  &:focus {
+    outline: none;
+    border-color: {var_admin_accent_color, default: #007bff};
+    box-shadow: 0 0 0 2px {alpha(var_admin_accent_color, 0.3)};
+  }
+}
+
+// Specific color variables for the admin theme, potentially overriding global ones
+// These could also be in a separate admin_theme.pxr file and imported.
+:root { // Assuming PXR supports a way to define or override theme vars for a scope
+  var_admin_border_color: #4a5568; // Darker gray
+  var_admin_accent_color: #3182ce; // A blue accent
+  // ... other admin specific theme variables
+}
+
+// Notes:
+// - Internal PXR files can define styles tailored for backend or admin interfaces
+//   which might differ from the public-facing application aesthetics.
+// - They can still use or override global theme variables ({var_...}).
+// - The concept of `TargetScope` helps in modularizing styles and preventing conflicts.

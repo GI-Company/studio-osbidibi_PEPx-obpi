@@ -1,0 +1,108 @@
+// BBS Framework Example: example.pxr
+// Purpose: Defines the visual presentation, styling, layout, and animations for BBS components.
+// This file is referenced by .fold and .if files for styling elements,
+// and by .pmf files for triggering animations.
+
+// --- PXR Header ---
+// TargetScope: global | component_specific_id // Defines if styles are global or for a component
+// Version: 1.0
+
+// --- Style Definitions ---
+
+// Example 1: Styling a specific element by ID (from .fold or .if)
+#dashboard_welcome_button {
+  background-color: {var_primary_accent_color}; // Using BBS theme variables
+  color: {var_text_on_primary_color};
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.1s ease; // CSS-like transitions
+
+  &:hover {
+    background-color: {darken(var_primary_accent_color, 10%)};
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+// Example 2: Defining a reusable style class
+.bbs_card_style {
+  background: {var_glassmorphic_background_card}; // Glassmorphism effect
+  backdrop-filter: blur(10px) saturate(120%);
+  border: 1px solid {var_border_color_subtle};
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+// Example 3: Layout definition for a section (Flexbox/Grid like)
+$dashboard_main_content_layout { // Referencing a layout defined in .fold
+  display: flex;
+  flex-direction: column; // or row
+  gap: 15px;
+  align-items: center; // or start, end, stretch
+  justify-content: flex-start; // or center, space-between, etc.
+}
+
+// Example 4: Defining an animation sequence
+@animation data_sphere_expand_glow {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+    box-shadow: 0 0 5px {var_accent_color};
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+    box-shadow: 0 0 20px {var_accent_color}, 0 0 30px {lighten(var_accent_color, 20%)};
+  }
+  100% {
+    transform: scale(1.1);
+    opacity: 0.85;
+    box-shadow: 0 0 10px {var_accent_color};
+  }
+  duration: 0.8s;
+  timing-function: ease-in-out;
+  iteration-count: 1; // or infinite
+}
+
+@animation data_sphere_contract_dim {
+  // ... definition for contracting and dimming animation
+  duration: 0.5s;
+}
+
+
+// --- PXR Syntax Notes (Conceptual based on user prompt and extended) ---
+// #<element_id> { ...css_like_styles... }
+//   Styles a specific element.
+//
+// .<class_name> { ...css_like_styles... }
+//   Defines a reusable style class.
+//
+// $<layout_id_from_fold> { display: flex | grid; ...layout_properties... }
+//   Defines layout for a container.
+//
+// @animation <animation_name> { ...keyframes_and_properties... }
+//   Defines a named animation sequence.
+//   Properties: duration, timing-function, iteration-count, delay, fill-mode, direction.
+//   Keyframes: 0% to 100% or 'from'/'to'.
+//
+// {var_variable_name}
+//   References a BBS theme variable (e.g., colors, fonts, spacing).
+//   Allows for dynamic theming.
+//
+// &:<pseudo_class_or_element> { ...styles... }
+//   Similar to CSS pseudo-classes (e.g., &:hover, &:active, &::before).
+//
+// // Functions (conceptual)
+// darken(color, amount)
+// lighten(color, amount)
+// rgba(r,g,b,a)
+
+// Note: This syntax is conceptual and would require a custom CSS-like parser and rendering engine
+//       within the BBS environment to translate these definitions into actual visual styles.
+//       It aims for a declarative way to define presentation integrated with BBS concepts.

@@ -1,0 +1,47 @@
+// BBS Framework: Host Device Access Peripherals (appname.hdap)
+// Conceptual Content:
+// This file lists and configures access to various host device peripherals
+// that the BBS environment might interact with.
+
+{
+  "peripheralAccessList": [
+    {
+      "type": "usb",
+      "description": "General USB device access",
+      "accessLevel": "sandboxed_passthrough", // BBS apps get controlled access
+      "bbsVirtualPortMapping": true // Map host USB ports to virtual BBS ports
+    },
+    {
+      "type": "camera",
+      "hostCameraId": "front_camera, back_camera", // Specific host cameras
+      "accessLevel": "user_permission_required_per_app",
+      "virtualCameraDevice": "bbs_cam0"
+    },
+    {
+      "type": "microphone",
+      "hostMicrophoneId": "default_mic",
+      "accessLevel": "user_permission_required_per_app",
+      "virtualMicrophoneDevice": "bbs_mic0"
+    },
+    {
+      "type": "storage_external", // SD cards, USB drives connected to host
+      "accessLevel": "user_permission_browse_mount",
+      "mountPointPrefix": "/bbs_mnt/host_ext/"
+    },
+    {
+      "type": "keyboard_mouse",
+      "accessLevel": "direct_input_capture_within_bbs_window",
+      "virtualHID": "bbs_hid_interface"
+    },
+    {
+      "type": "game_controller",
+      "accessLevel": "passthrough_event_mapping",
+      "virtualController": "bbs_gamepad0"
+    }
+  ],
+  "notes": [
+    "Requires significant OS-level permissions and drivers.",
+    "Security and privacy are major concerns for peripheral access.",
+    "This file defines the BBS environment's *desired* access model."
+  ]
+}

@@ -1,0 +1,118 @@
+// BBS Framework: Host Device Install Script (appname.hdis)
+// Conceptual Content:
+// This script (conceptually) handles the installation of the BBS application
+// onto various host operating systems. For plug-and-play (USB NAND), it
+// would handle the setup for running directly from the drive.
+
+// --- Script Header ---
+// Target: BBS Application Installation & Setup
+// Version: 1.0
+// Environment: Host OS (pre-BBS launch or initial setup)
+
+// --- Begin Script ---
+
+LOG_INFO "Starting BBS Installation Process."
+
+// 1. Detect Host OS (Similar to hdcs.appname but with install focus)
+DETECT_OS os_name os_version
+
+LOG_INFO "Detected Host OS: ${os_name} ${os_version}"
+
+SWITCH ${os_name} DO
+  CASE "Windows"
+    LOG_INFO "Windows OS detected. Preparing Windows installation."
+    // Steps:
+    // 1. Check for dependencies (e.g., .NET Framework, WebView2 runtime if Electron-based)
+    // 2. Create installation directory (e.g., C:\Program Files\BinaryBlocksphere)
+    // 3. Copy application files (from executable or archive)
+    // 4. Create Start Menu shortcuts, Desktop icon
+    // 5. Register URL protocol for app.bbs (bbs://)
+    // 6. Set up registry keys if necessary (e.g., for uninstall info)
+    INSTALL_WINDOWS_PACKAGE "BinaryBlocksphere.msi_or_exe_payload"
+    LOG_INFO "BBS installed successfully on Windows."
+    BREAK
+
+  CASE "MacOS"
+    LOG_INFO "MacOS detected. Preparing MacOS installation."
+    // Steps:
+    // 1. Mount DMG if applicable
+    // 2. Copy .app bundle to /Applications
+    // 3. Register URL protocol (bbs://)
+    // 4. Request permissions if needed (e.g., Accessibility for global shortcuts)
+    INSTALL_MACOS_BUNDLE "BinaryBlocksphere.app"
+    LOG_INFO "BBS installed successfully on MacOS. Drag to Applications if needed."
+    BREAK
+
+  CASE "Linux"
+    LOG_INFO "Linux distribution detected. Preparing Linux installation."
+    // Steps:
+    // 1. Check for dependencies (e.g., libgtk, libnotify, webview component)
+    // 2. Determine package manager (apt, yum, pacman, etc.) or use AppImage/Flatpak
+    // 3. Install .deb, .rpm, or extract tarball to /opt/binaryblocksphere
+    // 4. Create .desktop file for application launchers
+    // 5. Register URL protocol (bbs://)
+    INSTALL_LINUX_PACKAGE "binaryblocksphere_amd64.deb_or_AppImage"
+    LOG_INFO "BBS installed successfully on Linux."
+    BREAK
+
+  CASE "Android"
+    LOG_INFO "Android OS detected. Preparing Android installation (conceptual)."
+    // This would typically be an APK installation process.
+    // 1. Check Android version compatibility.
+    // 2. Request necessary permissions (storage, network, etc. via AndroidManifest).
+    // 3. If appname.hdhl is configured, set up as home launcher option.
+    INSTALL_ANDROID_APK "BinaryBlocksphere.apk"
+    LOG_INFO "BBS (conceptual APK) installed on Android."
+    BREAK
+
+  CASE "iOS"
+    LOG_INFO "iOS detected. Preparing iOS installation (conceptual PWA)."
+    // For iOS, this would likely involve:
+    // 1. Guiding user to "Add to Home Screen" for PWA experience.
+    // 2. Utilizing browser features for offline storage and PWA manifest.
+    GUIDE_IOS_PWA_INSTALL
+    LOG_INFO "BBS PWA setup guide initiated for iOS."
+    BREAK
+  
+  CASE "WebOS"
+    LOG_INFO "WebOS detected. Preparing WebOS installation (conceptual)."
+    // This would involve packaging as a WebOS app (e.g., .ipk)
+    // 1. Check WebOS version and TV model compatibility.
+    // 2. Install app package via WebOS mechanisms.
+    INSTALL_WEBOS_PACKAGE "com.binaryblocksphere.app.ipk"
+    LOG_INFO "BBS (conceptual IPK) installed on WebOS."
+    BREAK
+
+  CASE "USBFlashDrive_NAND" // Conceptual target for plug-and-play
+    LOG_INFO "Plug-and-Play (USB NAND Storage) mode detected."
+    // Steps:
+    // 1. Verify integrity of files on USB drive.
+    // 2. Run appname.hdcs to configure for current temporary host.
+    // 3. Create temporary data/cache folders on the USB drive itself or in host's temp.
+    // 4. Launch BBS directly from the USB drive.
+    // 5. On exit, ensure all session data (if persistent on USB) is saved and cache cleared.
+    SETUP_USB_NAND_MODE
+    LOG_INFO "BBS configured for Plug-and-Play mode from USB."
+    // This script might then chain-load the main app.bbs executable.
+    LAUNCH_FROM_USB "app.bbs" 
+    BREAK
+
+  DEFAULT
+    LOG_ERROR "Unsupported Operating System: ${os_name}. BBS installation cannot proceed automatically."
+    EXIT_INSTALL 1
+ENDSWITCH
+
+// Post-installation steps common to most OS (conceptual)
+RUN_POST_INSTALL_CHECKS
+REGISTER_PEPX_EXTENSION // Associate .pepx files with BBS (conceptual)
+
+LOG_INFO "BBS Installation and Setup Complete."
+// Optionally, launch BBS after installation
+// LAUNCH_BBS_APP
+
+// --- End Script ---
+
+// Notes:
+// - This is a highly conceptual script. Actual installation logic is OS-specific and complex.
+// - INSTALL_*, REGISTER_*, LAUNCH_* are placeholder commands.
+// - For Electron, this logic would be part of the installer (e.g., using electron-builder).

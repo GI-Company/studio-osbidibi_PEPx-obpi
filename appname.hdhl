@@ -1,0 +1,29 @@
+// BBS Framework: Host Device Home Launcher (Android) (appname.hdhl)
+// Conceptual Content:
+// This file would contain settings and intent filters to allow the BBS
+// application, when running on Android, to register itself as a
+// potential home screen launcher.
+
+{
+  "androidLauncherSettings": {
+    "isDefaultCandidate": true,
+    "intentFilter": {
+      "action": "android.intent.action.MAIN",
+      "category": [
+        "android.intent.category.HOME",
+        "android.intent.category.DEFAULT"
+      ]
+    },
+    "appName": "BinaryBlocksphere Environment",
+    "icon": "@bbs_framework_assets/launcher_icon.png", // Path to launcher icon within BBS assets
+    "theme": "@style/BBSEnvironmentTheme" // Reference to an Android theme
+  },
+  "permissionsRequired": [
+    // Potentially none needed just to be a launcher, but features within might.
+  ],
+  "notes": [
+    "This requires native Android development (e.g., modifying AndroidManifest.xml).",
+    "Integration with Electron would involve specific configurations for Android builds.",
+    "This is a conceptual representation of settings for such integration."
+  ]
+}

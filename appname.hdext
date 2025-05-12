@@ -1,0 +1,31 @@
+// BBS Framework: Host Device Extendable Storage (appname.hdext)
+// Conceptual Content:
+// This file configures how the BBS environment utilizes extendable storage,
+// either via a designated folder on the host's drive or by accessing
+// external storage devices connected to the host.
+
+{
+  "extendableStorage": {
+    "mode": "prefer_external_then_host_folder", // "host_folder_only", "external_only"
+    "hostFolder": {
+      "path": "%USERPROFILE%/BBSExtendedStorage", // Example path, uses environment variables
+      "minFreeSpaceRequiredMB": 10240 // 10GB
+    },
+    "externalDeviceAccess": {
+      "autoMount": true,
+      "bbsMountPointPrefix": "/bbs_mnt/external/", // Where external drives appear in BBS VFS
+      "supportedFileSystems": ["exFAT", "NTFS_read", "FAT32", "APFS_read_conceptual"],
+      "promptForFormatUnsupported": true
+    },
+    "bbsInternalStorageAllocation": {
+      // How much of this extended storage BBS attempts to reserve or manage
+      "percentageOfAvailable": 75,
+      "maxSizeBytes": "500GB_conceptual_limit"
+    }
+  },
+  "notes": [
+    "Accessing host file systems and external drives requires appropriate permissions.",
+    "File system operations would be handled by the host OS, bridged to BBS.",
+    "This defines the BBS strategy for using extended storage."
+  ]
+}

@@ -1,0 +1,91 @@
+// BBS Framework: Internal Backend Bridge (index.ifb)
+// Conceptual Content:
+// This file defines the bridge connecting the application's backend logic
+// (potentially defined in .if files or other server-side modules) with the
+// frontend via the EFB, and with the core BBS system services (like VFS, PEPX storage).
+// It handles business logic, data processing, and secure operations.
+
+// --- IFB Configuration ---
+{
+  "bridgeType": "internal_service_layer",
+  "version": "1.0",
+  "description": "Main backend/internal bridge for BBS applications."
+}
+
+// --- Conceptual Service Definitions & Logic ---
+
+// Example: User Authentication Service
+class AuthService {
+  getCurrentUser(): UserProfile | null {
+    // Logic to get current authenticated user from BBS session
+    console.log("[IFB] AuthService: Getting current user.");
+    return { username: "bbs_user", id: "user123", permissions: ["read", "write"] }; // Placeholder
+  }
+
+  login(credentials: any): Promise<boolean> {
+    console.log("[IFB] AuthService: Attempting login.");
+    // Logic to authenticate against BBS user store
+    return Promise.resolve(true); // Placeholder
+  }
+}
+const authService = new AuthService();
+
+// Example: Project Data Service (interacting with VFS/PEPX)
+class ProjectService {
+  async loadProject(projectId: string): Promise<ProjectData | null> {
+    console.log(`[IFB] ProjectService: Loading project ${projectId}`);
+    // 1. Resolve project path from projectId (e.g., from a manifest)
+    // 2. Access VFS to get project files.
+    // 3. If files are in PEPX format, trigger PEPX conversion service.
+    //    const rawData = await vfs_readFile(`/projects/${projectId}/data.pepx`);
+    //    const projectData = await pepx_decode(rawData);
+    //    return projectData;
+    return { id: projectId, name: "Sample Project", files: [] }; // Placeholder
+  }
+
+  async saveProject(projectData: ProjectData): Promise<boolean> {
+    console.log(`[IFB] ProjectService: Saving project ${projectData.id}`);
+    // 1. If necessary, trigger PEPX encoding for project data.
+    //    const pepxData = await pepx_encode(projectData);
+    // 2. Use VFS to write the data.
+    //    await vfs_writeFile(`/projects/${projectData.id}/data.pepx`, pepxData);
+    return Promise.resolve(true); // Placeholder
+  }
+}
+const projectService = new ProjectService();
+
+
+// --- API Handlers (Called by EFB) ---
+// These functions would be registered and made available to the EFB.
+const apiHandlers = {
+  // Auth
+  'auth/getCurrentUser': () => authService.getCurrentUser(),
+  'auth/login': (params: any) => authService.login(params.credentials),
+
+  // Project
+  'project/load': (params: any) => projectService.loadProject(params.projectId),
+  'project/save': (params: any) => projectService.saveProject(params.projectData),
+
+  // VFS direct (example, could be more abstract)
+  'vfs/list': (params: any) => {
+    console.log(`[IFB] Direct VFS list for path: ${params.path}`);
+    // return CoreBBS.VFS.list(params.path); // Conceptual call to core VFS
+    return [];
+  }
+};
+
+// --- Initialization Logic ---
+console.log("[IFB] Internal Backend Bridge Initialized.");
+// Register API handlers with the EFB communication channel.
+// EFB.registerApiHandlers(apiHandlers); // Conceptual registration
+
+// Expose services or methods if not using a strict API handler registration
+// export { authService, projectService };
+
+
+// Notes:
+// - This file is highly conceptual.
+// - It represents the server-side or main process logic in an Electron app,
+//   or a backend service layer in a web application.
+// - PEPX_decode/encode functions are conceptual calls to the PixelStorage system.
+// - Interaction with `EFB` is conceptual, defining how frontend requests are routed.

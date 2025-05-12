@@ -1,0 +1,67 @@
+// BBS Framework Example: private/internal/xyz/example.if
+// Purpose: Defines detailed content for internal or administrative sections.
+// Uses the BBS symbol-based syntax, tailored for backend/admin information display and interaction.
+
+// --- IF Header ---
+// ContextID: admin_sidebar_nav // Populates the admin sidebar defined in an internal .fold
+// DataSources: [ "ifb:admin/getNavigationItems" ] // Fetch navigation items from backend
+
+// --- Admin Sidebar Navigation Content ---
+
+// *this is how you*name*
+// *menus*or tabs if more the one*
+// *in the *order from left to rigjht*or*top*to bottom
+
+// Static Header for Sidebar
+#admin_sidebar_logo { path: "PAX:admin_ui/bbs_admin_logo.svg"; shape: image; size: 150px auto; margin-bottom: 20px; }
+!BBS Admin Console!
+-style_ref=admin_sidebar_title.pxr- // Apply a PXR style
+
+// Dynamic Navigation Menu
+{admin_navigation_menu} // Variable name for the menu container
+{admin_nav_item_template} // Template for each navigation item
+{nav_heading, nav_link, nav_separator} // Possible object types for the menu
+
+// Template for 'admin_nav_item_template' (conceptual, how data might be bound)
+// This is how a single navigation link item could be defined if data is iterated:
+// IF_TYPE nav_link THEN
+//   [ {{item.label}} ] // Text for the button/link from data source
+//   ( (action: "navigate_admin_module")
+//     (targetModuleFold: "{{item.targetFoldFile}}") // e.g., "user_management.fold"
+//     (icon: "PAX:admin_ui/icons/{{item.iconName}}.svg")
+//     (styleClass: "admin_sidebar_link_style")
+//   (W°100%/button) ) // Full width button
+// ENDIF
+// IF_TYPE nav_heading THEN
+//   !{{item.label}}!
+//   -style_ref=admin_sidebar_heading.pxr-
+// ENDIF
+
+// --- Example IF for an Admin Module (e.g., user_management_details.if) ---
+// ContextID: admin_user_details_view // To be loaded into the main admin area
+
+@user_detail_username_context@ // Placeholder: e.g., "Username: johndoe"
+@user_detail_email_context@    // Placeholder: e.g., "Email: john.doe@example.com"
+@user_detail_role_context@     // Placeholder: e.g., "Role: Editor"
+
+// #this is the way to define or input a path to an object and object in this order shape color size#
+#user_activity_chart { type: line_chart; data_source: "ifb:admin/getUserActivity/${userId}"; x_axis: "date"; y_axis: "logins"; color: "{var_admin_accent_color}"; size: 100% 300px; }
+
+// Buttons for admin actions
+[Suspend User Account]
+( (action: "admin_suspend_user")
+  (userId: "{{current_inspected_user_id}}") // Dynamic based on viewed user
+  (styleClass: "admin_danger_button_style")
+(W°auto/button) )
+
+[Reset User Password]
+( (action: "admin_reset_password")
+  (userId: "{{current_inspected_user_id}}")
+  (styleClass: "admin_warning_button_style")
+(W°auto/button) )
+
+// Notes on internal .if files:
+// - Content is typically data-driven, fetching information via IFB.
+// - UI elements are geared towards administrative tasks (tables, charts, action buttons).
+// - Placeholders (@context@) are heavily used and populated by PMF logic after data fetching.
+// - Security is critical; actions triggered from these UIs often have significant backend impact.

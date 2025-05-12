@@ -1,0 +1,78 @@
+// BBS Framework Example: private/internal/flow/example.pmf
+// Purpose: Defines internal application flows, logic for privileged operations,
+// or backend-focused interactions. Syntax and structure are similar to public PMF files,
+// but these might interact more with IFB (Internal Backend Bridge) services.
+
+// --- PMF Header ---
+// TargetFold: admin_panel.fold // Example: Targets an admin panel layout
+// TargetSection: user_management_section
+// Version: 1.0
+// AccessLevel: private_internal // Denotes this PMF is for internal/backend logic
+
+// --- Event Listeners and Actions (Internal Focus) ---
+
+// Example 1: Admin action - Fetch all users
+@ 'load' on 'admin_user_list_container'
+? event
+¿
+  FETCH_DATA "ifb:admin/getAllUsers" // Calls an Internal Backend Bridge function
+  THEN (users) => {
+    POPULATE_TABLE 'admin_users_table' with_data users using_template 'user_row_template.if'
+    LOG_TO_CONSOLE "Admin: User list loaded."
+  }
+  CATCH (error) => {
+    DISPLAY_ERROR_MESSAGE 'admin_user_list_error' with `Failed to load users: ${error.message}`
+    LOG_ERROR `Admin: Error loading users: ${error}`
+  }
+¿
+
+// Example 2: Admin action - Suspend a user account
+@ 'click' on 'suspend_user_button' // Assume this button is part of each user_row_template
+? event (userId: event.target.dataset.userId) // Get userId from button's data attribute
+¿
+  CONFIRM_ACTION { // Built-in confirmation dialog
+    title: "Confirm Suspension",
+    message: `Are you sure you want to suspend user ${userId}?`,
+    confirmButtonText: "Suspend",
+    cancelButtonText: "Cancel"
+  }
+  IF_CONFIRMED THEN
+    FETCH_DATA "ifb:admin/suspendUser" with_payload { userId: userId }
+    THEN (response) => {
+      IF response.success THEN
+        UPDATE_USER_STATUS_IN_TABLE 'admin_users_table' for_userId userId to_status "Suspended"
+        SHOW_NOTIFICATION "User ${userId} suspended successfully." type "success"
+      ELSE
+        SHOW_NOTIFICATION `Failed to suspend user: ${response.error}` type "error"
+      ENDIF
+    }
+    CATCH (error) => {
+      SHOW_NOTIFICATION `Error suspending user: ${error.message}` type "error"
+      LOG_ERROR `Admin: Error suspending user ${userId}: ${error}`
+    }
+  ENDIF
+¿
+
+// Example 3: System Log Tailing (Conceptual)
+// This would involve establishing a persistent connection or polling.
+@ 'init' on 'system_log_viewer_widget'
+? event
+¿
+  SUBSCRIBE_TO_STREAM "ifb:system/getLogStream" // IFB provides a data stream
+  ON_STREAM_DATA (logEntry) => {
+    APPEND_TO_LOG_VIEW 'system_log_output_area' with_entry logEntry
+  }
+  ON_STREAM_ERROR (error) => {
+    APPEND_TO_LOG_VIEW 'system_log_output_area' with_entry `Stream error: ${error.message}` style "error"
+    LOG_ERROR `System log stream error: ${error}`
+  }
+¿
+
+// Notes:
+// - Internal PMF files focus on logic that requires higher privileges or direct backend interaction.
+// - They heavily utilize the IFB (Internal Backend Bridge) for data and operations.
+// - `POPULATE_TABLE`, `UPDATE_USER_STATUS_IN_TABLE`, `CONFIRM_ACTION`, `SUBSCRIBE_TO_STREAM`
+//   are conceptual high-level actions provided by the BBS PMF runtime.
+// - Security is paramount for PMFs with `AccessLevel: private_internal`. The BBS runtime
+//   would enforce that these can only be triggered by appropriate internal system events
+//   or authenticated admin interactions.

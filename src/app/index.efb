@@ -1,0 +1,79 @@
+// BBS Framework: External Frontend Bridge (index.efb)
+// Conceptual Content:
+// This file defines the bridge between the BBS application's
+// frontend rendering logic (defined in .pxr, .fold, .if files)
+// and the underlying BBS environment or host (e.g., Electron main process, web browser APIs).
+// It handles UI events, API calls from frontend to backend/host, and state management.
+
+// --- EFB Configuration ---
+{
+  "bridgeType": "electron_ipc_or_web_worker", // Could be IPC for Electron, or Web Worker/Service Worker for pure web
+  "version": "1.0",
+  "description": "Main frontend bridge for BBS applications."
+}
+
+// --- Conceptual API Endpoints Exposed to Frontend ---
+// These would be functions callable from .pmf (Pixelative Manipulated Flow) files or UI components.
+
+// Example: VFS Operations
+function vfs_listDirectory(path: string): Promise<VFSItem[]> {
+  // Implementation: Send IPC message to main process (Electron) or call VFS module directly
+  console.log(`[EFB] Requesting directory listing for: ${path}`);
+  // return HostInterface.vfs.list(path);
+  return Promise.resolve([]); // Placeholder
+}
+
+function vfs_readFile(filePath: string): Promise<string> {
+  // Implementation: Send IPC message or call VFS module
+  console.log(`[EFB] Requesting file read for: ${filePath}`);
+  // return HostInterface.vfs.read(filePath);
+  return Promise.resolve(""); // Placeholder
+}
+
+// Example: System Information
+function system_getOSInfo(): Promise<{ name: string, version: string }> {
+  console.log("[EFB] Requesting OS Info");
+  // return HostInterface.system.getOS();
+  return Promise.resolve({ name: "BBS-Host", version: "1.0" }); // Placeholder
+}
+
+// Example: Window Controls (if in Electron-like environment)
+function window_minimize(): void {
+  console.log("[EFB] Requesting window minimize");
+  // HostInterface.window.minimize();
+}
+
+function window_maximize(): void {
+  console.log("[EFB] Requesting window maximize");
+  // HostInterface.window.maximize();
+}
+
+function window_close(): void {
+  console.log("[EFB] Requesting window close");
+  // HostInterface.window.close();
+}
+
+// --- Event Handling from Host/Backend to Frontend ---
+// Example: File system change notifications
+// HostInterface.vfs.onChange((event) => {
+//   emitEventToFrontend('vfs_changed', event.detail);
+// });
+
+// function emitEventToFrontend(eventName: string, payload: any) {
+//   // Logic to dispatch event to active UI components/listeners
+//   console.log(`[EFB] Emitting event to frontend: ${eventName}`, payload);
+//   // window.dispatchEvent(new CustomEvent(eventName, { detail: payload }));
+// }
+
+
+// --- Initialization Logic ---
+console.log("[EFB] External Frontend Bridge Initialized.");
+// Setup initial communication channels, register global handlers.
+
+
+// Notes:
+// - This file is highly conceptual. The actual implementation depends heavily on
+//   the target platform (Electron, Web, etc.).
+// - In Electron, this might involve preload scripts and IPC communication.
+// - In a web PWA, this might involve service workers and browser APIs.
+// - The functions and event handling are illustrative.

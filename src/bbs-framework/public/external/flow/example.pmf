@@ -1,0 +1,108 @@
+// BBS Framework Example: example.pmf
+// Purpose: Defines interactive flows, event handling, and dynamic content manipulation.
+// This file works in conjunction with .pxr (styling/layout) and .if/.fold (structure/content).
+
+// --- PMF Header ---
+// TargetFold: main.fold // The .fold file this PMF primarily targets
+// TargetSection: dashboard_section // Specific section within the .fold file
+// Version: 1.0
+
+// --- Event Listeners and Actions ---
+
+// Example 1: Button Click Handler
+// `button_id_from_fold_or_if` refers to an element defined in .fold or .if
+// with a unique identifier.
+@ 'click' on 'dashboard_welcome_button' // Event listener: 'click' on element with id 'dashboard_welcome_button'
+? event
+¿
+  // Action: Show a popover/modal
+  DISPLAY_POPOVER {
+    contentRef: "welcome_message_content_from_if_file", // Reference to content defined in an .if file
+    title: "Welcome to BBS!",
+    size: { width: "300px", height: "auto" },
+    animation: "fade_in_slide_down_0.3s" // Animation defined in a .pxr file or globally
+  }
+  // Action: Log event to BBS console
+  LOG_TO_CONSOLE "Welcome button clicked by user."
+¿
+
+// Example 2: Data Fetch and Update
+// This assumes an element 'user_greeting_text' exists to display the greeting.
+@ 'load' on 'user_profile_widget' // Event listener: 'load' event for 'user_profile_widget'
+? event
+¿
+  // Action: Fetch data using EFB (External Frontend Bridge)
+  FETCH_DATA "efb:user/getCurrentProfile" // Calls an EFB function `user/getCurrentProfile`
+  THEN (profileData) => {
+    // Action: Update content of an element
+    UPDATE_CONTENT 'user_greeting_text' with `Hello, ${profileData.username}!`
+    // Action: Conditionally show/hide elements
+    IF profileData.isAdmin THEN
+      SHOW_ELEMENT 'admin_dashboard_link'
+    ELSE
+      HIDE_ELEMENT 'admin_dashboard_link'
+    ENDIF
+  }
+  CATCH (error) => {
+    UPDATE_CONTENT 'user_greeting_text' with "Error loading profile."
+    LOG_ERROR `Profile load failed: ${error}`
+  }
+¿
+
+// Example 3: Input Field Change and Validation (Conceptual)
+@ 'inputChange' on 'project_name_input'
+? event (value: event.target.value)
+¿
+  VALIDATE_INPUT value against_rule "project_name_rules" // 'project_name_rules' defined elsewhere
+  IF_VALID THEN
+    CLEAR_ERROR_MESSAGE 'project_name_error_display'
+    ENABLE_BUTTON 'save_project_button'
+  ELSE
+    DISPLAY_ERROR_MESSAGE 'project_name_error_display' with "Invalid project name."
+    DISABLE_BUTTON 'save_project_button'
+  ENDIF
+¿
+
+// Example 4: Complex Animation Trigger (Links to .pxr definitions)
+@ 'mouseEnter' on 'interactive_data_sphere'
+? event
+¿
+  // Action: Trigger a complex animation defined in a .pxr file
+  PLAY_ANIMATION 'data_sphere_expand_glow' on_target 'interactive_data_sphere'
+¿
+
+@ 'mouseLeave' on 'interactive_data_sphere'
+? event
+¿
+  PLAY_ANIMATION 'data_sphere_contract_dim' on_target 'interactive_data_sphere'
+¿
+
+
+// --- PMF Syntax Notes (Conceptual from user prompt and extended) ---
+// @ '<event_name>' on '<element_id_or_selector>'
+//   Defines an event listener.
+// ? <event_object_or_parameters>
+//   (Optional) Specifies parameters passed to the event handler.
+// ¿
+//   <actions_block_start>
+//   // Actions to perform. One or more actions.
+//   // Actions can be:
+//   // - UI Manipulation: DISPLAY_POPOVER, UPDATE_CONTENT, SHOW_ELEMENT, HIDE_ELEMENT, etc.
+//   // - Data Operations: FETCH_DATA (via EFB), SAVE_DATA, etc.
+//   // - Logic: IF/THEN/ELSE, VALIDATE_INPUT, etc.
+//   // - Logging: LOG_TO_CONSOLE, LOG_ERROR, etc.
+//   // - Animation: PLAY_ANIMATION (referencing .pxr definitions)
+// ¿ <actions_block_end>
+
+// FETCH_DATA "efb:<bridge_function_path>" [with_payload {key: value}]
+//   Calls a function exposed by the External Frontend Bridge.
+//   THEN (responseData) => { ... }
+//   CATCH (error) => { ... }
+//     Handles promise resolution.
+
+// UPDATE_CONTENT '<element_id>' with <new_content_or_template_string>
+//   Changes the inner content of a specified HTML element.
+
+// Note: This is a highly conceptual representation of how .pmf files might work.
+// A real implementation would require a sophisticated parser, runtime, and
+// tight integration with the rendering engine and EFB.
