@@ -122,3 +122,174 @@ body {
 .btn-primary.button-3d-interactive:hover {
    box-shadow: 0 4px 8px hsla(var(--primary), 0.4);
 }
+
+
+/* Mobile Wallet Integration Styles */
+.wallet-button {
+  display: none; /* Hidden by default, shown only on mobile */
+  background-color: hsl(var(--primary)); /* Use theme primary */
+  color: hsl(var(--primary-foreground)); /* Use theme primary foreground */
+  border: none;
+  border-radius: 0.25rem; /* Consistent with ShadCN radius */
+  padding: 0.625rem 0.9375rem; /* 10px 15px */
+  margin: 0.625rem 0; /* 10px 0 */
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  @apply button-3d-interactive; /* Apply 3D effect */
+}
+
+.wallet-button:hover {
+  background-color: hsl(var(--primary) / 0.9); /* Slightly darker primary */
+}
+
+.wallet-options {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000; /* Ensure it's on top */
+}
+
+.wallet-options h3 {
+  color: hsl(var(--foreground)); /* Use theme foreground */
+  margin-bottom: 1.25rem; /* 20px */
+  @apply radiant-text;
+}
+
+.wallet-providers {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.9375rem; /* 15px */
+  max-width: 31.25rem; /* 500px */
+}
+
+.wallet-provider {
+  background-color: hsl(var(--card)); /* Use theme card */
+  color: hsl(var(--card-foreground)); /* Use theme card foreground */
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem; /* Consistent with ShadCN radius */
+  padding: 0.9375rem; /* 15px */
+  width: 8.125rem; /* 130px */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.2s;
+  @apply button-3d-interactive;
+  @apply glassmorphic; /* Apply glassmorphic effect */
+}
+
+.wallet-provider:hover {
+  transform: scale(1.05);
+  border-color: hsl(var(--primary));
+}
+
+.wallet-provider.native-wallet {
+  border: 2px solid hsl(var(--accent)); /* Use theme accent */
+}
+
+.wallet-icon {
+  font-size: 1.5rem; /* 24px */
+  margin-bottom: 0.625rem; /* 10px */
+  height: 2.5rem; /* 40px */
+  width: 2.5rem; /* 40px */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background-color: hsl(var(--muted)); /* Use theme muted */
+  color: hsl(var(--accent));
+}
+.wallet-icon svg {
+  width: 1.25rem; /* 20px */
+  height: 1.25rem; /* 20px */
+}
+
+
+.close-wallet-options {
+  position: absolute;
+  top: 1.25rem; /* 20px */
+  right: 1.25rem; /* 20px */
+  background: none;
+  border: none;
+  color: hsl(var(--foreground)); /* Use theme foreground */
+  font-size: 1.5rem; /* 24px */
+  cursor: pointer;
+}
+
+/* Toast styles already handled by ShadCN Toaster, this can be removed or adapted if a custom one is strictly needed */
+/* .toast { ... } */
+
+.mobile-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: hsl(var(--primary)); /* Use theme primary */
+  color: hsl(var(--primary-foreground));
+  padding: 0.9375rem; /* 15px */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transform: translateY(100%);
+  transition: transform 0.3s;
+  z-index: 900;
+}
+
+.mobile-banner.show {
+  transform: translateY(0);
+}
+
+.mobile-banner p {
+  margin: 0;
+  flex: 1;
+}
+
+.mobile-banner button {
+  background-color: hsl(var(--primary-foreground));
+  color: hsl(var(--primary));
+  border: none;
+  border-radius: 0.25rem; /* Consistent with ShadCN radius */
+  padding: 0.5rem 0.75rem; /* 8px 12px */
+  margin-left: 0.625rem; /* 10px */
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.mobile-banner button#dismiss-banner {
+  background-color: transparent;
+  color: hsl(var(--primary-foreground));
+  border: 1px solid hsl(var(--primary-foreground));
+}
+
+/* QR Code wallet-specific styling */
+.qr-wallet-info {
+  margin-top: 0.9375rem; /* 15px */
+  padding: 0.625rem; /* 10px */
+  background-color: hsl(var(--muted) / 0.5); /* Use theme muted with transparency */
+  border-radius: 0.25rem;
+  font-size: 0.875rem; /* 14px */
+  text-align: center;
+  @apply radiant-text;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Force display on small screens */
+@media (max-width: 768px) {
+  .wallet-button {
+    display: inline-flex; /* Use inline-flex for button contents */
+    align-items: center;
+    justify-content: center;
+  }
+  .wallet-button svg { /* Style for potential SVG icons inside */
+    margin-right: 0.5rem;
+  }
+}

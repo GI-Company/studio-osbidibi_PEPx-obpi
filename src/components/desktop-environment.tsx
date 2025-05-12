@@ -4,7 +4,7 @@
 import type * as React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb, LayoutGrid, BotMessageSquare, LogOut, FolderOpen, Package, Loader2, Users, Activity, Lock, PlaySquare, ScreenShare, Wifi, BookOpenText, FileSearch, NotebookText } from 'lucide-react';
+import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb, LayoutGrid, BotMessageSquare, LogOut, FolderOpen, Package, Loader2, Users, Activity, Lock, PlaySquare, ScreenShare, Wifi, BookOpenText, FileSearch, NotebookText, CreditCard } from 'lucide-react'; // Added CreditCard
 import { MiniBrowser } from './mini-browser';
 import { Separator } from './ui/separator';
 import { VirtualPartitionApp } from './virtual-partition-app';
@@ -25,6 +25,7 @@ import { ConnectivityCenterApp } from '@/components/connectivity-center-app';
 import { UserManualApp } from '@/components/user-manual-app';
 import { DocumentViewerApp } from '@/components/document-viewer-app';
 import { NotepadApp } from '@/components/notepad-app';
+import { PaymentTerminalApp } from '@/components/payment-terminal-app'; // Added PaymentTerminalApp
 import { toast } from '@/hooks/use-toast';
 import { useVFS } from '@/contexts/VFSContext';
 
@@ -44,6 +45,7 @@ type ActiveApp =
   | 'userManual'
   | 'documentViewer'
   | 'notepad'
+  | 'paymentTerminal' // Added paymentTerminal
   | { type: 'pixelProject'; id: string; name: string; path: string; }
   | null;
 
@@ -81,6 +83,7 @@ export function DesktopEnvironment() {
     { id: 'userManual', name: 'User Manual', icon: BookOpenText, action: () => openApp('userManual'), dataAiHint: "help documentation manual" },
     { id: 'documentViewer', name: 'Doc Viewer', icon: FileSearch, action: () => openApp('documentViewer'), dataAiHint: "document viewer files" },
     { id: 'notepad', name: 'Notepad', icon: NotebookText, action: () => openApp('notepad'), dataAiHint: "text editor notes" },
+    { id: 'paymentTerminal', name: 'Payment POS', icon: CreditCard, action: () => openApp('paymentTerminal'), dataAiHint: "payment terminal POS" }, // Added Payment Terminal
   ];
 
   const adminAppsList = [
@@ -189,6 +192,7 @@ export function DesktopEnvironment() {
       case 'userManual': return 'User Manual';
       case 'documentViewer': return 'Document Viewer';
       case 'notepad': return 'Notepad';
+      case 'paymentTerminal': return 'Payment Terminal'; // Added title for payment terminal
       default: return 'OSbidibi GDE Application';
     }
   };
@@ -311,6 +315,7 @@ export function DesktopEnvironment() {
               {activeApp === 'userManual' && <UserManualApp />}
               {activeApp === 'documentViewer' && <DocumentViewerApp />}
               {activeApp === 'notepad' && <NotepadApp />}
+              {activeApp === 'paymentTerminal' && <PaymentTerminalApp />} 
           </div>
         </div>
         <div
@@ -352,4 +357,3 @@ export function DesktopEnvironment() {
     </div>
   );
 }
-
