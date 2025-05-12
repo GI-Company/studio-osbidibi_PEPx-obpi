@@ -4,11 +4,11 @@
 import type * as React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
-import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb, LayoutGrid, BotMessageSquare, LogOut, FolderOpen, Package, Loader2, Users, Activity, Lock, PlaySquare, ScreenShare, Wifi, BookOpenText, FileSearch, NotebookText, CreditCard } from 'lucide-react'; // Added CreditCard
+import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb, LayoutGrid, BotMessageSquare, LogOut, FolderOpen, Package, Loader2, Users, Activity, Lock, PlaySquare, ScreenShare, Wifi, BookOpenText, FileSearch, NotebookText, CreditCard, Phone, ShieldQuestion } from 'lucide-react'; // Added Phone, ShieldQuestion
 import { MiniBrowser } from './mini-browser';
 import { Separator } from './ui/separator';
 import { VirtualPartitionApp } from './virtual-partition-app';
-import { PixelStoreApp } from './pixel-store-app';
+import { PEPxApp } from './PEPxApp'; // Renamed from PixelStoreApp, Corrected casing
 import { CodingAssistantApp } from './coding-assistant-app';
 import { AppLaunchpad } from './app-launchpad';
 import { AgenticTerminalApp } from './agentic-terminal-app';
@@ -25,7 +25,8 @@ import { ConnectivityCenterApp } from '@/components/connectivity-center-app';
 import { UserManualApp } from '@/components/user-manual-app';
 import { DocumentViewerApp } from '@/components/document-viewer-app';
 import { NotepadApp } from '@/components/notepad-app';
-import { PaymentTerminalApp } from '@/components/payment-terminal-app'; // Added PaymentTerminalApp
+import { PaymentTerminalApp } from '@/components/payment-terminal-app'; 
+import { DataIntelligenceApp } from '@/components/data-intelligence-app'; // New Data Intelligence App
 import { toast } from '@/hooks/use-toast';
 import { useVFS } from '@/contexts/VFSContext';
 
@@ -34,7 +35,7 @@ type ActiveApp =
   | 'browser' 
   | 'osbidibiShell' 
   | 'virtualPartition' 
-  | 'pixelStore' 
+  | 'pepxApp' // Updated from pixelStore
   | 'codingAssistant' 
   | 'agenticTerminal' 
   | 'fileManager' 
@@ -45,7 +46,8 @@ type ActiveApp =
   | 'userManual'
   | 'documentViewer'
   | 'notepad'
-  | 'paymentTerminal' // Added paymentTerminal
+  | 'paymentTerminal'
+  | 'dataIntelligenceApp' // New app
   | { type: 'pixelProject'; id: string; name: string; path: string; }
   | null;
 
@@ -76,14 +78,15 @@ export function DesktopEnvironment() {
     { id: 'agenticTerminal', name: 'Agent Terminal', icon: BotMessageSquare, action: () => openApp('agenticTerminal'), dataAiHint: "AI agent terminal" },
     { id: 'codingAssistant', name: 'AI Assist', icon: Lightbulb, action: () => openApp('codingAssistant'), dataAiHint: "AI assistant code" },
     { id: 'virtualPartition', name: 'V-Partition', icon: HardDrive, action: () => openApp('virtualPartition'), dataAiHint: "virtual machine disk" },
-    { id: 'pixelStore', name: 'PixelStore', icon: Layers3, action: () => openApp('pixelStore'), dataAiHint: "data storage concept" },
+    { id: 'pepxApp', name: 'PEPx Storage', icon: Layers3, action: () => openApp('pepxApp'), dataAiHint: "pixel data storage" },
     { id: 'fileManager', name: 'File Manager', icon: FolderOpen, action: () => openApp('fileManager'), dataAiHint: "file system browser" },
     { id: 'mediaPlayer', name: 'Media Hub', icon: PlaySquare, action: () => openApp('mediaPlayer'), dataAiHint: "media player video audio" },
     { id: 'connectivityCenter', name: 'Connectivity', icon: Wifi, action: () => openApp('connectivityCenter'), dataAiHint: "network wifi cast" },
     { id: 'userManual', name: 'User Manual', icon: BookOpenText, action: () => openApp('userManual'), dataAiHint: "help documentation manual" },
     { id: 'documentViewer', name: 'Doc Viewer', icon: FileSearch, action: () => openApp('documentViewer'), dataAiHint: "document viewer files" },
     { id: 'notepad', name: 'Notepad', icon: NotebookText, action: () => openApp('notepad'), dataAiHint: "text editor notes" },
-    { id: 'paymentTerminal', name: 'Payment POS', icon: CreditCard, action: () => openApp('paymentTerminal'), dataAiHint: "payment terminal POS" }, // Added Payment Terminal
+    { id: 'paymentTerminal', name: 'Payment POS', icon: CreditCard, action: () => openApp('paymentTerminal'), dataAiHint: "payment terminal POS" },
+    { id: 'dataIntelligenceApp', name: 'Data Intel', icon: ShieldQuestion, action: () => openApp('dataIntelligenceApp'), dataAiHint: "data lookup intelligence" },
   ];
 
   const adminAppsList = [
@@ -101,7 +104,7 @@ export function DesktopEnvironment() {
       path: projectPath,
     };
     setSavedPixelStoreProjects(prev => {
-      if (prev.find(p => p.path === projectPath)) return prev;
+      if (prev.find(p => p.path === projectPath)) return prev; // Avoid duplicates
       return [...prev, newProject];
     });
   };
@@ -126,8 +129,9 @@ export function DesktopEnvironment() {
         toast({ title: "Project Load Warning", description: `Manifest for "${project.name}" not found at ${project.path}. Proceeding with agent terminal.`, variant: "default"});
     }
 
+    // Simulate loading time
     await new Promise(resolve => setTimeout(resolve, 2500)); 
-    openApp('agenticTerminal'); 
+    openApp('agenticTerminal'); // Open agent terminal in context of this project
     toast({ title: "Project Context Active", description: `Project "${project.name}" loaded. Agent Terminal is active for this project.`});
     setIsLoadingProject(false);
   };
@@ -181,7 +185,7 @@ export function DesktopEnvironment() {
       case 'browser': return 'Web Browser';
       case 'osbidibiShell': return 'OSbidibi-PEPX0.0.1 Shell (bidibi)';
       case 'virtualPartition': return 'Virtual Partition Environment';
-      case 'pixelStore': return 'BBS PixelStore Interface';
+      case 'pepxApp': return 'PEPx Storage Interface';
       case 'codingAssistant': return 'AI Coding Assistant / Chat';
       case 'agenticTerminal': return 'Agentic Coding Terminal';
       case 'fileManager': return 'File Manager';
@@ -192,7 +196,8 @@ export function DesktopEnvironment() {
       case 'userManual': return 'User Manual';
       case 'documentViewer': return 'Document Viewer';
       case 'notepad': return 'Notepad';
-      case 'paymentTerminal': return 'Payment Terminal'; // Added title for payment terminal
+      case 'paymentTerminal': return 'Payment Terminal';
+      case 'dataIntelligenceApp': return 'Data Intelligence Suite';
       default: return 'OSbidibi GDE Application';
     }
   };
@@ -304,7 +309,7 @@ export function DesktopEnvironment() {
               {activeApp === 'osbidibiShell' && <ShellEmulator isEmbeddedInGDE={true} />}
               {activeApp === 'browser' && <MiniBrowser />}
               {activeApp === 'virtualPartition' && <VirtualPartitionApp />}
-              {activeApp === 'pixelStore' && <PixelStoreApp />}
+              {activeApp === 'pepxApp' && <PEPxApp />}
               {activeApp === 'codingAssistant' && <CodingAssistantApp />}
               {activeApp === 'agenticTerminal' && <AgenticTerminalApp onSaveProjectToPixelStore={handleAddSavedProject} />}
               {activeApp === 'fileManager' && <FileManagerApp />}
@@ -316,6 +321,7 @@ export function DesktopEnvironment() {
               {activeApp === 'documentViewer' && <DocumentViewerApp />}
               {activeApp === 'notepad' && <NotepadApp />}
               {activeApp === 'paymentTerminal' && <PaymentTerminalApp />} 
+              {activeApp === 'dataIntelligenceApp' && <DataIntelligenceApp />}
           </div>
         </div>
         <div
@@ -350,10 +356,11 @@ export function DesktopEnvironment() {
 
         <Separator className="my-0 bg-primary/20" />
          <div className="p-1.5 text-xs text-center text-muted-foreground/70 radiant-text bg-black/40">
-            OSbidibi-PEPX0.0.1 GDE v0.9.4-alpha. Main entry point active. VFS operational.
+            OSbidibi-PEPX0.0.1 GDE v0.9.5-alpha. Main entry point active. VFS & PEPx operational.
           </div>
       </div>
       <AppLaunchpad isOpen={isLaunchpadOpen} onClose={() => setIsLaunchpadOpen(false)} apps={allLaunchableItems} />
     </div>
   );
 }
+

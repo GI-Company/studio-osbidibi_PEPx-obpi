@@ -12,6 +12,7 @@ const searchEngines = {
   google: "https://www.google.com/search?q=",
   duckduckgo: "https://duckduckgo.com/?q=",
   bing: "https://www.bing.com/search?q=",
+  startpage: "https://www.startpage.com/sp/search?query=", // Added Startpage
 };
 
 type SearchEngineKey = keyof typeof searchEngines;
@@ -20,10 +21,10 @@ interface MiniBrowserProps {
   initialUrl?: string;
 }
 
-export function MiniBrowser({ initialUrl = "https://www.google.com/webhp?igu=1" }: MiniBrowserProps) {
+export function MiniBrowser({ initialUrl = "https://www.startpage.com/" }: MiniBrowserProps) { // Default to Startpage
   const [addressBarInput, setAddressBarInput] = useState(initialUrl);
   const [searchBarInput, setSearchBarInput] = useState("");
-  const [selectedSearchEngine, setSelectedSearchEngine] = useState<SearchEngineKey>("google");
+  const [selectedSearchEngine, setSelectedSearchEngine] = useState<SearchEngineKey>("startpage"); // Default search engine
   const [iframeSrc, setIframeSrc] = useState(initialUrl);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -94,6 +95,7 @@ export function MiniBrowser({ initialUrl = "https://www.google.com/webhp?igu=1" 
               <SelectValue placeholder="Search Engine" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="startpage">Startpage</SelectItem>
               <SelectItem value="google">Google</SelectItem>
               <SelectItem value="duckduckgo">DuckDuckGo</SelectItem>
               <SelectItem value="bing">Bing</SelectItem>
