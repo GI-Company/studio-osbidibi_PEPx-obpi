@@ -137,4 +137,3 @@ export function MiniBrowser({ initialUrl = "https://www.google.com/" }: MiniBrow
     </div>
   );
 }
-
