@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI-powered chat assistant with tiered capabilities.
@@ -106,7 +107,7 @@ const prompt = ai.definePrompt({
   name: 'chatAssistantPrompt',
   input: {schema: ChatAssistantInputSchema},
   output: {schema: ChatAssistantOutputSchema},
-  prompt: (input) => {
+  prompt: (input: ChatAssistantInput) => { // Explicitly typed input here for clarity, though TS usually infers it correctly for this specific callback
     const historyMessages = input.history?.map(msg => ({
         role: msg.role,
         content: [{text: msg.content}]
@@ -121,7 +122,7 @@ const prompt = ai.definePrompt({
     }
   },
   config: {
-    temperature: (input) => (input.userTier === 'admin' ? 0.4 : 0.7), // More precise for admin, balanced for others
+    temperature: (input: ChatAssistantInput) => (input.userTier === 'admin' ? 0.4 : 0.7), // Explicitly type input
     safetySettings: [
       { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
@@ -130,7 +131,7 @@ const prompt = ai.definePrompt({
     ],
   },
   // Use the more powerful model for admin, and flash for others.
-  model: (input) => (input.userTier === 'admin' ? 'googleai/gemini-1.5-pro-latest' : 'googleai/gemini-1.5-flash-latest')
+  model: (input: ChatAssistantInput) => (input.userTier === 'admin' ? 'googleai/gemini-1.5-pro-latest' : 'googleai/gemini-1.5-flash-latest') // Explicitly type input
 });
 
 const chatAssistantFlow = ai.defineFlow(
@@ -166,3 +167,4 @@ const chatAssistantFlow = ai.defineFlow(
     return output;
   }
 );
+

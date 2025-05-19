@@ -53,12 +53,18 @@ export function ChatInterface({ userTier, isTrialActive }: ChatInterfaceProps) {
     setIsLoading(true);
 
     try {
-      const genkitHistory = chatHistory.map(msg => ({ role: msg.role, content: msg.content }));
-      genkitHistory.push({ role: 'user', content: messageToSend });
+      // Prepare history for Genkit flow, ensuring it matches ChatMessageSchema (role, content only)
+      const flowHistory = chatHistory.slice(-10).map(h => ({ 
+        role: h.role, 
+        content: h.content 
+      }));
+      // Add the current user message to the history being sent to the flow
+      flowHistory.push({ role: 'user', content: messageToSend });
+
 
       const input: ChatAssistantInput = {
         message: messageToSend,
-        history: genkitHistory.slice(-10),
+        history: flowHistory,
         userTier,
       };
       const result = await chatWithAI(input);
@@ -203,5 +209,7 @@ export function ChatInterface({ userTier, isTrialActive }: ChatInterfaceProps) {
     </div>
   );
 }
+
+    
 
     
