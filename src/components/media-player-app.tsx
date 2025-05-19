@@ -28,6 +28,9 @@ export function MediaPlayerApp() {
     if (agreementChecked) {
       setHasAgreed(true);
       setError(null);
+      // Automatically try to request permissions after agreement if not already granted
+      if (hasCameraPermission === null) requestCamera();
+      if (hasMicPermission === null) requestMicrophone();
     } else {
       toast({
         title: "Agreement Required",
@@ -38,6 +41,7 @@ export function MediaPlayerApp() {
   };
 
   const requestCamera = async () => {
+    if (isLoadingPermissions) return;
     setIsLoadingPermissions(true);
     setError(null);
     try {
@@ -58,6 +62,7 @@ export function MediaPlayerApp() {
   };
 
   const requestMicrophone = async () => {
+    if (isLoadingPermissions) return;
     setIsLoadingPermissions(true);
     setError(null);
     try {
@@ -147,10 +152,10 @@ export function MediaPlayerApp() {
       </CardHeader>
 
       {isLoadingPermissions && (
-        <div className="flex items-center justify-center flex-grow">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="ml-2 radiant-text">Requesting permissions...</p>
-        </div>
+        <CardContent className="flex-grow flex flex-col items-center justify-center space-y-4 p-4">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="ml-2 radiant-text">Requesting permissions...</p>
+        </CardContent>
       )}
 
       {!isLoadingPermissions && (hasCameraPermission === null || hasMicPermission === null) && (hasCameraPermission !== true || hasMicPermission !== true) && (
@@ -182,8 +187,8 @@ export function MediaPlayerApp() {
       {(!isLoadingPermissions && (hasCameraPermission === true || hasMicPermission === true)) && (
         <Tabs defaultValue="camera" className="flex-grow flex flex-col w-full h-full overflow-hidden">
           <TabsList className="grid w-full grid-cols-3 m-1 bg-muted/50 glassmorphic">
-            <TabsTrigger value="camera" className="button-3d-interactive"><Video className="w-4 h-4 mr-1 sm:mr-2"/>Camera</TabsTrigger>
-            <TabsTrigger value="microphone" className="button-3d-interactive"><Mic className="w-4 h-4 mr-1 sm:mr-2"/>Microphone</TabsTrigger>
+            <TabsTrigger value="camera" className="button-3d-interactive" disabled={hasCameraPermission !== true}><Video className="w-4 h-4 mr-1 sm:mr-2"/>Camera</TabsTrigger>
+            <TabsTrigger value="microphone" className="button-3d-interactive" disabled={hasMicPermission !== true}><Mic className="w-4 h-4 mr-1 sm:mr-2"/>Microphone</TabsTrigger>
             <TabsTrigger value="music" className="button-3d-interactive"><Music className="w-4 h-4 mr-1 sm:mr-2"/>Music Player</TabsTrigger>
           </TabsList>
 
@@ -258,3 +263,4 @@ export function MediaPlayerApp() {
     </div>
   );
 }
+

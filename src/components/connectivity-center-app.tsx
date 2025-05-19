@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area'; // Added import
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from '@/hooks/use-toast';
 import { 
   ScreenShare, Wifi, Bluetooth, Nfc, Share2, Network, HardDrive, Router, Loader2, Usb, 
@@ -102,16 +102,29 @@ export function ConnectivityCenterApp() {
         setExternalStorageStatus('No External Storage Detected');
         toast({ title: "Storage Unmounted", description: "BBS Virtual USB Drive disconnected from VFS." });
       } else {
-        toast({ title: "Error", description: "Failed to unmount virtual drive.", variant: "destructive" });
+        toast({ title: "Error", description: "Failed to unmount virtual drive. It might not exist or is protected.", variant: "destructive" });
       }
     } else {
-      if (!getVFSItem('/mnt')) createVFSFolder('/', 'mnt');
+      if (!getVFSItem('/mnt')) { // Check if /mnt exists
+        const mntCreated = createVFSFolder('/', 'mnt'); // Create /mnt if it doesn't exist
+        if (!mntCreated) {
+            toast({ title: "Error", description: "Failed to create /mnt directory. Cannot mount virtual drive.", variant: "destructive"});
+            return;
+        }
+      }
       if (createVFSFolder('/mnt', 'external_usb_drive')) {
         setIsExternalDriveMounted(true);
         setExternalStorageStatus('BBS Virtual USB Drive (Connected)');
-        toast({ title: "Storage Mounted", description: "BBS Virtual USB Drive connected to VFS at /mnt/external_usb_drive." });
+        toast({ title: "Storage Mounted", description: `BBS Virtual USB Drive connected to VFS at ${VIRTUAL_EXTERNAL_DRIVE_PATH}.` });
       } else {
-        toast({ title: "Error", description: "Failed to mount virtual drive. Ensure /mnt exists.", variant: "destructive" });
+        // Check if already exists, which can happen if state is out of sync with VFS
+        if (getVFSItem(VIRTUAL_EXTERNAL_DRIVE_PATH)) {
+             setIsExternalDriveMounted(true);
+             setExternalStorageStatus('BBS Virtual USB Drive (Connected)');
+             toast({ title: "Info", description: "Virtual drive was already mounted in VFS.", variant: "default"});
+        } else {
+            toast({ title: "Error", description: "Failed to mount virtual drive. Ensure /mnt exists or the path is not occupied.", variant: "destructive" });
+        }
       }
     }
   };
@@ -353,7 +366,7 @@ export function ConnectivityCenterApp() {
                  <p className="text-xs text-muted-foreground mt-1 radiant-text">Share GDE output to a BBS-managed virtual display.</p>
               </div>
             )}
-            {discoveredDisplays.length === 0 && !isScanningDisplays && !isScanningDisplays && ( <p className="text-sm text-muted-foreground radiant-text">No BBS displays detected on the virtual network.</p> )}
+            {discoveredDisplays.length === 0 && !isScanningDisplays && !isCasting && ( <p className="text-sm text-muted-foreground radiant-text">No BBS displays detected on the virtual network.</p> )}
           </div>
         </section>
 
