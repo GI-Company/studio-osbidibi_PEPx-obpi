@@ -8,75 +8,75 @@ body {
 
 @layer base {
   :root {
-    --background: 224 71% 3%; /* Very Dark Blue-Black, almost black */
-    --foreground: 210 30% 98%; /* Bright White */
+    --background: 220 70% 4%; /* Very dark, almost black, slight blue tint */
+    --foreground: 185 100% 88%; /* Bright, light cyan for text */
 
-    --muted: 220 15% 20%; /* Kept for less prominent elements */
-    --muted-foreground: 210 20% 60%;
+    --muted: 220 25% 18%; /* Darker, desaturated blue for muted elements */
+    --muted-foreground: 200 30% 65%; /* Lighter muted text */
 
-    /* Card and Popover will form the base of the "green hued glass" */
-    --card: 140 30% 10%; /* Very Dark, slightly desaturated Green-Cyan for glass base */
-    --card-foreground: 210 30% 98%;
+    /* Card and Popover will form the base of the "holographic glass" */
+    --card: 210 40% 8%; /* Very dark blue for panel base */
+    --card-foreground: 185 100% 88%; /* Glowing cyan text on cards */
 
-    --popover: 140 30% 9%; /* Slightly darker for popovers */
-    --popover-foreground: 210 30% 98%;
+    --popover: 210 40% 7%; /* Slightly darker for popovers */
+    --popover-foreground: 185 100% 88%;
 
-    --border: 140 25% 25%; /* Adjusted to complement greenish glass */
-    --input: 140 20% 15%; /* Dark green-hued input background */
+    --border: 190 80% 40%; /* Bright cyan for subtle panel borders (used with low alpha) */
+    --input: 210 35% 12%; /* Dark blue input background */
 
-    --primary: 135 65% 45%; /* Vibrant Teal - User's "accent green hue" */
-    --primary-foreground: 200 100% 95%; /* Brighter white for primary contrast */
+    --primary: 190 95% 55%; /* Vibrant electric cyan-blue for primary actions */
+    --primary-foreground: 210 100% 98%; /* Very bright for high contrast on primary buttons */
 
-    --secondary: 210 10% 12%; /* Darker Blue-Gray for secondary elements */
-    --secondary-foreground: 210 20% 85%;
+    --secondary: 220 15% 20%; /* Darker blue-gray for secondary elements */
+    --secondary-foreground: 190 50% 80%; /* Lighter cyan for secondary text */
 
-    --accent: 135 60% 58%; /* Brighter Teal for highlights */
-    --accent-foreground: 200 100% 95%;
+    --accent: 180 100% 50%; /* Pure, vibrant cyan for highlights and glows */
+    --accent-foreground: 210 100% 98%; /* Very bright for text on accent backgrounds */
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 210 20% 98%;
+    --destructive: 0 65% 50%; /* Adjusted red for destructive actions */
+    --destructive-foreground: 0 0% 98%; /* Bright white/very light gray for destructive text */
 
-    --ring: 135 60% 58%; /* Brighter Teal for focus rings */
+    --ring: 180 100% 50%; /* Cyan for focus rings, matching accent */
     
     --radius: 0.5rem;
 
-    /* Specific theme variables */
+    /* Specific theme variables for glowing text */
     --shell-text-radiant: 
-      0 0 6px hsla(var(--foreground), 0.6), 
-      0 0 2px hsla(var(--accent), 0.8), 
-      0 0 10px hsla(var(--primary), 0.3);
+      0 0 4px hsla(var(--foreground), 0.9), 
+      0 0 8px hsla(var(--foreground), 0.6), 
+      0 0 12px hsla(var(--accent), 0.4); /* Focused foreground glow with an accent aura */
     --shell-prompt-color: hsl(var(--accent));
   }
 
   .dark {
-    --background: 224 71% 3%;
-    --foreground: 210 30% 98%;
+    --background: 220 70% 4%;
+    --foreground: 185 100% 88%;
 
-    --muted: 220 15% 20%;
-    --muted-foreground: 210 20% 60%;
+    --muted: 220 25% 18%;
+    --muted-foreground: 200 30% 65%;
 
-    --card: 140 30% 10%;
-    --card-foreground: 210 30% 98%;
+    --card: 210 40% 8%;
+    --card-foreground: 185 100% 88%;
 
-    --popover: 140 30% 9%;
-    --popover-foreground: 210 30% 98%;
+    --popover: 210 40% 7%;
+    --popover-foreground: 185 100% 88%;
 
-    --border: 140 25% 25%;
-    --input: 140 20% 15%;
+    --border: 190 80% 40%;
+    --input: 210 35% 12%;
 
-    --primary: 135 65% 45%;
-    --primary-foreground: 200 100% 95%;
+    --primary: 190 95% 55%;
+    --primary-foreground: 210 100% 98%;
 
-    --secondary: 210 10% 12%;
-    --secondary-foreground: 210 20% 85%;
+    --secondary: 220 15% 20%;
+    --secondary-foreground: 190 50% 80%;
 
-    --accent: 135 60% 58%;
-    --accent-foreground: 200 100% 95%;
+    --accent: 180 100% 50%;
+    --accent-foreground: 210 100% 98%;
 
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 210 20% 98%;
+    --destructive: 0 65% 50%;
+    --destructive-foreground: 0 0% 98%;
 
-    --ring: 135 60% 58%;
+    --ring: 180 100% 50%;
   }
 }
 
@@ -92,12 +92,12 @@ body {
 }
 
 .glassmorphic {
-  background-color: hsla(var(--card), 0.65); /* Use card color with more transparency */
-  backdrop-filter: blur(10px) saturate(120%); /* Slightly softer blur */
-  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  background-color: hsla(var(--card), 0.6); /* Dark card base, slightly more transparent */
+  backdrop-filter: blur(6px) saturate(160%); /* Less blur, more saturation for "crisp" glass */
+  -webkit-backdrop-filter: blur(6px) saturate(160%);
   border-width: 1px;
-  border-color: hsla(var(--border), 0.25); /* More subtle border for glass edges */
-  box-shadow: 0 6px 24px 0 rgba(0, 0, 0, 0.3); /* Softer shadow */
+  border-color: hsla(var(--accent), 0.35); /* Glowing accent border */
+  box-shadow: 0 2px 10px hsla(var(--accent), 0.2), 0 0 3px hsla(var(--foreground), 0.1); /* Subtle accent glow and foreground diffusion */
 }
 
 .radiant-text {
@@ -149,7 +149,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.8);
+  background-color: rgba(0, 0, 0, 0.85); /* Darker overlay for more contrast */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -172,9 +172,9 @@ body {
 }
 
 .wallet-provider {
-  background-color: hsl(var(--card)); /* Use theme card */
+  /* background-color: hsl(var(--card)); Will be glassmorphic */
   color: hsl(var(--card-foreground)); /* Use theme card foreground */
-  border: 1px solid hsl(var(--border));
+  /* border: 1px solid hsl(var(--border)); Will be glassmorphic border */
   border-radius: 0.5rem; /* Consistent with ShadCN radius */
   padding: 0.9375rem; /* 15px */
   width: 8.125rem; /* 130px */
@@ -182,18 +182,19 @@ body {
   flex-direction: column;
   align-items: center;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: transform 0.2s, border-color 0.2s;
   @apply button-3d-interactive;
   @apply glassmorphic; /* Apply glassmorphic effect */
 }
 
 .wallet-provider:hover {
   transform: scale(1.05);
-  border-color: hsl(var(--primary));
+  border-color: hsl(var(--primary)); /* Glow with primary color on hover */
 }
 
 .wallet-provider.native-wallet {
-  border: 2px solid hsl(var(--accent)); /* Use theme accent */
+  border-width: 2px; /* Make native wallet stand out slightly more */
+  border-color: hsl(var(--accent)); /* Use theme accent */
 }
 
 .wallet-icon {
@@ -205,7 +206,7 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background-color: hsl(var(--muted)); /* Use theme muted */
+  background-color: hsla(var(--muted), 0.7); /* Use theme muted with some transparency */
   color: hsl(var(--accent));
 }
 .wallet-icon svg {
@@ -221,8 +222,12 @@ body {
   background: none;
   border: none;
   color: hsl(var(--foreground)); /* Use theme foreground */
-  font-size: 1.5rem; /* 24px */
+  font-size: 1.8rem; /* Slightly larger */
   cursor: pointer;
+  transition: color 0.2s;
+}
+.close-wallet-options:hover {
+  color: hsl(var(--accent));
 }
 
 
@@ -240,6 +245,7 @@ body {
   transform: translateY(100%);
   transition: transform 0.3s;
   z-index: 900;
+  box-shadow: 0 -2px 10px hsla(var(--primary), 0.3); /* Add a top shadow for depth */
 }
 
 .mobile-banner.show {
@@ -265,19 +271,23 @@ body {
 .mobile-banner button#dismiss-banner {
   background-color: transparent;
   color: hsl(var(--primary-foreground));
-  border: 1px solid hsl(var(--primary-foreground));
+  border: 1px solid hsla(var(--primary-foreground), 0.7); /* Slightly softer border */
+}
+.mobile-banner button#dismiss-banner:hover {
+  border-color: hsl(var(--primary-foreground));
+  background-color: hsla(var(--primary-foreground), 0.1);
 }
 
 /* QR Code wallet-specific styling */
 .qr-wallet-info {
   margin-top: 0.9375rem; /* 15px */
   padding: 0.625rem; /* 10px */
-  background-color: hsl(var(--muted) / 0.5); /* Use theme muted with transparency */
+  background-color: hsla(var(--muted), 0.5); /* Use theme muted with transparency */
   border-radius: 0.25rem;
   font-size: 0.875rem; /* 14px */
   text-align: center;
-  @apply radiant-text;
   color: hsl(var(--muted-foreground));
+  border: 1px solid hsla(var(--border), 0.2);
 }
 
 /* Force display on small screens */
