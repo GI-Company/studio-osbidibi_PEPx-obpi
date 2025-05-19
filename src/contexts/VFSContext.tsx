@@ -23,7 +23,7 @@ export type VFSTree = Record<string, VFSItem>; // Represents the root, children 
 
 interface VFSContextType {
   fileSystem: VFSTree;
-  getItem: (path: string) => VFSItem | undefined; // retrieveOriginal flag removed as original is always in .content
+  getItem: (path: string) => VFSItem | undefined;
   listPath: (path: string) => VFSItem[];
   createFile: (path: string, fileName: string, content?: string) => boolean;
   createFolder: (path: string, folderName: string) => boolean;
@@ -213,7 +213,7 @@ export const VFSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const getItem = useCallback((path: string): VFSItem | undefined => {
-    const { item } = _navigateToPath(fileSystem, path);
+    const { item } = _navigateToPathInternal(fileSystem, path);
     // The `item.content` always holds the original content.
     // `item.pepxData` holds the conceptual encoded version.
     // `convertFromPEPx` would be used if you only had `pepxData` and needed to show the original.
@@ -221,7 +221,7 @@ export const VFSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [fileSystem]);
 
   const listPath = useCallback((path: string): VFSItem[] => {
-    const { item } = _navigateToPath(fileSystem, path);
+    const { item } = _navigateToPathInternal(fileSystem, path);
     if (item && item.type === 'folder' && item.children) {
       return Object.values(item.children);
     }
@@ -414,3 +414,4 @@ export const useVFS = (): VFSContextType => {
 // _navigateToPath is kept internal to the context
 // No changes needed to _navigateToPath function itself from the previous version.
 // It correctly identifies parent and item/itemName.
+
