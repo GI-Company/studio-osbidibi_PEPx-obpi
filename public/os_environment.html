@@ -1,0 +1,3571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OBPI - Operational in Browser Persisted Instance v0.7 (PEPx IDE)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
+    <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+    <style>
+        /* Chronological Tag: 20250525200000 - Original OBPI Styles */
+        :root {
+            --bg-color: #1a1a2e;
+            --window-bg: rgba(245, 245, 245, 0.97);
+            --window-border: #909090;
+            --window-header-bg: #2c2f3b;
+            --text-color-dark: #1f2937;
+            --text-color-light: #e5e7eb;
+            --accent-color: #6366f1; /* Indigo-500 */
+            --accent-color-darker: #4f46e5; /* Indigo-600 */
+            --taskbar-bg: rgba(25, 28, 38, 0.98);
+            --font-main: 'Inter', sans-serif;
+            --font-mono: 'Roboto Mono', monospace;
+            /* PEPx Specific Colors from its original CSS */
+            --pepx-primary-color: #3498db;
+            --pepx-secondary-color: #2980b9;
+            --pepx-bg-color: #f5f5f5;
+            --pepx-light-bg: #ffffff;
+            --pepx-text-color: #333;
+            --pepx-border-color: #ddd;
+        }
+
+        body.light-theme {
+            --bg-color: #e0e0e0;
+            --window-bg: rgba(255, 255, 255, 0.98);
+            --window-border: #c0c0c0;
+            --window-header-bg: #52525b;
+            --text-color-dark: #18181b;
+            --text-color-light: #f8fafc;
+            --taskbar-bg: rgba(200, 200, 210, 0.98);
+            /* PEPx light theme adjustments */
+            --pepx-primary-color: #3498db;
+            --pepx-secondary-color: #2980b9;
+            --pepx-bg-color: #f0f0f0;
+            --pepx-light-bg: #ffffff;
+            --pepx-text-color: #333;
+            --pepx-border-color: #ccc;
+        }
+
+        body.light-theme #desktop {
+            background-color: var(--bg-color);
+        }
+
+        body.light-theme .taskbar {
+            background-color: var(--taskbar-bg);
+            border-top: 1px solid #a0a0b0;
+        }
+
+        body.light-theme .taskbar-button {
+            background-color: rgba(0,0,0,0.1);
+            color: var(--text-color-dark);
+        }
+
+        body.light-theme .taskbar-button:hover {
+            background-color: rgba(0,0,0,0.2);
+        }
+
+        body.light-theme .os-window {
+            background-color: var(--window-bg);
+            border-color: var(--window-border);
+            color: var(--text-color-dark);
+        }
+
+        body.light-theme .window-header {
+            background-color: var(--window-header-bg);
+            color: var(--text-color-light);
+        }
+
+        body.light-theme .window-content {
+            background-color: #ffffff;
+            color: var(--text-color-dark);
+        }
+
+        body.light-theme #window-terminal .window-content {
+            background-color: #f0f0f0;
+            color: #121212;
+        }
+
+        body.light-theme #terminal-prompt {
+            color: #2563eb;
+        }
+
+        body.light-theme #terminal-input {
+            color: #121212;
+            caret-color: #121212;
+        }
+
+        body.light-theme #pyscript-output-area,
+        body.light-theme #pyide-output-area {
+            background-color: #f9f9f9;
+            color: #333;
+            border-color: #ddd;
+        }
+
+        body.light-theme #pyscript-code-area,
+        body.light-theme #pyide-code-area {
+            background-color: #fff;
+            color: #333;
+            border-color: #ccc;
+        }
+
+        body.light-theme #window-ai-assistant .window-content {
+            background-color: #e5e7eb;
+            color: #1f2937;
+        }
+
+        body.light-theme .ai-message.user {
+            background-color: var(--accent-color);
+        }
+
+        body.light-theme .ai-message.assistant {
+            background-color: #d1d5db;
+        }
+
+        body.light-theme .desktop-icon span {
+            color: var(--text-color-dark);
+            text-shadow: 1px 1px 1px #fff;
+        }
+
+        /* PEPx light theme specific window content */
+        body.light-theme #window-pepx-ide-app .window-content,
+        body.light-theme #window-pepx-explorer .window-content {
+            background-color: var(--pepx-bg-color);
+            color: var(--pepx-text-color);
+        }
+
+        body.light-theme #window-pepx-ide-app .pepx-toolbar,
+        body.light-theme #window-pepx-explorer .pepx-toolbar {
+            background-color: #e8e8e8;
+            border-bottom-color: var(--pepx-border-color);
+        }
+
+        body.light-theme #window-pepx-ide-app .pepx-toolbar button,
+        body.light-theme #window-pepx-explorer .pepx-toolbar button {
+            background-color: var(--pepx-primary-color);
+        }
+
+        body.light-theme #window-pepx-ide-app .pepx-toolbar button:hover,
+        body.light-theme #window-pepx-explorer .pepx-toolbar button:hover {
+            background-color: var(--pepx-secondary-color);
+        }
+
+        body.light-theme #window-pepx-ide-app .pepx-file-list,
+        body.light-theme #window-pepx-explorer .pepx-file-list {
+            /* No specific change, inherits window content bg */
+        }
+
+        body.light-theme #window-pepx-ide-app .pepx-item:hover,
+        body.light-theme #window-pepx-explorer .pepx-item:hover {
+            background-color: rgba(0,0,0,0.03);
+        }
+
+        body.light-theme #window-pepx-ide-app .pepx-status-bar,
+        body.light-theme #window-pepx-explorer .pepx-status-bar {
+            background-color: #e8e8e8;
+            border-top-color: var(--pepx-border-color);
+            color: #444;
+        }
+
+        body {
+            font-family: var(--font-main);
+            overflow: hidden;
+            background-color: var(--bg-color);
+            color: var(--text-color-light);
+            margin: 0; /* Ensure no default body margin */
+        }
+
+        .cli-font {
+            font-family: var(--font-mono);
+        }
+
+        .os-window {
+            min-width: 320px;
+            min-height: 220px;
+            background-color: var(--window-bg);
+            border: 1px solid var(--window-border);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            border-radius: 10px;
+            overflow: hidden; /* Important for resize handles and content clipping */
+            resize: both; /* Allow user resizing */
+        }
+
+        .os-window.active-window {
+            border-color: var(--accent-color);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.35);
+        }
+
+        .window-header {
+            background-color: var(--window-header-bg);
+            color: var(--text-color-light);
+            padding: 10px 15px;
+            cursor: move;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top-left-radius: 9px; /* Match window border-radius */
+            border-top-right-radius: 9px;
+            user-select: none; /* Prevent text selection while dragging */
+        }
+
+        .window-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .window-controls button {
+            background: none;
+            border: none;
+            color: var(--text-color-light);
+            font-size: 1.2rem;
+            padding: 2px 5px;
+            margin-left: 7px;
+            cursor: pointer;
+            border-radius: 4px;
+            line-height: 1; /* Critical for button alignment */
+        }
+
+        .window-controls button:hover {
+            background-color: rgba(255,255,255,0.15);
+        }
+
+        .window-content {
+            flex-grow: 1;
+            padding: 0; /* Apps like PEPx IDE will handle internal padding */
+            overflow: auto; /* Changed to auto to allow for scrollbars if content exceeds */
+            background-color: var(--window-bg); /* Default, apps can override */
+            color: var(--text-color-dark); /* Default for content */
+            /* Ensure height:100% if children need to fill this area */
+            height: calc(100% - 40px); /* Approx header height */
+        }
+
+        .window-content iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        #desktop {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            overflow: hidden;
+            padding: 10px; /* Padding for desktop icons */
+            display: flex; /* For icon layout */
+            flex-direction: column; /* Or row, depending on preference */
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap:10px;
+        }
+
+        .desktop-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 80px;
+            padding: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            user-select:none;
+        }
+
+        .desktop-icon:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+
+        .desktop-icon img,
+        .desktop-icon .icon-placeholder {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 5px;
+            object-fit: contain;
+        }
+
+        .desktop-icon .icon-placeholder {
+            font-size: 32px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            background-color: rgba(255,255,255,0.05);
+            border-radius:4px;
+        }
+
+        .desktop-icon span {
+            font-size: 0.75rem;
+            color: var(--text-color-light);
+            word-break: break-word;
+            line-height: 1.2;
+            max-height: 2.4em; /* approx 2 lines */
+            overflow:hidden;
+        }
+
+        #webgl-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -10; /* Behind desktop icons and windows */
+        }
+
+        .taskbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background-color: var(--taskbar-bg);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            z-index: 10000;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .taskbar-button {
+            background-color: rgba(255,255,255,0.1);
+            color: var(--text-color-light);
+            padding: 7px 14px;
+            margin-right: 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 0.85rem;
+            border: 1px solid transparent; /* For hover effect */
+        }
+
+        .taskbar-button:hover {
+            background-color: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.3);
+        }
+
+        #start-menu {
+            position: fixed;
+            bottom: 50px; /* Above taskbar */
+            left: 0;
+            background-color: var(--taskbar-bg); /* Consistent with taskbar */
+            border: 1px solid rgba(255,255,255,0.2);
+            border-bottom:none;
+            border-top-right-radius: 8px;
+            padding: 10px;
+            z-index: 9999; /* Below taskbar buttons, above windows typically */
+            min-width: 250px;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
+        }
+
+        .start-menu-item {
+            display: block;
+            padding: 8px 12px;
+            color: var(--text-color-light);
+            text-decoration: none;
+            border-radius: 4px;
+            font-size:0.9rem;
+        }
+        .start-menu-item:hover {
+            background-color: var(--accent-color);
+        }
+
+        .context-menu {
+            position: absolute;
+            background-color: #fff; /* Usually light for context menus */
+            border: 1px solid #ccc;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border-radius: 6px;
+            padding: 8px 0; /* Padding around the list of items */
+            z-index: 20000; /* Very high, above everything */
+            min-width: 180px;
+        }
+
+        .context-menu-item {
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #333; /* Dark text for light background */
+        }
+        .context-menu-item:hover {
+            background-color: #f0f0f0; /* Light gray hover */
+        }
+
+        /* Terminal Specific - padding handled by #window-terminal .window-content */
+        #window-terminal .window-content {
+            background-color: #121212;
+            color: #e0e0e0;
+            padding: 12px; /* Overall padding for the terminal content */
+            display: flex;
+            flex-direction: column-reverse; /* Output appears above input line */
+        }
+
+        #terminal-output {
+            white-space: pre-wrap;
+            word-break: break-all;
+            flex-grow: 1; /* Takes available space */
+            overflow-y: auto; /* Added for long output */
+        }
+
+        #terminal-input-line {
+            display: flex;
+            align-items: center;
+            padding-top: 6px; /* Space above input line */
+            flex-shrink: 0; /* Prevent input line from shrinking */
+        }
+
+        #terminal-prompt {
+            color: #00aaff; /* Bright blue prompt */
+            margin-right: 8px;
+        }
+
+        #terminal-input {
+            background-color: transparent;
+            border: none;
+            color: #f0f0f0; /* Light input text */
+            outline: none;
+            flex-grow: 1;
+            caret-color: #f0f0f0; /* Light caret */
+        }
+
+        /* AI Assistant Specific - padding handled by #window-ai-assistant .window-content */
+        #window-ai-assistant .window-content {
+            display: flex;
+            flex-direction: column;
+            background-color: #252a34; /* Dark chat background */
+            color: #e0e0e0;
+            padding:0; /* Child elements will handle their own padding */
+        }
+
+        #ai-chat-output {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 12px;
+            border-bottom: 1px solid #3a3f4b; /* Separator */
+        }
+
+        .ai-message {
+            margin-bottom: 12px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            max-width: 85%;
+            word-wrap: break-word;
+            line-height: 1.5;
+        }
+
+        .ai-message.user {
+            background-color: var(--accent-color);
+            color: white;
+            margin-left: auto; /* Align user messages to the right */
+            text-align: left; /* Text within bubble left-aligned */
+        }
+
+        .ai-message.assistant {
+            background-color: #3a3f4b; /* Darker bubble for assistant */
+            margin-right: auto; /* Align assistant messages to the left */
+        }
+
+        #ai-input-area {
+            display: flex;
+            padding: 12px;
+            border-top: 1px solid #3a3f4b; /* Separator */
+        }
+
+        #ai-input {
+            flex-grow: 1;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid #4a4f5a;
+            background-color: #3a3f4b;
+            color: #e0e0e0;
+            outline: none;
+        }
+
+        #ai-send-button {
+            margin-left: 10px;
+            padding: 10px 18px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        #ai-send-button:hover {
+            background-color: var(--accent-color-darker);
+        }
+
+        /* Disk Manager Specific - padding handled by #window-disk-manager .window-content */
+        #window-disk-manager .window-content {
+            padding: 15px;
+        }
+        .volume-item {
+            background-color: #e9ecef; /* Light gray item */
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom:10px;
+            border: 1px solid #ced4da;
+        }
+        .volume-item strong {
+            color: var(--accent-color);
+        }
+
+        /* Ncurses App Specific - padding handled by #window-ncurses-app .window-content */
+        #window-ncurses-app .window-content {
+            background-color: #000033; /* Dark blue, common for ncurses */
+            color: #c0c0c0; /* Light gray text */
+            font-family: 'Courier New', Courier, monospace; /* Monospace font */
+            padding: 5px;
+            overflow: hidden; /* Ncurses apps typically don't scroll */
+        }
+        .ncurses-char { /* For simulating character cells if needed */
+            display: inline-block;
+            width: 0.6em; /* Adjust for font */
+            text-align: center;
+        }
+
+        /* PyScript Runner & PyIDE Specific - padding handled by window content */
+        #window-pyscript-runner .window-content,
+        #window-py-ide .window-content {
+            display: flex;
+            flex-direction: column;
+            gap: 10px; /* Space between code area, buttons, output */
+            padding:10px;
+        }
+        #pyscript-code-area,
+        #pyide-code-area {
+            font-family: var(--font-mono);
+            flex-grow: 1;
+            border: 1px solid #ccc;
+            padding: 8px;
+            border-radius: 4px;
+            background-color: #fdfdfd; /* Very light for code */
+            color: #333; /* Dark text */
+        }
+        #pyscript-output-area,
+        #pyide-output-area {
+            height: 150px;
+            background-color: #1e1e1e; /* Dark console-like output */
+            color: #e0e0e0; /* Light text for output */
+            border: 1px solid #333;
+            padding: 8px;
+            border-radius: 4px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: var(--font-mono);
+        }
+
+        /* Fullscreen Lock Overlay for Pointer Lock */
+        .fullscreen-lock-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0,0,0,0.3); /* Optional visual cue */
+            z-index: 9999; /* Above desktop, below active window if needed */
+            display: none; /* Hidden by default */
+        }
+        body:fullscreen #fullscreen-lock-overlay, /* Standard fullscreen */
+        body:-webkit-full-screen #fullscreen-lock-overlay { /* Safari */
+            display: block; /* Show when fullscreen */
+        }
+
+        /* Network & Bluetooth Manager List Styles */
+        #window-network-manager .window-content ul,
+        #window-bluetooth-manager .window-content ul {
+            list-style: none;
+            padding:0;
+        }
+        #window-network-manager .window-content li,
+        #window-bluetooth-manager .window-content li {
+            background-color: #e9ecef;
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            display:flex;
+            justify-content: space-between;
+            align-items:center;
+        }
+        #window-network-manager .window-content,
+        #window-bluetooth-manager .window-content {
+            padding: 15px; /* Add padding for these apps */
+        }
+
+
+        /* PEPx File Explorer Specific Styles (Used by PEPx IDE as well) */
+        #window-pepx-explorer .window-content,
+        #window-pepx-ide-app .window-content { /* Chronological Tag: 20250525200001 - Apply PEPx IDE styles to its window */
+            padding: 0; /* PEPx manages its own internal padding */
+            background-color: var(--pepx-bg-color);
+            color: var(--pepx-text-color);
+            height: 100%; /* Ensure it fills the window content area */
+            display: flex; /* Enable flex for PEPxFileManager's own layout */
+            flex-direction: column; /* Or row if PEPx IDE structure needs it at top level */
+        }
+
+        .pepx-file-manager {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            border: none; /* Removed border as it's inside a window */
+            border-radius: 0;
+            overflow: hidden;
+        }
+
+        .pepx-toolbar {
+            display: flex;
+            padding: 10px;
+            background-color: #f0f0f0; /* Slightly different from main content bg */
+            border-bottom: 1px solid var(--pepx-border-color);
+            align-items: center;
+            flex-shrink: 0; /* Prevent toolbar from shrinking */
+        }
+
+        .pepx-toolbar button {
+            background-color: var(--pepx-primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 10px;
+            margin-right: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .pepx-toolbar button:hover {
+            background-color: var(--pepx-secondary-color);
+        }
+        .pepx-toolbar input#pepx-path-display {
+            flex-grow: 1;
+            padding: 6px;
+            border: 1px solid var(--pepx-border-color);
+            border-radius: 4px;
+            font-size: 0.8rem;
+            background-color: var(--pepx-light-bg); /* Consistent with file list bg */
+            color: var(--pepx-text-color);
+        }
+
+        .pepx-file-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* Icon view */
+            gap: 10px;
+            background-color: var(--pepx-light-bg);
+        }
+
+        .pepx-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+            border: 1px solid transparent; /* For hover outline */
+        }
+
+        .pepx-item:hover {
+            background-color: rgba(0, 0, 0, 0.05); /* Subtle hover */
+            border-color: var(--pepx-border-color);
+        }
+
+        .pepx-icon {
+            font-size: 28px; /* Adjust icon size */
+            margin-bottom: 4px;
+        }
+
+        .pepx-name {
+            text-align: center;
+            font-size: 11px;
+            word-break: break-word;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap; /* Can be 'normal' for wrapping short names */
+            line-height:1.2;
+        }
+        .pepx-size {
+            font-size: 9px;
+            color: #777;
+            margin-top: 2px;
+        }
+
+        .pepx-status-bar {
+            padding: 6px 10px;
+            background-color: #f0f0f0;
+            border-top: 1px solid var(--pepx-border-color);
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #555;
+            flex-shrink: 0; /* Prevent status bar from shrinking */
+        }
+
+        /* PEPx Modal (re-using OBPI's modal for consistency, but can be styled uniquely if needed) */
+        .pepx-modal-body img {
+            max-width: 100%;
+            display: block;
+            margin: 0 auto;
+            border-radius: 4px;
+        }
+        .pepx-modal-body pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            margin: 0;
+            font-family: var(--font-mono);
+            background-color: #f8f8f8; /* Light bg for code view */
+            padding:10px;
+            border-radius:4px;
+            max-height: 60vh; /* Limit height */
+            overflow-y:auto;
+        }
+        /* PEPx Context Menu (re-using OBPI's for consistency) */
+
+
+        /* Chronological Tag: 20250525200002 - Styles for PEPx IDE internal console. */
+        #pepx-ide-console {
+            /* Existing styles */
+        }
+        #pepx-ide-console .console-input-line {
+            display: flex;
+            align-items: center;
+            padding-top: 5px;
+        }
+        #pepx-ide-console .console-prompt {
+            color: #00aaff; /* PEPx IDE Console prompt color */
+            margin-right: 8px;
+            white-space: nowrap;
+        }
+        #pepx-ide-console .console-input {
+            background-color: transparent;
+            border: none;
+            color: #f0f0f0; /* Text color in console input */
+            outline: none;
+            flex-grow: 1;
+            caret-color: #f0f0f0; /* Caret color in console input */
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+        }
+        .hidden {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="desktop">
+        <canvas id="webgl-canvas"></canvas>
+        <div id="fullscreen-lock-overlay" class="fullscreen-lock-overlay"></div>
+    </div>
+
+    <div class="taskbar">
+        <button id="start-menu-button" class="taskbar-button">🚀 OBPI</button>
+        <div id="taskbar-apps-container" style="display: flex; margin-left: 10px;"></div>
+    </div>
+    <div id="start-menu" class="hidden">
+    </div>
+
+    <div id="context-menu" class="context-menu hidden"></div>
+
+    <div id="generic-modal" class="fixed inset-0 bg-black bg-opacity-60 items-center justify-center z-[15000] hidden">
+        <div class="bg-white p-6 rounded-lg shadow-xl max-w-md w-full text-gray-800">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modal-title" class="text-xl font-semibold">Modal Title</h3>
+                <button id="modal-close-button" class="text-2xl hover:text-red-500">×</button>
+            </div>
+            <div id="modal-content" class="mb-4"><p>Modal content goes here...</p></div>
+            <div id="modal-actions" class="flex justify-end space-x-3"></div>
+        </div>
+    </div>
+
+    <div id="pyscript-global-output" class="hidden"></div> <!-- For PyScript to have a target if needed -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // --- Chronological Tag: 20250525153000 ---
+
+        // --- Core OBPI Interfaces (Simplified for context) ---
+        // These are global placeholders for OBPI and Modal functionalities.
+        // They are defined here to ensure they are available before any other script tries to use them.
+        if (typeof OBPI === 'undefined') {
+            window.OBPI = {
+                kernel: {
+                    log: (message, type = 'info') => {
+                        // Fallback to console if a more sophisticated logger isn't fully initialized yet
+                        console.log(`[OBPI.kernel.${type.toUpperCase()}] ${message}`);
+                    }
+                },
+                contextMenuElement: document.createElement('div')
+            };
+            OBPI.contextMenuElement.id = 'obpi-context-menu'; // Set ID for styling
+            Object.assign(OBPI.contextMenuElement.style, {
+                position: 'absolute', zIndex: '10000', backgroundColor: 'var(--pepx-bg-color)',
+                border: '1px solid var(--pepx-border-color)', borderRadius: '4px',
+                boxShadow: '0 2px 5px rgba(0,0,0,0.2)', padding: '5px 0', minWidth: '120px',
+                transition: 'opacity 0.1s ease-in-out', opacity: '0', visibility: 'hidden',
+            });
+            OBPI.contextMenuElement.classList.add('hidden'); // Start hidden by class
+            document.body.appendChild(OBPI.contextMenuElement); // Append early
+
+            window.Modal = {
+                _modalElement: null,
+                _createModal() {
+                    if (this._modalElement) return;
+                    this._modalElement = document.createElement('div');
+                    this._modalElement.id = 'obpi-modal-overlay';
+                    Object.assign(this._modalElement.style, {
+                        position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
+                        backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center',
+                        alignItems: 'center', zIndex: '20000', visibility: 'hidden', opacity: '0',
+                        transition: 'opacity 0.2s ease-in-out',
+                    });
+                    this._modalElement.innerHTML = `
+                        <div id="obpi-modal-content" style="background-color: var(--pepx-bg-color); padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); max-width: 90%; max-height: 90%; overflow-y: auto; display: flex; flex-direction: column; min-width: 300px;">
+                            <h3 id="obpi-modal-title" style="margin-top: 0; color: var(--pepx-text-color);"></h3>
+                            <div id="obpi-modal-body" style="flex-grow: 1; margin-bottom: 20px; color: var(--pepx-text-color);"></div>
+                            <div id="obpi-modal-buttons" style="display: flex; justify-content: flex-end; gap: 10px;"></div>
+                        </div>
+                    `;
+                    document.body.appendChild(this._modalElement);
+                },
+                show(title, content, buttons = [{ text: 'OK', handler: () => { } }]) {
+                    this._createModal();
+                    this._modalElement.querySelector('#obpi-modal-title').innerHTML = title;
+                    this._modalElement.querySelector('#obpi-modal-body').innerHTML = content;
+                    const buttonContainer = this._modalElement.querySelector('#obpi-modal-buttons');
+                    buttonContainer.innerHTML = '';
+                    buttons.forEach(btnConfig => {
+                        const button = document.createElement('button');
+                        button.textContent = btnConfig.text;
+                        Object.assign(button.style, { backgroundColor: 'var(--pepx-primary-color)', color: 'white', border: 'none', borderRadius: '4px', padding: '8px 15px', cursor: 'pointer', fontSize: '0.9rem' });
+                        button.onclick = () => { this.hide(); if (btnConfig.handler) btnConfig.handler(); };
+                        buttonContainer.appendChild(button);
+                    });
+                    this._modalElement.style.visibility = 'visible'; this._modalElement.style.opacity = '1';
+                },
+                prompt(title, message, defaultValue = '', callback) {
+                    this._createModal();
+                    this._modalElement.querySelector('#obpi-modal-title').innerHTML = title;
+                    this._modalElement.querySelector('#obpi-modal-body').innerHTML = `<p style="color: var(--pepx-text-color);">${message}</p><input type="text" id="obpi-prompt-input" value="${defaultValue}" style="width: 100%; padding: 8px; border: 1px solid var(--pepx-border-color); border-radius: 4px; background-color: var(--pepx-light-bg); color: var(--pepx-text-color);">`;
+                    const buttonContainer = this._modalElement.querySelector('#obpi-modal-buttons'); buttonContainer.innerHTML = '';
+                    const okButton = document.createElement('button'); okButton.textContent = 'OK'; Object.assign(okButton.style, { backgroundColor: 'var(--pepx-primary-color)', color: 'white', border: 'none', borderRadius: '4px', padding: '8px 15px', cursor: 'pointer', fontSize: '0.9rem' });
+                    okButton.onclick = () => { const inputValue = this._modalElement.querySelector('#obpi-prompt-input').value; this.hide(); if (callback) callback(inputValue); };
+                    const cancelButton = document.createElement('button'); cancelButton.textContent = 'Cancel'; Object.assign(cancelButton.style, { backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', padding: '8px 15px', cursor: 'pointer', fontSize: '0.9rem', marginRight: '10px' });
+                    cancelButton.onclick = () => { this.hide(); if (callback) callback(null); };
+                    buttonContainer.appendChild(cancelButton); buttonContainer.appendChild(okButton);
+                    this._modalElement.style.visibility = 'visible'; this._modalElement.style.opacity = '1';
+                },
+                confirm(title, message, callback) {
+                    this._createModal();
+                    this._modalElement.querySelector('#obpi-modal-title').innerHTML = title;
+                    this._modalElement.querySelector('#obpi-modal-body').innerHTML = `<p style="color: var(--pepx-text-color);">${message}</p>`;
+                    const buttonContainer = this._modalElement.querySelector('#obpi-modal-buttons'); buttonContainer.innerHTML = '';
+                    const yesButton = document.createElement('button'); yesButton.textContent = 'Yes'; Object.assign(yesButton.style, { backgroundColor: 'var(--pepx-primary-color)', color: 'white', border: 'none', borderRadius: '4px', padding: '8px 15px', cursor: 'pointer', fontSize: '0.9rem' });
+                    yesButton.onclick = () => { this.hide(); if (callback) callback(true); };
+                    const noButton = document.createElement('button'); noButton.textContent = 'No'; Object.assign(noButton.style, { backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', padding: '8px 15px', cursor: 'pointer', fontSize: '0.9rem', marginRight: '10px' });
+                    noButton.onclick = () => { this.hide(); if (callback) callback(false); };
+                    buttonContainer.appendChild(noButton); buttonContainer.appendChild(yesButton);
+                    this._modalElement.style.visibility = 'visible'; this._modalElement.style.opacity = '1';
+                },
+                hide() {
+                    if (this._modalElement) {
+                        this._modalElement.style.opacity = '0';
+                        this._modalElement.addEventListener('transitionend', () => { if (this._modalElement) this._modalElement.style.visibility = 'hidden'; }, { once: true });
+                    }
+                }
+            };
+            // Hide context menu on global click
+            document.addEventListener('click', (e) => {
+                if (OBPI.contextMenuElement && !OBPI.contextMenuElement.contains(e.target)) {
+                    OBPI.contextMenuElement.classList.add('hidden');
+                }
+            });
+        }
+
+        // --- logger.js ---
+        // Centralized logging utility for the PEPx application.
+        class Logger {
+            constructor(outputElementId = 'pepx-console-output-area') {
+                this.outputElementId = outputElementId;
+                this.outputElement = document.getElementById(this.outputElementId);
+                if (!this.outputElement) {
+                    console.warn(`Logger: Output element #${outputElementId} not found initially.`);
+                }
+            }
+
+            // Method to re-bind the output element if it's created dynamically later
+            setOutputElement(element) {
+                this.outputElement = element;
+                if (!this.outputElement) {
+                    console.error(`Logger: Failed to set output element to provided element. Logging to console only.`);
+                }
+            }
+
+            _appendMessage(message, type = 'info', color = '#eee') {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                let typeColor = color;
+                switch(type.toLowerCase()){
+                    case 'error': typeColor = '#FF6347'; break; // Tomato
+                    case 'warn': typeColor = '#FFD700'; break; // Gold
+                    case 'success': typeColor = '#90EE90'; break; // LightGreen
+                    case 'info': typeColor = '#ADD8E6'; break; // LightBlue
+                    default: typeColor = '#eee'; break; // Default log color
+                }
+
+                logEntry.innerHTML = `<span style="color: #888;">[${timestamp}]</span> <span style="color: ${typeColor}; font-weight: ${type === 'error' || type === 'warn' ? 'bold' : 'normal'};">${type.toUpperCase()}:</span> ${message}`;
+                if (this.outputElement) {
+                    this.outputElement.appendChild(logEntry);
+                    this.outputElement.scrollTop = this.outputElement.scrollHeight; // Auto-scroll
+                }
+                // Always log to browser console for debugging
+                if (type === 'error') console.error(`[PEPx ${type.toUpperCase()}] ${message}`);
+                else if (type === 'warn') console.warn(`[PEPx ${type.toUpperCase()}] ${message}`);
+                else console.log(`[PEPx ${type.toUpperCase()}] ${message}`);
+            }
+
+            info(...args) {
+                this._appendMessage(args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' '), 'info');
+            }
+
+            warn(...args) {
+                this._appendMessage(args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' '), 'warn');
+            }
+
+            error(...args) {
+                this._appendMessage(args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' '), 'error');
+            }
+
+            success(...args) {
+                this._appendMessage(args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' '), 'success');
+            }
+
+            log(...args) { // Generic log for console output
+                this._appendMessage(args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' '), 'log');
+            }
+
+            clear() {
+                if (this.outputElement) {
+                    this.outputElement.innerHTML = '<div style="font-weight: bold; margin-bottom: 5px; color: #777;">Console Output</div>';
+                }
+            }
+        }
+        const logger = new Logger(); // Instantiate global logger
+
+        // --- Scalable UI (for PEPx IDE layout) ---
+        // Chronological Tag: 20250525200013 - ScalableUI class.
+        class ScalableUI {
+            constructor(ideContainerElement) { // Accepts direct element, not ID
+                this.ideContainer = ideContainerElement;
+                if (!this.ideContainer) {
+                    logger.error(`ScalableUI: IDE container element not found. Cannot initialize.`);
+                    return;
+                }
+                // Elements are queried after IDE HTML structure is injected
+                this.breakpoint = 768; // px, typical tablet breakpoint
+                this.init();
+            }
+
+            _queryElements() {
+                this.sidebar = this.ideContainer.querySelector('#pepx-ide-sidebar');
+                this.console = this.ideContainer.querySelector('#pepx-ide-console');
+                this.editorContainer = this.ideContainer.querySelector('#pepx-ide-editor-container');
+                this.mainArea = this.ideContainer.querySelector('#pepx-ide-main-area');
+            }
+
+
+            init() {
+                this._queryElements(); // Query elements once structure is expected to be there
+                window.addEventListener('resize', this.adjustLayout.bind(this));
+                this.adjustLayout(); // Initial adjustment
+                logger.info("ScalableUI: Initialized responsive layout listener for PEPx IDE.");
+            }
+
+            adjustLayout() {
+                this._queryElements(); // Ensure elements are fresh if DOM changes
+                if (!this.sidebar || !this.console || !this.editorContainer || !this.mainArea) {
+                    // logger.warn("ScalableUI: Not all IDE components found for layout adjustment."); // Too chatty
+                    return;
+                }
+
+                const width = this.ideContainer.offsetWidth; // Use container's width
+                if (width < this.breakpoint) {
+                    // Mobile layout
+                    this.sidebar.style.width = '100%';
+                    this.sidebar.style.height = '200px'; // Or some percentage like 30%
+                    this.sidebar.style.borderRight = 'none';
+                    this.sidebar.style.borderBottom = '1px solid var(--pepx-border-color)';
+
+                    this.mainArea.style.flexDirection = 'column';
+                    this.editorContainer.style.flexGrow = '1';
+                    this.console.style.height = '120px'; // Smaller console in mobile
+
+                    // When IDE itself is in a column with sidebar, ensure its own container is flex col
+                    if (this.ideContainer.parentElement && this.ideContainer.parentElement.style.flexDirection === 'column'){
+                        // This is already handled by main body style, but good for explicit control if needed
+                    } else {
+                        this.ideContainer.style.flexDirection = 'column';
+                    }
+
+                } else {
+                    // Desktop layout
+                    this.sidebar.style.width = '250px';
+                    this.sidebar.style.height = '100%'; // Take full height of its parent
+                    this.sidebar.style.borderRight = '1px solid var(--pepx-border-color)';
+                    this.sidebar.style.borderBottom = 'none';
+
+                    this.mainArea.style.flexDirection = 'column'; // main-area within IDE is still column
+                    this.editorContainer.style.flexGrow = '1';
+                    this.console.style.height = '150px';
+
+                    this.ideContainer.style.flexDirection = 'row'; // IDE container arranges sidebar and main-area in a row
+                }
+                // Trigger Monaco editor layout adjustment if it exists
+                if (window.monaco && window.pepxIDE && window.pepxIDE.activeEditor) {
+                    window.pepxIDE.activeEditor.layout();
+                }
+            }
+        }
+
+        // --- AppConfig (for PEPx IDE specific configurations) ---
+        // Chronological Tag: 20250525200014 - AppConfig for PEPx IDE, including conceptual backend/payment info.
+        const AppConfigPEPx = { // Renamed to avoid conflict with OBPI.config
+            ui: {
+                // No need for specific IDs here, as PEPxIDE will get its container element directly
+                consoleOutputElementId: 'pepx-console-output-area', // Still needed for logger init
+                mobileBreakpoint: 768
+            },
+
+            pepxStorage: {
+                canvasDimensions: 4096,
+                totalPlanes: 9,
+                localStorageMetadataKey: 'pepx_metadata_v0.8', // Unique key for PEPx IDE's metadata in localStorage
+            },
+
+            // Conceptual Backend/Payment/Global Access (NOT IMPLEMENTED IN THIS CLIENT-SIDE VERSION)
+            // These are placeholders for features that would require a real server.
+            payment: {
+                info: "Payment processing is a conceptual feature requiring a secure backend integration and a payment gateway (e.g., Stripe, PayPal). This client-side version does not handle real payments."
+            },
+            globalAccess: {
+                info: "Global access, public DNS routing, and self-hosting are conceptual features requiring server-side infrastructure (e.g., actual hosting, DNS configuration, and a backend API for client-server communication). This client-side version simulates access URLs and local operations.",
+                backendDashboard: {
+                    info: "The backend dashboard would be a self-hosted application (e.g., Node.js, Python/Django, PHP/Laravel) with its own configurable network connection to manage user accounts, deployments, payment data, and API access. It is not part of this client-side IDE."
+                },
+                apiSystem: {
+                    info: "A project-specific API system would run on the backend, handling data persistence, complex logic, and secure communication. It would be exposed through the backend dashboard, accessible via a public DNS, and routed internally to specific project endpoints."
+                }
+            }
+        };
+
+        // --- BiterConfig (for PEPx IDE's language runtime) ---
+        // Chronological Tag: 20250525200015 - BiterConfig for custom languages in PEPx IDE.
+        const BiterConfig = {
+            wasmModuleBaseUrl: '/assets/wasm/', // Conceptual: where your compiled .wasm files *would* reside
+
+            languages: {
+                blang: {
+                    name: 'Blang',
+                    fileExtension: '.blang',
+                    wasmFile: 'blang.wasm',
+                    compilerAssist: 'llvm', // Conceptual: hints which assist module to use
+                    runtimeOptions: { memory: 256, stackSize: 64 }
+                },
+                bitegems: {
+                    name: 'BiteGems',
+                    fileExtension: '.bitegems',
+                    wasmFile: 'bitegems.wasm',
+                    compilerAssist: 'pyscript', // Conceptual: hints PyScript for dynamic compilation/transpilation
+                    runtimeOptions: { memory: 128, gcStrategy: 'incremental' }
+                },
+                cib: {
+                    name: 'CIB (Cobal In Browser)',
+                    fileExtension: '.cib',
+                    wasmFile: 'cib.wasm',
+                    compilerAssist: 'llvm',
+                    runtimeOptions: { memory: 512, strictMode: true }
+                },
+                baskell: {
+                    name: 'Baskell',
+                    fileExtension: '.baskell',
+                    wasmFile: 'baskell.wasm',
+                    compilerAssist: 'pyscript',
+                    runtimeOptions: { memory: 192, lazyEvaluation: true }
+                }
+            },
+
+            policies: {
+                security: {
+                    sandboxLevel: 'strict',
+                    allowedAPIs: ['console', 'fetch']
+                },
+                resourceLimits: {
+                    cpuTimeMs: 5000,
+                    maxMemoryBytes: 100 * 1024 * 1024
+                },
+                errorHandling: {
+                    reportToBackend: false, // No backend in this version
+                    displayToUser: true
+                }
+            },
+
+            interconnections: {
+                llvm: {
+                    // LLVM compilation is conceptual; it would require a server-side LLVM compiler or a very large client-side WASM build.
+                    info: "LLVM compilation is conceptual. It would generate WASM from C-like languages.",
+                    compileEndpoint: '/api/compile/llvm', // Conceptual backend endpoint
+                    optimizationLevel: 'O2'
+                },
+                pyscript: {
+                    // PyScript transpilation is conceptual; it would involve loading PyScript runtime and using it.
+                    info: "PyScript transpilation is conceptual. It would dynamically transpile languages like BiteGems/Baskell.",
+                    pyscriptCDN: 'https://pyscript.net/latest/pyscript.min.js', // Example PyScript CDN
+                    transpileFunction: 'window.PyScriptTranspiler.transpile' // Conceptual JS function exposed by PyScript
+                }
+            }
+        };
+
+        // --- Assist (for PEPx IDE's compiler assistance) ---
+        // Chronological Tag: 20250525200016 - Assist class.
+        class Assist {
+            constructor() {
+                logger.info("Assist: Initializing conceptual compiler assistance module for PEPx IDE.");
+                this.pyscriptLoaded = false;
+            }
+
+            async _loadPyScript() {
+                if (this.pyscriptLoaded) {
+                    logger.info("Assist: PyScript already loaded (simulated).");
+                    return;
+                }
+                logger.info(`Assist: Simulating PyScript loading...`);
+                await new Promise(resolve => setTimeout(resolve, 500)); // Simulate loading time
+
+                if (!window.PyScriptTranspiler) {
+                    window.PyScriptTranspiler = {
+                        transpile: (code, lang) => {
+                            logger.info(`Assist: Simulating PyScript transpilation of ${lang} code.`);
+                            return `// Transpiled ${lang} code by PyScript (simulated)\nconsole.log("PyScript says: Running ${lang} code!");\n${code}\n// End transpiled`;
+                        }
+                    };
+                }
+                this.pyscriptLoaded = true;
+                logger.success("Assist: PyScript (simulated) loaded.");
+            }
+
+            async transpileWithPyScript(code, lang) {
+                await this._loadPyScript();
+                if (window.PyScriptTranspiler && typeof window.PyScriptTranspiler.transpile === 'function') {
+                    logger.info(`Assist: Attempting to transpile ${lang} code with PyScript (simulated)...`);
+                    try {
+                        const transpiledCode = window.PyScriptTranspiler.transpile(code, lang);
+                        logger.success(`Assist: PyScript transpilation for ${lang} successful (simulated).`);
+                        return transpiledCode;
+                    } catch (e) {
+                        logger.error(`Assist: PyScript transpilation failed for ${lang} (simulated): ${e.message}`);
+                        throw new Error(`PyScript transpilation failed (simulated): ${e.message}`);
+                    }
+                } else {
+                    logger.error("Assist: PyScript transpiler not available (simulated).");
+                    throw new Error("PyScript transpiler not initialized (simulated).");
+                }
+            }
+
+            async compileWithLLVM(code, lang) {
+                logger.info(`Assist: Simulating compilation of ${lang} code with LLVM...`);
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate compilation time
+
+                const simulatedWasmBinary = new TextEncoder().encode(`(module (func (export "run") (result i32) i32.const ${code.length % 100}))`).buffer;
+                logger.success(`Assist: LLVM compilation for ${lang} successful, returning simulated WASM binary.`);
+                return simulatedWasmBinary;
+            }
+
+            async getCompilerAssistance(code, langType) {
+                const langConfig = BiterConfig.languages[langType];
+                if (!langConfig) {
+                    logger.error(`Assist: No configuration found for language type: ${langType}`);
+                    throw new Error(`Unsupported language type for assistance: ${langType}`);
+                }
+
+                switch (langConfig.compilerAssist) {
+                    case 'pyscript':
+                        return this.transpileWithPyScript(code, langType);
+                    case 'llvm':
+                        return this.compileWithLLVM(code, langType);
+                    default:
+                        logger.warn(`Assist: No specific compiler assistance configured for ${langType}. Returning original code.`);
+                        return code;
+                }
+            }
+        }
+        const assist = new Assist(); // Instantiate assist for PEPx IDE
+
+        // --- Backend Publisher Client (for PEPx IDE's publishing feature) ---
+        // Chronological Tag: 20250525200017 - BackendPublisherClient for simulated deployment.
+        class BackendPublisherClientPEPx { // Renamed to avoid conflict if OBPI had one
+            constructor() {
+                logger.info("BackendPublisherClientPEPx: Initialized for simulated project publishing.");
+            }
+
+            async publishProject(projectData, projectPath, userId = 'anonymous') {
+                logger.info(`BackendPublisherClientPEPx: Simulating project publication for path: ${projectPath} by user: ${userId}`);
+                logger.info(`BackendPublisherClientPEPx: Project contains ${Object.keys(projectData).length} files.`);
+                logger.info(`BackendPublisherClientPEPx: ${AppConfigPEPx.globalAccess.info}`);
+                logger.info(`BackendPublisherClientPEPx: ${AppConfigPEPx.globalAccess.backendDashboard.info}`);
+                logger.info(`BackendPublisherClientPEPx: ${AppConfigPEPx.globalAccess.apiSystem.info}`);
+                logger.info(`BackendPublisherClientPEPx: ${AppConfigPEPx.payment.info}`);
+
+                try {
+                    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate processing delay
+
+                    const uniqueProjectSlug = `pepx-proj-${userId.substring(0, 8)}-${Date.now().toString(36)}`;
+                    const mockAccessUrl = `https://${uniqueProjectSlug}.global.pepx.io/${projectPath.substring(1).replace(/\//g, '-')}`; // Simple URL for simulation
+
+                    logger.success(`BackendPublisherClientPEPx: Simulated successful project deployment.`);
+                    logger.info(`BackendPublisherClientPEPx: (Actual global access and payment require a real backend.)`);
+
+                    return {
+                        success: true,
+                        message: 'Project successfully deployed and accessible globally (simulated).',
+                        accessUrl: mockAccessUrl,
+                        deploymentId: uniqueProjectSlug,
+                        timestamp: new Date().toISOString()
+                    };
+                } catch (error) {
+                    logger.error(`BackendPublisherClientPEPx: Error during project publication simulation: ${error.message}`);
+                    throw new Error(`Failed to publish project (simulated): ${error.message}`);
+                }
+            }
+        }
+        const backendPublisherClient = new BackendPublisherClientPEPx(); // Instantiate
+
+
+        // --- PEPx Storage System (Integrated) - Client-Side Persistence via Canvas ---
+        // Chronological Tag: 20250525200018 - PEPxMetadataStore for local file metadata.
+        class PEPxMetadataStore {
+            constructor(storageKey = AppConfigPEPx.pepxStorage.localStorageMetadataKey) {
+                this.storageKey = storageKey;
+                this.files = {};
+                this.loadFromLocalStorage();
+                logger.info(`PEPxMetadataStore: Initialized with key '${this.storageKey}'.`);
+                // Chronological Tag: 20250525200019 - Add default mock files if store is empty.
+                if (Object.keys(this.files).length === 0) {
+                    this._addDefaultMockFiles();
+                }
+            }
+
+            _addDefaultMockFiles() {
+                const mockFiles = [
+                    { id: 'pepx-mock-folder-docs', name: 'Documents', path: '/Documents', type: 'folder', size: 0, created: new Date().toISOString(), modified: new Date().toISOString() },
+                    { id: 'pepx-mock-file-readme', name: 'README.txt', path: '/', type: 'text/plain', size: 100, storedByteLength: 100, created: new Date().toISOString(), modified: new Date().toISOString(), content: "Welcome to PEPx IDE!\n\nThis is a client-side environment. Files are stored in your browser's local storage.\n\nTry opening a file, creating a new folder, or uploading a file using the buttons in the file explorer. Use the console below to execute commands like 'ls' or 'cat /README.txt'." },
+                    { id: 'pepx-mock-file-js-example', name: 'hello.js', path: '/Documents', type: 'application/javascript', size: 50, storedByteLength: 50, created: new Date().toISOString(), modified: new Date().toISOString(), content: "console.log('Hello from PEPx IDE!');\nconsole.log('Current time: ' + new Date().toLocaleTimeString());" },
+                    { id: 'pepx-mock-file-blang-example', name: 'my_app.blang', path: '/Documents', type: 'text/plain', size: 30, storedByteLength: 30, created: new Date().toISOString(), modified: new Date().toISOString(), content: "START\nLOAD 10\nADD 5\nPRINT\nEND" }
+                ];
+
+                mockFiles.forEach(file => {
+                    this.files[file.id] = file;
+                    // For files with content, simulate storing them in PEPxStorage (implicitly, since we only save metadata)
+                    if (file.content) {
+                        const contentBlob = new Blob([file.content], { type: file.type });
+                        const dummyAllocation = { plane: 0, startX: 0, startY: 0, pixelCount: file.storedByteLength }; // Placeholder
+                        this.files[file.id].allocation = dummyAllocation;
+                        logger.info(`PEPxMetadataStore: Added mock file '${file.name}' with dummy allocation.`);
+                    } else {
+                        logger.info(`PEPxMetadataStore: Added mock folder '${file.name}'.`);
+                    }
+                });
+                this.saveToLocalStorage();
+                logger.info("PEPxMetadataStore: Added default mock files.");
+            }
+
+            addFile(metadata) {
+                this.files[metadata.id] = metadata;
+                this.saveToLocalStorage();
+                logger.info(`PEPxMetadataStore: Added/updated metadata for file ID: ${metadata.id}`);
+            }
+
+            getFile(fileId) {
+                return this.files[fileId];
+            }
+
+            deleteFile(fileId) {
+                delete this.files[fileId];
+                this.saveToLocalStorage();
+                logger.info(`PEPxMetadataStore: Deleted metadata for file ID: ${fileId}`);
+            }
+
+            listFiles(path = '/') {
+                const allFiles = Object.values(this.files);
+                const normalizedPath = path === '/' ? '/' : (path.endsWith('/') ? path : path + '/');
+
+                const children = allFiles.filter(file => {
+                    if (file.type === 'folder' && file.path === normalizedPath.slice(0,-1) && normalizedPath !== '/') { // special case for the folder itself at non-root
+                        return false;
+                    }
+                    if (normalizedPath === '/') {
+                        // Root level items have a path like '/filename' or '/foldername'
+                        return file.path.startsWith('/') && file.path.indexOf('/', 1) === -1;
+                    } else {
+                        // Children of a path like '/foo/' should have paths like '/foo/bar'
+                        return file.path.startsWith(normalizedPath) && file.path.substring(normalizedPath.length).indexOf('/') === -1;
+                    }
+                }).sort((a,b) => { // Folders first, then by name
+                    if (a.type === 'folder' && b.type !== 'folder') return -1;
+                    if (a.type !== 'folder' && b.type === 'folder') return 1;
+                    return a.name.localeCompare(b.name);
+                });
+
+                // Add parent folder if not root, for navigation
+                if (path !== '/') {
+                    const parentParts = path.split('/').filter(Boolean);
+                    parentParts.pop();
+                    const parentPath = parentParts.length > 0 ? '/' + parentParts.join('/') : '/';
+                    children.unshift({
+                        id: 'pepx-special-parent-dir', // Special ID for parent directory
+                        name: '..',
+                        path: parentPath,
+                        type: 'folder',
+                        size: 0,
+                        created: '', modified: ''
+                    });
+                }
+                return children;
+            }
+
+            saveToLocalStorage() {
+                try {
+                    localStorage.setItem(this.storageKey, JSON.stringify(this.files));
+                } catch (e) {
+                    logger.error(`PEPxMetadata: Failed to save to localStorage: ${e.message}`);
+                }
+            }
+
+            loadFromLocalStorage() {
+                try {
+                    const data = localStorage.getItem(this.storageKey);
+                    if (data) this.files = JSON.parse(data);
+                } catch (e) {
+                    logger.error(`PEPxMetadata: Failed to load from localStorage: ${e.message}`);
+                }
+            }
+        }
+
+        // Chronological Tag: 20250525200020 - PEPxStorage for canvas-based data.
+        class PEPxStorage {
+            constructor(dimensions = AppConfigPEPx.pepxStorage.canvasDimensions) {
+                this.dimensions = dimensions;
+                this.totalPlanes = AppConfigPEPx.pepxStorage.totalPlanes;
+                this.colorChannels = 4; // RGBA
+                this.bitsPerChannelComponent = 2; // LSB Steganography
+                this.canvasElements = [];
+                this.metadataStore = new PEPxMetadataStore(); // Re-instantiate local metadata store
+                this.isInitialized = false;
+                logger.info(`PEPxStorage: Instantiated with dimensions ${this.dimensions}x${this.dimensions}.`);
+            }
+
+            async initializeCanvases() {
+                if (this.isInitialized) return;
+                logger.info(`PEPxStorage: Initializing ${this.totalPlanes} canvas planes for data storage...`);
+
+                for (let i = 0; i < this.totalPlanes; i++) {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = this.dimensions;
+                    canvas.height = this.dimensions;
+                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+                    // Initialize with a slightly noisy background, ensuring LSBs are clear for data.
+                    for (let y = 0; y < this.dimensions; y++) {
+                        for (let x = 0; x < this.dimensions; x++) {
+                            const r = (Math.floor(Math.random() * 64) * 4);
+                            const g = (Math.floor(Math.random() * 64) * 4);
+                            const b = (Math.floor(Math.random() * 64) * 4);
+                            const a = 255; // Alpha must be 255 for LSBs to be reliable from getImageData
+                            ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${a/255})`; // CSS rgba uses 0-1 for alpha
+                            ctx.fillRect(x, y, 1, 1);
+                        }
+                    }
+                    this.canvasElements.push({ id: `pepx-plane-${i}`, canvas: canvas, ctx: ctx });
+                }
+                this.isInitialized = true;
+                logger.success(`PEPxStorage: ${this.totalPlanes} storage planes initialized.`);
+            }
+
+            calculateCapacity() {
+                const pixelsPerPlane = this.dimensions * this.dimensions;
+                const bytesPerPixel = (this.colorChannels * this.bitsPerChannelComponent) / 8;
+                const totalBytes = pixelsPerPlane * bytesPerPixel * this.totalPlanes;
+                return totalBytes;
+            }
+
+            async storeFile(file, path, existingFileId = null, fileName = null, fileType = null) { // Chronological Tag: 20250525200021 - Added fileName, fileType for new files.
+                if (!this.isInitialized) await this.initializeCanvases();
+                logger.info(`PEPx: Storing file "${fileName || file.name}" to canvas storage at path "${path}"`);
+                try {
+                    const arrayBuffer = await this.readFileAsArrayBuffer(file);
+                    const dataToStore = new Uint8Array(arrayBuffer);
+
+                    const allocation = this.findFreeSpace(dataToStore.byteLength, existingFileId);
+                    if (!allocation) throw new Error('PEPx: Insufficient storage space.');
+
+                    await this.encodeDataToPixels(dataToStore, allocation);
+                    const fileId = existingFileId || this.generateUniqueId();
+
+                    // Chronological Tag: 20250525200022 - Storing file content directly in metadata for mock files.
+                    // If file has direct content (like mock files), store it in metadata directly for easy retrieval
+                    // This bypasses the canvas for simplicity for pre-defined files, but real files go to canvas.
+                    const fileContent = typeof file.content === 'string' ? file.content : null;
+                    const finalFileName = fileName || file.name;
+                    const finalFilePath = path === '/' ? `/${finalFileName}` : `${path}/${finalFileName}`;
+
+
+                    this.metadataStore.addFile({
+                        id: fileId,
+                        name: finalFileName,
+                        path: finalFilePath, // Store the full path to the file/folder itself
+                        size: file.size,
+                        storedByteLength: dataToStore.byteLength,
+                        type: fileType || file.type,
+                        allocation: allocation,
+                        created: new Date().toISOString(),
+                        modified: new Date().toISOString(),
+                        content: fileContent // Store content for mock files
+                    });
+                    logger.success(`PEPx: File "${finalFileName}" stored successfully. ID: ${fileId}`);
+                    return fileId;
+                } catch (error) {
+                    logger.error(`PEPx: Failed to store file "${fileName || file.name}": ${error.message}`);
+                    throw error;
+                }
+            }
+
+            async retrieveFile(fileId) {
+                if (!this.isInitialized) {
+                    logger.warn("PEPx: Canvases not initialized for retrieval. Initializing now.");
+                    await this.initializeCanvases();
+                }
+                logger.info(`PEPx: Retrieving file ID "${fileId}"`);
+                const metadata = this.metadataStore.getFile(fileId);
+                if (!metadata || (!metadata.allocation && !metadata.content)) throw new Error(`PEPx: File metadata or allocation not found for ID: ${fileId}`);
+
+                // Chronological Tag: 20250525200023 - Retrieve content from metadata for mock files, or canvas for real ones.
+                if (metadata.content) { // For mock files, content is directly in metadata
+                    return new Blob([metadata.content], { type: metadata.type });
+                }
+
+                const dataBytes = await this.decodeDataFromPixels(metadata.allocation, metadata.storedByteLength);
+                logger.success(`PEPx: File "${metadata.name}" retrieved successfully.`);
+                return new Blob([dataBytes.buffer], { type: metadata.type });
+            }
+
+            findFreeSpace(bytesNeeded, existingFileId = null) {
+                const pixelsNeeded = bytesNeeded; // Assuming 1 byte per pixel for simplicity with 2 bits per channel x 4 channels
+
+                // If updating an existing file, try to reuse its allocation
+                if (existingFileId) {
+                    const existingMetadata = this.metadataStore.getFile(existingFileId);
+                    if (existingMetadata && existingMetadata.allocation && existingMetadata.allocation.pixelCount >= pixelsNeeded) {
+                        logger.info(`PEPx: Reusing existing allocation for file ID ${existingFileId}.`);
+                        return existingMetadata.allocation;
+                    }
+                }
+
+                for (let planeIndex = 0; planeIndex < this.totalPlanes; planeIndex++) {
+                    const currentPlaneCapacity = this.dimensions * this.dimensions; // Pixels in this plane
+                    const existingAllocationsOnPlane = Object.values(this.metadataStore.files)
+                        .filter(f => f.allocation && f.allocation.plane === planeIndex && f.id !== existingFileId)
+                        .sort((a, b) => (a.allocation.startY * this.dimensions + a.allocation.startX) - (b.allocation.startY * this.dimensions + b.allocation.startX));
+
+                    let currentX = 0;
+                    let currentY = 0;
+                    let lastPixelIndex = -1; // Linear index of the last pixel of the last allocation
+
+                    if (existingAllocationsOnPlane.length > 0) {
+                        const lastAlloc = existingAllocationsOnPlane[existingAllocationsOnPlane.length - 1].allocation;
+                        lastPixelIndex = (lastAlloc.startY * this.dimensions + lastAlloc.startX) + lastAlloc.pixelCount -1;
+                    }
+
+                    currentX = (lastPixelIndex + 1) % this.dimensions;
+                    currentY = Math.floor((lastPixelIndex + 1) / this.dimensions);
+
+                    if (currentY < this.dimensions && (currentY * this.dimensions + currentX + pixelsNeeded <= currentPlaneCapacity)) {
+                        logger.info(`PEPx: Allocating ${pixelsNeeded} pixels on plane ${planeIndex} starting at (${currentX},${currentY})`);
+                        return { plane: planeIndex, startX: currentX, startY: currentY, pixelCount: pixelsNeeded };
+                    }
+                }
+                logger.warn(`PEPx: No contiguous free space found for ${bytesNeeded} bytes.`);
+                return null;
+            }
+
+            async encodeDataToPixels(dataBytes, allocation) {
+                const { plane, startX, startY, pixelCount } = allocation;
+                const planeObj = this.canvasElements[plane];
+                if (!planeObj) throw new Error(`PEPx: Invalid plane index ${plane}`);
+
+                let imageData = planeObj.ctx.getImageData(0, 0, this.dimensions, this.dimensions);
+                let pixels = imageData.data;
+
+                let currentX = startX;
+                let currentY = startY;
+                let pixelCounter = 0;
+
+                for (let i = 0; i < dataBytes.length; i++) {
+                    if (pixelCounter >= pixelCount) {
+                        logger.warn("PEPx Encode: Data length exceeds pixel count allocation. Truncating.");
+                        break;
+                    }
+                    const byte = dataBytes[i];
+                    const pixelOffset = (currentY * this.dimensions + currentX) * 4;
+
+                    pixels[pixelOffset]     = (pixels[pixelOffset]     & 0xFC) | ((byte >> 6) & 0x03); // R - bits 7,6
+                    pixels[pixelOffset + 1] = (pixels[pixelOffset + 1] & 0xFC) | ((byte >> 4) & 0x03); // G - bits 5,4
+                    pixels[pixelOffset + 2] = (pixels[pixelOffset + 2] & 0xFC) | ((byte >> 2) & 0x03); // B - bits 3,2
+                    pixels[pixelOffset + 3] = (pixels[pixelOffset + 3] & 0xFC) | (byte        & 0x03); // A - bits 1,0
+
+                    currentX++;
+                    pixelCounter++;
+                    if (currentX >= this.dimensions) {
+                        currentX = 0;
+                        currentY++;
+                        if (currentY >= this.dimensions) {
+                            logger.error('PEPx Encode: Ran out of plane space during multi-line encoding.');
+                            throw new Error('PEPx Encode: Ran out of plane space during multi-line encoding.');
+                        }
+                    }
+                }
+                planeObj.ctx.putImageData(imageData, 0, 0);
+                logger.info(`PEPx Encode: Encoded ${dataBytes.length} bytes to canvas plane ${plane}.`);
+            }
+
+            async decodeDataFromPixels(allocation, storedByteLength) {
+                const { plane, startX, startY, pixelCount } = allocation;
+                const planeObj = this.canvasElements[plane];
+                if (!planeObj) throw new Error(`PEPx: Invalid plane index ${plane}`);
+
+                const imageData = planeObj.ctx.getImageData(0, 0, this.dimensions, this.dimensions);
+                const pixels = imageData.data;
+
+                const decodedBytes = new Uint8Array(storedByteLength);
+                let currentX = startX;
+                let currentY = startY;
+                let pixelCounter = 0;
+
+                for (let i = 0; i < storedByteLength; i++) {
+                    if (pixelCounter >= pixelCount) {
+                        logger.warn("PEPx Decode: Byte length exceeds pixel count allocation. Truncating.");
+                        break;
+                    }
+                    const pixelOffset = (currentY * this.dimensions + currentX) * 4;
+
+                    let byte = 0;
+                    byte |= (pixels[pixelOffset]     & 0x03) << 6;
+                    byte |= (pixels[pixelOffset + 1] & 0x03) << 4;
+                    byte |= (pixels[pixelOffset + 2] & 0x03) << 2;
+                    byte |= (pixels[pixelOffset + 3] & 0x03);
+                    decodedBytes[i] = byte;
+
+                    currentX++;
+                    pixelCounter++;
+                    if (currentX >= this.dimensions) {
+                        currentX = 0;
+                        currentY++;
+                        if (currentY >= this.dimensions) {
+                            logger.error('PEPx Decode: Ran out of plane space during multi-line decoding.');
+                            throw new Error('PEPx Decode: Ran out of plane space during multi-line decoding.');
+                        }
+                    }
+                }
+                logger.info(`PEPx Decode: Decoded ${storedByteLength} bytes from canvas plane ${plane}.`);
+                return decodedBytes;
+            }
+
+            readFileAsArrayBuffer(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+
+            async compressData(data) { return data; } // Placeholder for future
+            async decompressData(data) { return data; } // Placeholder for future
+
+            generateUniqueId() {
+                return 'pepx-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+            }
+        }
+
+        // Chronological Tag: 20250525200024 - PEPxFileManager for UI and file operations.
+        class PEPxFileManager {
+            constructor(storageInstance) {
+                this.storage = storageInstance;
+                this.currentPath = '/';
+                this.uiContainer = null;
+                this.fileListElement = null;
+                this.pathDisplayElement = null;
+                this.statusElement = null;
+
+                // Chronological Tag: 20250525200025 - Preset Icons for various file types.
+                this.fileTypeIcons = {
+                    'folder': '📁',
+                    'text/plain': '📄',
+                    'application/javascript': '💡', // JS icon
+                    'application/json': '📊',
+                    'application/xml': '📰',
+                    'text/html': '🌐',
+                    'text/css': '🖌️',
+                    'text/markdown': '📝',
+                    'image/png': '🖼️',
+                    'image/jpeg': '🖼️',
+                    'image/gif': '🖼️',
+                    'video/mp4': '🎬',
+                    'audio/mpeg': '🎵',
+                    'application/pdf': '📜',
+                    'application/zip': '📦',
+                    'application/x-zip-compressed': '📦',
+                    // Custom language icons
+                    '.blang': '⚙️',
+                    '.bitegems': '💎',
+                    '.cib': '🏦',
+                    '.baskell': '🧪',
+                    'default': '❓' // Default unknown file type
+                };
+            }
+
+            initUI(containerElement) {
+                this.uiContainer = containerElement;
+                this.uiContainer.innerHTML = `
+                    <div class="pepx-file-manager">
+                        <div class="pepx-toolbar">
+                            <button id="pepx-back-btn">⬅ Back</button>
+                            <button id="pepx-home-btn">🏠 Home</button>
+                            <input type="text" id="pepx-path-display" value="${this.currentPath}" readonly>
+                            <button id="pepx-upload-btn" class="ml-auto">⬆️ Upload</button>
+                            <button id="pepx-new-folder-btn">➕ New Folder</button>
+                            <button id="pepx-new-file-btn">📄 New File</button>
+                        </div>
+                        <div class="pepx-file-list" id="pepx-file-list-area"></div>
+                        <div class="pepx-status-bar">
+                            <span id="pepx-status-text">Ready</span>
+                            <span id="pepx-item-count">0 items</span>
+                        </div>
+                    </div>
+                `;
+                this.fileListElement = this.uiContainer.querySelector('#pepx-file-list-area');
+                this.pathDisplayElement = this.uiContainer.querySelector('#pepx-path-display');
+                this.statusElement = this.uiContainer.querySelector('#pepx-status-text');
+
+                this.uiContainer.querySelector('#pepx-back-btn').onclick = () => this.navigateUp();
+                this.uiContainer.querySelector('#pepx-home-btn').onclick = () => this.navigate('/');
+                this.uiContainer.querySelector('#pepx-upload-btn').onclick = () => this.showUploadDialog();
+                this.uiContainer.querySelector('#pepx-new-folder-btn').onclick = () => this.createNewFolder();
+                this.uiContainer.querySelector('#pepx-new-file-btn').onclick = () => this.createNewFile(); // New button for new file
+                this.fileListElement.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    const itemElement = e.target.closest('.pepx-item');
+                    if (itemElement && itemElement.dataset.id) {
+                        const fileId = itemElement.dataset.id;
+                        const file = this.storage.metadataStore.getFile(fileId);
+                        if (file) this.showFileContextMenu(file, e);
+                    } else {
+                        this.showPathContextMenu(e);
+                    }
+                });
+
+                this.refreshFileList();
+            }
+
+            async refreshFileList() {
+                if (!this.fileListElement || !this.storage || !this.storage.metadataStore) {
+                    logger.warn("PEPxFileManager: UI or storage not ready for refresh.");
+                    return;
+                }
+                this.statusElement.textContent = 'Loading files...';
+                try {
+                    const filesInCurrentPath = this.storage.metadataStore.listFiles(this.currentPath);
+
+                    this.fileListElement.innerHTML = '';
+                    // No sorting needed here, as listFiles already sorts
+
+                    filesInCurrentPath.forEach(file => {
+                        const element = document.createElement('div');
+                        element.className = 'pepx-item';
+                        element.title = `${file.name}\nType: ${file.type}\nSize: ${this.formatFileSize(file.size)}\nModified: ${new Date(file.modified).toLocaleString()}`;
+                        element.dataset.id = file.id;
+
+                        let icon = this.fileTypeIcons.default;
+                        if (file.type === 'folder') {
+                            icon = (file.name === '..') ? '⬆️' : this.fileTypeIcons.folder; // '..' icon handled here
+                        } else {
+                            const fileExtension = file.name.split('.').pop().toLowerCase();
+                            const langConfig = Object.values(BiterConfig.languages).find(
+                                lang => lang.fileExtension.substring(1) === fileExtension
+                            );
+                            if (langConfig && this.fileTypeIcons[langConfig.fileExtension]) {
+                                icon = this.fileTypeIcons[langConfig.fileExtension];
+                            } else if (this.fileTypeIcons[file.type]) {
+                                icon = this.fileTypeIcons[file.type];
+                            } else if (this.fileTypeIcons['.'+fileExtension]) { // Try generic extension
+                                icon = this.fileTypeIcons['.'+fileExtension];
+                            }
+                        }
+
+                        element.innerHTML = `
+                            <div class="pepx-icon">${icon}</div>
+                            <div class="pepx-name">${file.name}</div>
+                            ${file.type !== 'folder' ? `<div class="pepx-size">${this.formatFileSize(file.size)}</div>` : ''}
+                        `;
+                        element.ondblclick = () => {
+                            if (file.type === 'folder') this.navigate(file.path);
+                            else if (window.pepxIDE) {
+                                window.pepxIDE.openFileInEditor(file.id);
+                            } else {
+                                this.openFile(file.id); // Fallback to simple open
+                            }
+                        };
+                        this.fileListElement.appendChild(element);
+                    });
+                    this.pathDisplayElement.value = this.currentPath;
+                    this.uiContainer.querySelector('#pepx-item-count').textContent = `${filesInCurrentPath.filter(f => f.name !== '..').length} items`;
+                    this.statusElement.textContent = 'Ready';
+                } catch (error) {
+                    logger.error(`PEPxFileManager: Failed to refresh file list: ${error.message}`);
+                    this.statusElement.textContent = 'Error loading files.';
+                    Modal.show("Error", `Could not load files: ${error.message}`);
+                }
+            }
+
+            navigate(newPath) {
+                // Ensure the path always starts with / and does not end with / unless it's root
+                if (!newPath.startsWith('/')) newPath = '/' + newPath;
+                if (newPath.length > 1 && newPath.endsWith('/')) newPath = newPath.slice(0, -1);
+                if(newPath === '') newPath = '/'; // Handle case where parts join to empty string
+
+                this.currentPath = newPath;
+                this.refreshFileList();
+            }
+
+            navigateUp() {
+                if (this.currentPath === '/') return;
+                const parts = this.currentPath.split('/').filter(Boolean);
+                parts.pop();
+                this.navigate(parts.length > 0 ? '/' + parts.join('/') : '/');
+            }
+
+            showUploadDialog() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.multiple = true;
+                input.onchange = async () => {
+                    const files = input.files;
+                    if (!files || files.length === 0) return;
+
+                    this.statusElement.textContent = `Uploading ${files.length} file(s)...`;
+                    Modal.show("Uploading Files", `Preparing to upload ${files.length} file(s) to PEPx storage at ${this.currentPath}. This might take a while for large files.`, [{ text: "Close" }]);
+
+                    for (let i = 0; i < files.length; i++) {
+                        try {
+                            this.statusElement.textContent = `Uploading ${files[i].name}... (${i + 1}/${files.length})`;
+                            await this.storage.storeFile(files[i], this.currentPath, null, files[i].name, files[i].type);
+                        } catch (error) {
+                            logger.error(`PEPx: Failed to upload ${files[i].name}: ${error.message}`);
+                            Modal.show("Upload Error", `Failed to upload ${files[i].name}: ${error.message}`);
+                        }
+                    }
+                    this.statusElement.textContent = 'Upload complete.';
+                    Modal.hide();
+                    this.refreshFileList();
+                };
+                input.click();
+            }
+
+            async openFile(fileId) {
+                // This is a fallback open, typically used when no IDE is present.
+                // In PEPxIDE, files are opened via pepxIDE.openFileInEditor
+                this.statusElement.textContent = 'Loading file...';
+                try {
+                    const metadata = this.storage.metadataStore.getFile(fileId);
+                    if (!metadata) throw new Error(`File metadata not found for ID: ${fileId}`);
+
+                    const blob = await this.storage.retrieveFile(fileId);
+                    const url = URL.createObjectURL(blob);
+
+                    let modalContent;
+                    if (metadata.type.startsWith('image/')) {
+                        modalContent = `<img src="${url}" alt="${metadata.name}" class="pepx-modal-body img">`;
+                    } else if (metadata.type.startsWith('text/') || metadata.type === 'application/json' || metadata.type === 'application/xml' || metadata.type === 'application/javascript' || metadata.type === 'text/markdown') {
+                        const text = await blob.text();
+                        modalContent = `<pre class="pepx-modal-body pre">${text.replace(/</g, "&lt;")}</pre>`;
+                    } else {
+                        Modal.confirm("Download File", `Preview not available for "${metadata.name}" (${metadata.type}). Download instead?`, (doDownload) => {
+                            if (doDownload) this.downloadFile(url, metadata.name);
+                            else URL.revokeObjectURL(url);
+                        });
+                        this.statusElement.textContent = 'Ready';
+                        return;
+                    }
+                    Modal.show(metadata.name, modalContent, [{ text: 'Close', handler: () => URL.revokeObjectURL(url) }]);
+                    this.statusElement.textContent = 'Ready';
+                } catch (error) {
+                    logger.error(`PEPx: Failed to open file ${fileId}: ${error.message}`);
+                    this.statusElement.textContent = 'Error opening file.';
+                    Modal.show("Error", `Could not open file: ${error.message}`);
+                }
+            }
+
+            downloadFile(url, name) {
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = name;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                setTimeout(() => URL.revokeObjectURL(url), 100);
+            }
+
+            createNewFolder() {
+                Modal.prompt('Create New Folder', 'Enter folder name:', 'New Folder', async (folderName) => {
+                    if (!folderName) return;
+                    const safeFolderName = folderName.replace(/[^\w\s.-]/gi, '_'); // Allow more chars
+
+                    const newFolderPath = this.currentPath === '/' ? `/${safeFolderName}` : `${this.currentPath}/${safeFolderName}`;
+
+                    const existing = Object.values(this.storage.metadataStore.files).find(f => f.path === newFolderPath && f.type === 'folder');
+                    if (existing) {
+                        Modal.show("Error", `A folder named "${safeFolderName}" already exists here.`);
+                        return;
+                    }
+
+                    const folderId = this.storage.generateUniqueId();
+                    this.storage.metadataStore.addFile({
+                        id: folderId,
+                        name: safeFolderName,
+                        path: newFolderPath,
+                        type: 'folder',
+                        size: 0,
+                        created: new Date().toISOString(),
+                        modified: new Date().toISOString()
+                    });
+                    this.refreshFileList();
+                    this.statusElement.textContent = `Folder '${safeFolderName}' created.`;
+                });
+            }
+
+            createNewFile() {
+                Modal.prompt('Create New File', 'Enter file name (e.g., script.js, my_data.txt):', 'New File.txt', async (fileName) => {
+                    if (!fileName) return;
+                    const safeFileName = fileName.replace(/[^\w\s.-]/gi, '_');
+
+                    const newFilePath = this.currentPath === '/' ? `/${safeFileName}` : `${this.currentPath}/${safeFileName}`;
+
+                    const existing = Object.values(this.storage.metadataStore.files).find(f => f.path === newFilePath && f.type !== 'folder');
+                    if (existing) {
+                        Modal.show("Error", `A file named "${safeFileName}" already exists here.`);
+                        return;
+                    }
+
+                    const fileExtension = safeFileName.split('.').pop().toLowerCase();
+                    let fileType = 'text/plain'; // Default
+                    if (fileExtension === 'js') fileType = 'application/javascript';
+                    else if (fileExtension === 'json') fileType = 'application/json';
+                    else if (fileExtension === 'html') fileType = 'text/html';
+                    else if (fileExtension === 'css') fileType = 'text/css';
+                    else if (fileExtension === 'xml') fileType = 'application/xml';
+                    else if (fileExtension === 'md') fileType = 'text/markdown';
+                    // Add other types as needed
+
+                    const emptyContent = '';
+                    const emptyFileBlob = new File([emptyContent], safeFileName, { type: fileType });
+
+
+                    try {
+                        // Chronological Tag: 20250525200026 - storeFile parameters for new files.
+                        const fileId = await this.storage.storeFile(emptyFileBlob, this.currentPath, null, safeFileName, fileType);
+                        const metadata = this.storage.metadataStore.getFile(fileId);
+                        // Ensure correct name, type, path for the new file in metadata
+                        metadata.name = safeFileName;
+                        metadata.type = fileType;
+                        metadata.path = newFilePath; // Ensure full path is set correctly
+                        metadata.content = emptyContent; // Store empty content directly for new files
+                        this.storage.metadataStore.addFile(metadata); // Update metadata
+                        this.refreshFileList();
+                        this.statusElement.textContent = `File '${safeFileName}' created.`;
+
+                        // Open the newly created file in the IDE
+                        if (window.pepxIDE) {
+                            window.pepxIDE.openFileInEditor(fileId);
+                        }
+                    } catch (error) {
+                        Modal.show("Error", `Failed to create file: ${error.message}`);
+                        logger.error(`PEPxFileManager: Failed to create new file: ${error.message}`);
+                    }
+                });
+            }
+
+            showPathContextMenu(event) {
+                const menuItems = [
+                    { label: 'New Folder...', action: 'new-folder-here', icon: '📁' },
+                    { label: 'New File...', action: 'new-file-here', icon: '📄' },
+                    { label: 'Upload Files...', action: 'upload-here', icon: '⬆️' },
+                    { label: 'Refresh', action: 'refresh-current', icon: '🔄' }
+                ];
+                OBPI.contextMenuElement.innerHTML = '';
+                menuItems.forEach(item => {
+                    const menuItemEl = document.createElement('div');
+                    menuItemEl.className = 'context-menu-item';
+                    menuItemEl.innerHTML = `<span style="margin-right: 8px;">${item.icon}</span> ${item.label}`;
+                    menuItemEl.onclick = () => {
+                        OBPI.contextMenuElement.classList.add('hidden');
+                        if (item.action === 'new-folder-here') this.createNewFolder();
+                        else if (item.action === 'new-file-here') this.createNewFile();
+                        else if (item.action === 'upload-here') this.showUploadDialog();
+                        else if (item.action === 'refresh-current') this.refreshFileList();
+                    };
+                    OBPI.contextMenuElement.appendChild(menuItemEl);
+                });
+                OBPI.contextMenuElement.style.top = `${event.clientY}px`;
+                OBPI.contextMenuElement.style.left = `${event.clientX}px`;
+                OBPI.contextMenuElement.classList.remove('hidden');
+            }
+
+            showFileContextMenu(file, event) {
+                const menuItems = [
+                    { label: 'Open', action: 'open', icon: '📂' },
+                    { label: 'Download', action: 'download', icon: '💾' },
+                    { label: 'Rename...', action: 'rename', icon: '✏️' },
+                    { label: 'Delete', action: 'delete', icon: '🗑️' },
+                    { label: 'Properties', action: 'properties', icon: 'ℹ️' }
+                ];
+                OBPI.contextMenuElement.innerHTML = '';
+                menuItems.forEach(item => {
+                    const menuItemEl = document.createElement('div');
+                    menuItemEl.className = 'context-menu-item';
+                    menuItemEl.innerHTML = `<span style="margin-right: 8px;">${item.icon}</span> ${item.label}`;
+                    menuItemEl.onclick = () => {
+                        OBPI.contextMenuElement.classList.add('hidden');
+                        if (item.action === 'open') {
+                            if (file.type === 'folder') this.navigate(file.path);
+                            else if (window.pepxIDE) {
+                                window.pepxIDE.openFileInEditor(file.id);
+                            } else {
+                                this.openFile(file.id); // Fallback to simple open
+                            }
+                        }
+                        else if (item.action === 'download') this.downloadFileById(file.id);
+                        else if (item.action === 'rename') this.renameFile(file.id);
+                        else if (item.action === 'delete') this.deleteFile(file.id);
+                        else if (item.action === 'properties') this.showFileProperties(file.id);
+                    };
+                    OBPI.contextMenuElement.appendChild(menuItemEl);
+                });
+                OBPI.contextMenuElement.style.top = `${event.clientY}px`;
+                OBPI.contextMenuElement.style.left = `${event.clientX}px`;
+                OBPI.contextMenuElement.classList.remove('hidden');
+            }
+
+            async downloadFileById(fileId) {
+                this.statusElement.textContent = `Preparing download for ${fileId}...`;
+                try {
+                    const metadata = this.storage.metadataStore.getFile(fileId);
+                    if (!metadata) throw new Error(`File metadata not found: ${fileId}`);
+                    const blob = await this.storage.retrieveFile(fileId);
+                    const url = URL.createObjectURL(blob);
+                    this.downloadFile(url, metadata.name);
+                    this.statusElement.textContent = 'Download started.';
+                } catch (error) {
+                    logger.error(`PEPx: Failed to download file ${fileId}: ${error.message}`);
+                    this.statusElement.textContent = 'Error downloading file.';
+                    Modal.show("Error", `Could not download file: ${error.message}`);
+                }
+            }
+
+            renameFile(fileId) {
+                const metadata = this.storage.metadataStore.getFile(fileId);
+                if (!metadata) return;
+
+                Modal.prompt('Rename File/Folder', 'Enter new name:', metadata.name, async (newName) => {
+                    if (newName && newName !== metadata.name) {
+                        const safeNewName = newName.replace(/[^\w\s.-]/gi, '_');
+
+                        const oldPath = metadata.path;
+                        const parentDir = oldPath.substring(0, oldPath.lastIndexOf('/'));
+                        const newFullPath = parentDir === '' ? `/${safeNewName}` : `${parentDir}/${safeNewName}`;
+
+                        const existingInDir = Object.values(this.storage.metadataStore.files).find(f => f.path === newFullPath && f.id !== fileId);
+                        if (existingInDir) {
+                            Modal.show("Error", `An item named "${safeNewName}" already exists in this location.`);
+                            return;
+                        }
+
+                        metadata.name = safeNewName;
+                        metadata.path = newFullPath;
+                        metadata.modified = new Date().toISOString();
+
+                        if (metadata.type === 'folder') {
+                            const oldPathPrefix = oldPath.endsWith('/') ? oldPath : oldPath + '/';
+                            const newPathPrefix = newFullPath.endsWith('/') ? newFullPath : newFullPath + '/';
+                            Object.values(this.storage.metadataStore.files).forEach(f => {
+                                if (f.path.startsWith(oldPathPrefix) && f.id !== fileId) { // Only update children
+                                    f.path = newPathPrefix + f.path.substring(oldPathPrefix.length);
+                                    f.modified = new Date().toISOString();
+                                }
+                            });
+                            logger.info(`PEPx: Folder rename also updated paths of contained items.`);
+                        }
+
+                        this.storage.metadataStore.saveToLocalStorage();
+                        this.refreshFileList();
+                        this.statusElement.textContent = `Renamed to '${safeNewName}'.`;
+                        if (window.pepxIDE && window.pepxIDE.activeFileId === fileId) {
+                            window.pepxIDE.statusBarElement.textContent = `Editing: ${safeNewName}`;
+                        }
+                    }
+                });
+            }
+
+            deleteFile(fileId) {
+                const metadata = this.storage.metadataStore.getFile(fileId);
+                if (!metadata) return;
+
+                Modal.confirm('Delete Item', `Are you sure you want to delete "${metadata.name}"? ${metadata.type === 'folder' ? 'This will also delete all its contents.' : ''}`, (confirmed) => {
+                    if (confirmed) {
+                        if (metadata.type === 'folder') {
+                            const pathPrefix = metadata.path.endsWith('/') ? metadata.path : metadata.path + '/';
+                            const childrenToDelete = Object.values(this.storage.metadataStore.files).filter(f => f.path.startsWith(pathPrefix)); // Includes folder itself
+                            childrenToDelete.forEach(child => {
+                                this.storage.metadataStore.deleteFile(child.id);
+                                 if (window.pepxIDE && window.pepxIDE.activeFileId === child.id) {
+                                    window.pepxIDE.activeEditor.setValue('');
+                                    window.pepxIDE.activeFileId = null;
+                                    window.pepxIDE.statusBarElement.textContent = 'No file open.';
+                                }
+                            });
+                            logger.warn(`PEPx: Recursively deleted folder '${metadata.name}' and its children.`);
+                        }
+                        this.storage.metadataStore.deleteFile(fileId); // Delete the primary item if not already deleted (e.g., if it was a file)
+                         if (window.pepxIDE && window.pepxIDE.activeFileId === fileId) { // If it was a file and open
+                            window.pepxIDE.activeEditor.setValue('');
+                            window.pepxIDE.activeFileId = null;
+                            window.pepxIDE.statusBarElement.textContent = 'No file open.';
+                        }
+
+                        this.refreshFileList();
+                        this.statusElement.textContent = `"${metadata.name}" deleted.`;
+                    }
+                });
+            }
+
+            showFileProperties(fileId) {
+                const metadata = this.storage.metadataStore.getFile(fileId);
+                if (!metadata) {
+                    Modal.show("Error", "File properties not found.");
+                    return;
+                }
+                const content = `
+                    <p><strong>Name:</strong> ${metadata.name}</p>
+                    <p><strong>Type:</strong> ${metadata.type}</p>
+                    <p><strong>Size:</strong> ${this.formatFileSize(metadata.size)} (${metadata.size} bytes)</p>
+                    <p><strong>Stored Size (Canvas):</strong> ${this.formatFileSize(metadata.storedByteLength || metadata.size)}</p>
+                    <p><strong>Path:</strong> ${metadata.path}</p>
+                    <p><strong>ID:</strong> ${metadata.id}</p>
+                    <p><strong>Created:</strong> ${new Date(metadata.created).toLocaleString()}</p>
+                    <p><strong>Modified:</strong> ${new Date(metadata.modified).toLocaleString()}</p>
+                `;
+                Modal.show(`Properties: ${metadata.name}`, content);
+            }
+
+            formatFileSize(bytes) {
+                if (bytes === undefined || bytes === null || isNaN(bytes)) return 'N/A';
+                if (bytes === 0 && typeof bytes === 'number') return '0 B';
+                const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(1024));
+                return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + units[i];
+            }
+        }
+
+        // Chronological Tag: 20250525200027 - PEPxIDE class (main IDE logic).
+        class PEPxIDE {
+            constructor(fileManagerInstance, backendPublisherClientInstance) {
+                this.fileManager = fileManagerInstance;
+                this.backendPublisherClient = backendPublisherClientInstance;
+                this.activeEditor = null;
+                this.activeFileId = null;
+                this.ideContainer = null; // Will be the window-content div
+                this.editorContainer = null;
+                this.sidebarContainer = null;
+                this.toolbarElement = null;
+                this.statusBarElement = null;
+                this.consoleOutputElement = null;
+                this.consoleInput = null;
+                this.consolePrompt = null;
+                this.wasmInterpreter = new BiterWASMInterpreter();
+                // Chronological Tag: 20250525200028 - Use IDE's internal logger instance.
+                this.logger = new Logger(AppConfigPEPx.ui.consoleOutputElementId); // Local logger for IDE console
+            }
+
+            async init(containerElement) { // Accepts the actual DOM element for the window content
+                this.ideContainer = containerElement; // The content div of the window
+                if (!this.ideContainer) {
+                    this.logger.error(`PEPxIDE: Container element not provided. Cannot initialize IDE.`);
+                    return;
+                }
+
+                // Inject the internal HTML structure into the window content div
+                this.ideContainer.innerHTML = `
+                    <div id="pepx-ide-sidebar" style="width: 250px; background-color: var(--pepx-light-bg); border-right: 1px solid var(--pepx-border-color); display: flex; flex-direction: column; height: 100%;">
+                        <div style="padding: 10px; font-weight: bold; border-bottom: 1px solid var(--pepx-border-color); color: var(--pepx-primary-color);">PEPx File Explorer</div>
+                        <div id="pepx-file-manager-container" style="flex-grow: 1; overflow-y: auto;"></div>
+                    </div>
+                    <div id="pepx-ide-main-area" style="flex-grow: 1; display: flex; flex-direction: column; height: 100%; overflow:hidden;">
+                        <div id="pepx-ide-toolbar" style="padding: 8px; background-color: var(--pepx-light-bg); border-bottom: 1px solid var(--pepx-border-color); display: flex; gap: 8px; align-items: center;">
+                            <button id="pepx-ide-save-btn" style="background-color: var(--pepx-primary-color); color: white; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer;">💾 Save</button>
+                            <button id="pepx-ide-run-btn" style="background-color: #28a745; color: white; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer;">▶️ Run</button>
+                            <button id="pepx-ide-publish-btn" style="background-color: #ffc107; color: black; border: none; border-radius: 4px; padding: 6px 12px; cursor: pointer;">🚀 Publish</button>
+                            <span id="pepx-ide-status" style="margin-left: auto; font-size: 0.9rem; color: #555;">Ready</span>
+                        </div>
+                        <div id="pepx-ide-editor-container" style="flex-grow: 1; overflow: hidden; background-color: #1e1e1e;"></div>
+                        <div id="pepx-ide-console" style="height: 150px; background-color: #2a2a2a; color: #eee; font-family: var(--font-mono); font-size: 0.8rem; overflow-y: auto; padding: 10px; border-top: 1px solid #444; display:flex; flex-direction:column;">
+                            <div style="font-weight: bold; margin-bottom: 5px; color: #777; flex-shrink:0;">Console Output</div>
+                            <pre id="pepx-console-output-area" style="margin: 0; white-space: pre-wrap; flex-grow:1; overflow-y:auto;"></pre>
+                            <div class="console-input-line" style="flex-shrink:0;">
+                                <span class="console-prompt"></span>
+                                <input type="text" class="console-input">
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Bind elements to class properties after they are injected into the DOM
+                this.sidebarContainer = this.ideContainer.querySelector('#pepx-ide-sidebar');
+                this.editorContainer = this.ideContainer.querySelector('#pepx-ide-editor-container');
+                this.toolbarElement = this.ideContainer.querySelector('#pepx-ide-toolbar');
+                this.statusBarElement = this.ideContainer.querySelector('#pepx-ide-status');
+                this.consoleOutputElement = this.ideContainer.querySelector('#pepx-console-output-area');
+
+                // Pass the correct element to the logger
+                this.logger.setOutputElement(this.consoleOutputElement);
+                this.logger.clear(); // Clear initial "Console Output" text
+
+                this.fileManager.initUI(this.ideContainer.querySelector('#pepx-file-manager-container'));
+
+                await this.loadMonacoEditor();
+
+                this.toolbarElement.querySelector('#pepx-ide-save-btn').onclick = () => this.saveActiveFile();
+                this.toolbarElement.querySelector('#pepx-ide-run-btn').onclick = () => this.runActiveFile();
+                this.toolbarElement.querySelector('#pepx-ide-publish-btn').onclick = () => this.publishProject();
+
+                // Chronological Tag: 20250525200029 - Initialize the internal shell.
+                this._initInternalShell();
+
+                // Chronological Tag: 20250525200030 - Initialize ScalableUI with the correct IDE container element.
+                this.scalableUI = new ScalableUI(this.ideContainer);
+
+                this.logger.info("PEPxIDE: Initialized.");
+                window.pepxIDE = this; // Make it globally accessible for OBPI kernel logging if needed
+            }
+
+            // Chronological Tag: 20250525200031 - Internal shell (wshell) commands and logic.
+            _initInternalShell() {
+                this.consoleInput = this.ideContainer.querySelector('.console-input');
+                this.consolePrompt = this.ideContainer.querySelector('.console-prompt');
+                this._updatePrompt();
+
+                this.consoleInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        const commandStr = this.consoleInput.value.trim();
+                        if (commandStr) {
+                            this.logger.log(`<span style="color: #00aaff;">${this.consolePrompt.textContent.replace(/</g, "&lt;")}</span> ${commandStr.replace(/</g, "&lt;")}`); // Echo command
+                            if (commandStr !== OBPI.commandHistory[0]) OBPI.commandHistory.unshift(commandStr);
+                            if (OBPI.commandHistory.length > 50) OBPI.commandHistory.pop();
+                            this._executeShellCommand(commandStr);
+                        }
+                        this.consoleInput.value = '';
+                        OBPI.commandHistoryIndex = -1;
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        if (OBPI.commandHistoryIndex < OBPI.commandHistory.length - 1) {
+                            OBPI.commandHistoryIndex++;
+                            this.consoleInput.value = OBPI.commandHistory[OBPI.commandHistoryIndex];
+                            this.consoleInput.setSelectionRange(this.consoleInput.value.length, this.consoleInput.value.length);
+                        } else {
+                            OBPI.commandHistoryIndex = -1;
+                            this.consoleInput.value = '';
+                        }
+                    } else if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        if (OBPI.commandHistoryIndex > 0) {
+                            OBPI.commandHistoryIndex--;
+                            this.consoleInput.value = OBPI.commandHistory[OBPI.commandHistory[OBPI.commandHistoryIndex]];
+                            this.consoleInput.setSelectionRange(this.consoleInput.value.length, this.consoleInput.value.length);
+                        } else {
+                            OBPI.commandHistoryIndex = -1;
+                            this.consoleInput.value = '';
+                        }
+                    } else if (e.key === 'Tab') {
+                        e.preventDefault();
+                        const currentInput = this.consoleInput.value;
+                        const parts = currentInput.split(' ');
+                        const lastPart = parts[parts.length - 1];
+                        if (parts.length > 1 && (parts[0] === 'ls' || parts[0] === 'cd' || parts[0] === 'cat')) {
+                            const searchPath = lastPart.startsWith('/') ? lastPart : (this.fileManager.currentPath === '/' ? '/' : this.fileManager.currentPath + '/') + lastPart;
+                            const pathComponents = searchPath.split('/').filter(Boolean);
+                            const targetDir = pathComponents.slice(0, -1).join('/');
+                            const prefix = pathComponents[pathComponents.length - 1] || '';
+
+                            const targetNodePath = targetDir ? '/' + targetDir : '/';
+                            const childrenInTargetDir = this.fileManager.storage.metadataStore.listFiles(targetNodePath);
+
+                            const suggestions = childrenInTargetDir
+                                .filter(item => item.name.startsWith(prefix) && item.name !== '..')
+                                .map(item => item.name + (item.type === 'folder' ? '/' : ''));
+
+                            if (suggestions.length === 1) {
+                                const newLastPart = lastPart.substring(0, lastPart.lastIndexOf('/') + 1) + suggestions[0];
+                                this.consoleInput.value = parts.slice(0, -1).join(' ') + (parts.length > 1 ? ' ' : '') + newLastPart;
+                            } else if (suggestions.length > 1) {
+                                this.logger.log(suggestions.join(' '));
+                            }
+                        }
+                    }
+                });
+
+                this.consoleOutputElement.parentElement.onclick = () => this.consoleInput.focus();
+                this.consoleInput.focus();
+                this.logger.log("Type 'help' for available commands.");
+            }
+
+            _updatePrompt() {
+                let currentDirName = this.fileManager.currentPath.split('/').filter(Boolean).pop() || '/';
+                if (this.fileManager.currentPath === '/') currentDirName = '/';
+                else if (this.fileManager.currentPath.startsWith('/Documents')) currentDirName = '~' + this.fileManager.currentPath.substring('/Documents'.length); // Simulate ~ for Documents
+                this.consolePrompt.innerHTML = `guest@pepx-ide:${currentDirName}&nbsp;$&nbsp;`; // Use &nbsp; for spacing
+            }
+
+            async _executeShellCommand(commandStr) {
+                const parts = commandStr.split(/\s+/);
+                const command = parts[0].toLowerCase();
+                const args = parts.slice(1);
+
+                const cliCommands = {
+                    help: () => {
+                        this.logger.log("Available Commands:");
+                        for (const cmd in cliCommands) {
+                            this.logger.log(`  ${cmd}`);
+                        }
+                        this.logger.log("For file operations: ls, cd, cat, mkdir, write, new_file, rm.");
+                        this.logger.log("For IDE operations: run_pepx_app, publish_project.");
+                        this.logger.log("For conceptual backend: check_payment_status, get_api_endpoint, config_network.");
+                    },
+                    ls: () => {
+                        const files = this.fileManager.storage.metadataStore.listFiles(this.fileManager.currentPath);
+                        const displayFiles = files.filter(f => f.name !== '..');
+
+                        if (displayFiles.length === 0) {
+                            this.logger.log("(empty directory)");
+                        } else {
+                            displayFiles.forEach(file => {
+                                let icon = '';
+                                 if (file.type === 'folder') {
+                                    icon = this.fileManager.fileTypeIcons.folder;
+                                } else {
+                                    const fileExtension = file.name.split('.').pop().toLowerCase();
+                                    const langConfig = Object.values(BiterConfig.languages).find(lang => lang.fileExtension.substring(1) === fileExtension);
+                                    if (langConfig && this.fileManager.fileTypeIcons[langConfig.fileExtension]) icon = this.fileManager.fileTypeIcons[langConfig.fileExtension];
+                                    else if (this.fileManager.fileTypeIcons[file.type]) icon = this.fileManager.fileTypeIcons[file.type];
+                                    else if (this.fileManager.fileTypeIcons['.'+fileExtension]) icon = this.fileManager.fileTypeIcons['.'+fileExtension];
+                                    else icon = this.fileManager.fileTypeIcons.default;
+                                }
+                                this.logger.log(`${icon} ${file.name}${file.type === 'folder' ? '/' : ''}`);
+                            });
+                        }
+                    },
+                    cd: (args) => {
+                        if (!args[0]) {
+                            this.fileManager.navigate('/'); // Go to root if no argument
+                        } else {
+                            let targetPath = args[0];
+                            if (targetPath === '..') {
+                                this.fileManager.navigateUp();
+                            } else {
+                                const normalizedTargetPath = targetPath.startsWith('/') ? targetPath : (this.fileManager.currentPath === '/' ? '/' : this.fileManager.currentPath + '/') + targetPath;
+                                const targetMetadata = this.fileManager.storage.metadataStore.files;
+                                const foundFile = Object.values(targetMetadata).find(f => f.path === normalizedTargetPath && f.type === 'folder');
+
+                                if (foundFile) {
+                                    this.fileManager.navigate(foundFile.path);
+                                } else {
+                                    this.logger.error(`cd: '${targetPath}': No such directory.`);
+                                }
+                            }
+                        }
+                        this._updatePrompt();
+                    },
+                    cat: async (args) => {
+                        if (!args[0]) { this.logger.error("cat: missing file operand"); return; }
+                        const filePath = args[0];
+                        const fullFilePath = filePath.startsWith('/') ? filePath : (this.fileManager.currentPath === '/' ? '/' : this.fileManager.currentPath + '/') + filePath;
+                        const fileMetadata = Object.values(this.fileManager.storage.metadataStore.files).find(f => f.path === fullFilePath && f.type !== 'folder');
+
+                        if (fileMetadata) {
+                            try {
+                                const blob = await this.fileManager.storage.retrieveFile(fileMetadata.id);
+                                const content = await blob.text();
+                                this.logger.log(content.replace(/</g, "&lt;").replace(/>/g, "&gt;")); // Sanitize for HTML display
+                            } catch (e) {
+                                this.logger.error(`cat: Could not read file '${filePath}': ${e.message}`);
+                            }
+                        } else {
+                            this.logger.error(`cat: '${filePath}': No such file or directory.`);
+                        }
+                    },
+                    mkdir: (args) => {
+                        if (!args[0]) { this.logger.error("mkdir: missing operand"); return; }
+                        const folderName = args[0];
+                        this.fileManager.createNewFolder(folderName); // This will handle prompts and refresh
+                    },
+                    write: async (args) => {
+                        if (args.length < 2) { this.logger.error("write: usage: write <filename> \"<text>\""); return; }
+                        const fileName = args[0];
+                        const content = args.slice(1).join(" ").replace(/^"|"$/g, ''); // Remove surrounding quotes
+
+                        const newFilePath = this.fileManager.currentPath === '/' ? `/${fileName}` : `${this.fileManager.currentPath}/${fileName}`;
+                        const existingFile = Object.values(this.fileManager.storage.metadataStore.files).find(f => f.path === newFilePath && f.type !== 'folder');
+
+                        const fileBlob = new File([content], fileName, { type: existingFile ? existingFile.type : 'text/plain' });
+                        try {
+                            if (existingFile) {
+                                await this.fileManager.storage.storeFile(fileBlob, this.fileManager.currentPath, existingFile.id, fileName, existingFile.type);
+                                this.logger.success(`Content updated in '${fileName}'.`);
+                            } else {
+                                await this.fileManager.storage.storeFile(fileBlob, this.fileManager.currentPath, null, fileName, 'text/plain');
+                                this.logger.success(`File '${fileName}' created and content written.`);
+                            }
+                            this.fileManager.refreshFileList();
+                        } catch (e) {
+                            this.logger.error(`write: Failed to write to '${fileName}': ${e.message}`);
+                        }
+                    },
+                    new_file: (args) => {
+                        if (!args[0]) { this.logger.error("new_file: missing file name"); return; }
+                        const fileName = args[0];
+                        this.fileManager.createNewFile(fileName); // This will handle prompts and refresh
+                    },
+                     rm: (args) => {
+                        if (!args[0]) { this.logger.error("rm: missing operand"); return; }
+                        const itemPath = args[0];
+                        const fullItemPath = itemPath.startsWith('/') ? itemPath : (this.fileManager.currentPath === '/' ? '/' : this.fileManager.currentPath + '/') + itemPath;
+                        const itemMetadata = Object.values(this.fileManager.storage.metadataStore.files).find(f => f.path === fullItemPath);
+
+                        if (itemMetadata) {
+                            this.fileManager.deleteFile(itemMetadata.id); // This will handle prompts and refresh
+                        } else {
+                            this.logger.error(`rm: '${itemPath}': No such file or directory.`);
+                        }
+                    },
+                    clear: () => this.logger.clear(),
+                    run_pepx_app: async (args) => {
+                        if (!args[0]) { this.logger.error("run_pepx_app: missing file path"); return; }
+                        const filePath = args[0];
+                        const fullFilePath = filePath.startsWith('/') ? filePath : (this.fileManager.currentPath === '/' ? '/' : this.fileManager.currentPath + '/') + filePath;
+                        const fileMetadata = Object.values(this.fileManager.storage.metadataStore.files).find(f => f.path === fullFilePath && f.type !== 'folder');
+
+                        if (fileMetadata) {
+                            this.logger.info(`Attempting to run PEPx App: ${fileMetadata.name}`);
+                            await this.openFileInEditor(fileMetadata.id); // Open in editor
+                            await new Promise(resolve => setTimeout(resolve, 100)); // Give editor a moment
+                            this.runActiveFile(); // Then run
+                        } else {
+                            this.logger.error(`run_pepx_app: '${filePath}': File not found or is a directory.`);
+                        }
+                    },
+                    publish_project: () => {
+                        this.publishProject();
+                    },
+                    // Chronological Tag: 20250525200032 - CLI Commands for conceptual backend actions.
+                    check_payment_status: () => {
+                        this.logger.info(`Conceptual: Checking payment portal status...`);
+                        this.logger.info(`Status: ${AppConfigPEPx.payment.info}`);
+                    },
+                    get_api_endpoint: () => {
+                        this.logger.info(`Conceptual: Retrieving API endpoint...`);
+                        this.logger.info(`Endpoint Info: ${AppConfigPEPx.globalAccess.apiSystem.info}`);
+                    },
+                    config_network: () => {
+                        this.logger.info(`Conceptual: Opening network configuration for self-hosting...`);
+                        this.logger.info(`Network Configuration Info: ${AppConfigPEPx.globalAccess.backendDashboard.info}`);
+                    },
+                };
+
+                if (cliCommands[command]) {
+                    try {
+                        await cliCommands[command](args);
+                    } catch (e) {
+                        this.logger.error(`Error executing '${command}': ${e.message}`);
+                    }
+                } else {
+                    this.logger.error(`Command not found: ${command}. Type 'help'.`);
+                }
+            }
+
+            async loadMonacoEditor() {
+                if (typeof monaco === 'undefined') {
+                    this.logger.info("PEPxIDE: Loading Monaco Editor...");
+                    const script = document.createElement('script');
+                    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs/loader.min.js'; // Updated version
+                    document.head.appendChild(script);
+
+                    await new Promise(resolve => script.onload = resolve);
+
+                    window.require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.45.0/min/vs' } });
+                    await new Promise(resolve => window.require(['vs/editor/editor.main'], resolve));
+                    this.logger.success("PEPxIDE: Monaco Editor loaded.");
+                }
+            }
+
+            async openFileInEditor(fileId) {
+                this.statusBarElement.textContent = `Opening file ID: ${fileId}...`;
+                try {
+                    const metadata = this.fileManager.storage.metadataStore.getFile(fileId);
+                    if (!metadata) {
+                        throw new Error(`File metadata not found for ID: ${fileId}`);
+                    }
+
+                    const blob = await this.fileManager.storage.retrieveFile(fileId);
+                    const content = await blob.text();
+
+                    let language = 'plaintext';
+                    // Determine language based on file extension or type
+                    const fileExtension = metadata.name.split('.').pop().toLowerCase();
+                    const langConfig = Object.values(BiterConfig.languages).find(
+                        lang => lang.fileExtension.substring(1) === fileExtension
+                    );
+                    if (langConfig) {
+                        language = 'plaintext'; // Monaco doesn't have native support for custom langs, use plaintext
+                        if (fileExtension === 'blang' || fileExtension === 'cib') language = 'cpp'; // Use C++ for similar syntax highlighting
+                        else if (fileExtension === 'bitegems') language = 'ruby'; // Use Ruby for similar
+                        else if (fileExtension === 'baskell') language = 'haskell'; // Use Haskell
+                    } else if (metadata.name.endsWith('.js') || metadata.type === 'application/javascript') language = 'javascript';
+                    else if (metadata.name.endsWith('.json') || metadata.type === 'application/json') language = 'json';
+                    else if (metadata.name.endsWith('.html')) language = 'html';
+                    else if (metadata.name.endsWith('.css')) language = 'css';
+                    else if (metadata.name.endsWith('.xml')) language = 'xml';
+                    else if (metadata.name.endsWith('.ts')) language = 'typescript';
+                    else if (metadata.name.endsWith('.py')) language = 'python';
+                    else if (metadata.name.endsWith('.md')) language = 'markdown';
+
+
+                    if (this.activeEditor) {
+                        this.activeEditor.dispose();
+                    }
+                    this.activeEditor = monaco.editor.create(this.editorContainer, {
+                        value: content,
+                        language: language,
+                        theme: OBPI.activeTheme === 'light' ? 'vs' : 'vs-dark', // Adjust theme
+                        automaticLayout: true,
+                        minimap: { enabled: false },
+                        scrollBeyondLastLine: false,
+                        readOnly: false,
+                    });
+                    this.activeFileId = fileId;
+                    this.statusBarElement.textContent = `Editing: ${metadata.name}`;
+                    this.logger.info(`PEPxIDE: Opened ${metadata.name} for editing.`);
+                } catch (error) {
+                    this.logger.error(`PEPxIDE: Error opening file ID ${fileId}: ${error.message}`);
+                    this.statusBarElement.textContent = 'Error opening file.';
+                    Modal.show("Error", `Could not open file: ${error.message}`);
+                }
+            }
+
+            async saveActiveFile() {
+                if (!this.activeEditor || !this.activeFileId) {
+                    this.logger.warn("PEPxIDE: No active file to save.");
+                    this.statusBarElement.textContent = 'No file open.';
+                    return;
+                }
+
+                this.statusBarElement.textContent = 'Saving file...';
+                try {
+                    const metadata = this.fileManager.storage.metadataStore.getFile(this.activeFileId);
+                    if (!metadata) {
+                        throw new Error(`Metadata for active file ${this.activeFileId} not found.`);
+                    }
+
+                    const content = this.activeEditor.getValue();
+                    // Chronological Tag: 20250525200033 - Creating File object for storage with updated content.
+                    const updatedFile = new File([content], metadata.name, { type: metadata.type, lastModified: new Date().getTime() });
+
+                    // Pass original filename and type to storeFile in case they were determined dynamically
+                    await this.fileManager.storage.storeFile(updatedFile, metadata.path.substring(0, metadata.path.lastIndexOf('/')) || '/', this.activeFileId, metadata.name, metadata.type);
+                    // Also update content in metadataStore directly for mock files
+                    const updatedMetadata = this.fileManager.storage.metadataStore.getFile(this.activeFileId);
+                    if (updatedMetadata.content !== undefined) { // Mock files have content directly
+                         updatedMetadata.content = content;
+                         updatedMetadata.size = content.length;
+                         updatedMetadata.storedByteLength = content.length; // For mock files, these might be the same
+                         this.fileManager.storage.metadataStore.addFile(updatedMetadata); // Save change
+                    }
+
+
+                    this.statusBarElement.textContent = `Saved: ${metadata.name}`;
+                    this.logger.success(`PEPxIDE: File "${metadata.name}" saved successfully.`);
+                } catch (error) {
+                    this.logger.error(`PEPxIDE: Failed to save file: ${error.message}`);
+                    this.statusBarElement.textContent = 'Error saving file.';
+                    Modal.show("Save Error", `Could not save file: ${error.message}`);
+                }
+            }
+
+            // Chronological Tag: 20250525200034 - Enhanced runActiveFile for native app execution.
+            async runActiveFile() {
+                if (!this.activeEditor || !this.activeFileId) {
+                    this.logger.warn("PEPxIDE: No active file to run.");
+                    this.statusBarElement.textContent = 'No file open to run.';
+                    return;
+                }
+
+                this.logger.clear(); // Clear console before running
+                this.statusBarElement.textContent = `Running file...`;
+
+                try {
+                    const metadata = this.fileManager.storage.metadataStore.getFile(this.activeFileId);
+                    if (!metadata) {
+                        throw new Error(`Metadata for active file ${this.activeFileId} not found.`);
+                    }
+
+                    const fileContent = this.activeEditor.getValue();
+                    this.logger.info(`PEPxIDE: Running: ${metadata.name}...`);
+
+                    const fileExtension = metadata.name.split('.').pop().toLowerCase();
+                    const langConfig = Object.values(BiterConfig.languages).find(
+                        lang => lang.fileExtension.substring(1) === fileExtension
+                    );
+
+                    if (metadata.name.endsWith('.js') || metadata.type === 'application/javascript') {
+                        this.runJavaScript(fileContent);
+                    } else if (metadata.name.endsWith('.py')) {
+                        this.runPyScript(fileContent);
+                    } else if (langConfig) {
+                        await this.wasmInterpreter.runLanguage(langConfig.name.toLowerCase(), fileContent);
+                    } else {
+                        this.logger.warn(`PEPxIDE: Unsupported file type for direct execution: ${metadata.type}.`);
+                        this.statusBarElement.textContent = 'Unsupported file type for run.';
+                        Modal.show("Execution Error", `File type "${metadata.type}" is not directly executable in this environment.`);
+                        return;
+                    }
+                    this.statusBarElement.textContent = `Executed: ${metadata.name}`;
+                } catch (error) {
+                    this.logger.error(`PEPxIDE: Error running file: ${error.message}\n${error.stack || ''}`);
+                    this.statusBarElement.textContent = 'Execution failed.';
+                    Modal.show("Execution Error", `Error running file: ${error.message}`);
+                }
+            }
+
+            runJavaScript(code) {
+                // Redirect console logs to the IDE's logger
+                const originalConsoleLog = console.log;
+                const originalConsoleError = console.error;
+                const originalConsoleWarn = console.warn;
+
+                console.log = (...args) => this.logger.log(`JS_OUT:`, ...args);
+                console.error = (...args) => this.logger.error(`JS_ERR:`, ...args);
+                console.warn = (...args) => this.logger.warn(`JS_WARN:`, ...args);
+
+                try {
+                    new Function(code)();
+                    this.logger.success("JavaScript execution complete.");
+                } catch (e) {
+                    this.logger.error(`JavaScript Runtime Error: ${e.message}\nStack: ${e.stack}`);
+                    // Don't re-throw, let it be logged.
+                } finally {
+                    console.log = originalConsoleLog;
+                    console.error = originalConsoleError;
+                    console.warn = originalConsoleWarn;
+                }
+            }
+            runPyScript(code) {
+                this.logger.info("Attempting to run Python script via PyScript...");
+                if (window.pyscript && window.pyscript.interpreter) {
+                    try {
+                        // Capture PyScript output
+                        const currentLogger = this.logger;
+                        const pyscriptOutputDiv = document.getElementById('pyscript-global-output'); // PyScript might write here
+                        if(pyscriptOutputDiv) pyscriptOutputDiv.innerHTML = ''; // Clear previous if any
+
+                        const oldStdOut = window.pyscript.interpreter.stdout;
+                        const oldStdErr = window.pyscript.interpreter.stderr;
+
+                        window.pyscript.interpreter.stdout = (msg) => { currentLogger.log(`PY_OUT: ${msg}`); if(oldStdOut) oldStdOut(msg); };
+                        window.pyscript.interpreter.stderr = (msg) => { currentLogger.error(`PY_ERR: ${msg}`); if(oldStdErr) oldStdErr(msg); };
+
+                        window.pyscript.runPython(code);
+                        this.logger.success("Python script execution initiated.");
+
+                        // Restore stdout/stderr after a short delay (pyscript execution might be async internally)
+                        setTimeout(() => {
+                             if(window.pyscript && window.pyscript.interpreter) {
+                                window.pyscript.interpreter.stdout = oldStdOut;
+                                window.pyscript.interpreter.stderr = oldStdErr;
+                            }
+                        }, 1000);
+
+                    } catch (e) {
+                        this.logger.error(`PyScript Runtime Error: ${e.message}`);
+                    }
+                } else {
+                    this.logger.error("PyScript is not available or not initialized.");
+                    Modal.show("PyScript Error", "PyScript runtime is not available. Cannot execute Python code.");
+                }
+            }
+
+
+            // Chronological Tag: 20250525200035 - Project publishing logic.
+            async publishProject() {
+                this.statusBarElement.textContent = 'Publishing project...';
+                this.logger.info("PEPxIDE: Initiating project publication process (simulated)...");
+
+                try {
+                    const projectFilesMetadata = this.fileManager.storage.metadataStore.listFiles(this.fileManager.currentPath);
+
+                    if (projectFilesMetadata.length === 0 || (projectFilesMetadata.length === 1 && projectFilesMetadata[0].name === '..')) {
+                        Modal.show("Publication Failed", "No files found in the current directory to publish.");
+                        this.statusBarElement.textContent = 'Publication failed.';
+                        return;
+                    }
+
+                    const projectData = {};
+                    for (const fileMetadata of projectFilesMetadata) {
+                        if (fileMetadata.type === 'folder' || fileMetadata.name === '..') continue; // Skip folders and parent nav
+                        try {
+                            const blob = await this.fileManager.storage.retrieveFile(fileMetadata.id);
+                            const content = await blob.text(); // Assuming textual content for publishing
+                            projectData[fileMetadata.path] = {
+                                name: fileMetadata.name,
+                                type: fileMetadata.type,
+                                size: fileMetadata.size,
+                                content: btoa(unescape(encodeURIComponent(content))) // Base64 encode UTF-8 string
+                            };
+                        } catch (error) {
+                            this.logger.error(`PEPxIDE: Failed to retrieve file for publication: ${fileMetadata.name}. Error: ${error.message}`);
+                            Modal.show("Publication Error", `Failed to retrieve all project files. Cannot publish. Error: ${error.message}`);
+                            this.statusBarElement.textContent = 'Publication failed.';
+                            return;
+                        }
+                    }
+
+                    const publishResult = await this.backendPublisherClient.publishProject(projectData, this.fileManager.currentPath, 'anonymous'); // No real user ID in this version
+
+                    if (publishResult && publishResult.success) {
+                        this.logger.success(`PEPxIDE: Project published successfully to: ${publishResult.accessUrl}`);
+                        Modal.show("Project Published!", `Your project has been published successfully.<br>Access URL: <a href="${publishResult.accessUrl}" target="_blank">${publishResult.accessUrl}</a>`);
+                        this.statusBarElement.textContent = 'Project published.';
+                    } else {
+                        throw new Error(publishResult.message || "Unknown publication error.");
+                    }
+                } catch (error) {
+                    this.logger.error(`PEPxIDE: Failed to publish project: ${error.message}`);
+                    this.statusBarElement.textContent = 'Publication failed.';
+                    Modal.show("Publication Failed", `Could not publish project: ${error.message}`);
+                }
+            }
+        }
+
+        // --- WASM Interpreters for Browser-based Langs (Biter) ---
+        // Chronological Tag: 20250525200036 - BiterWASMInterpreter for custom languages.
+        class BiterWASMInterpreter {
+            constructor() {
+                logger.info("BiterWASMInterpreter: Initializing conceptual browser-based language runtime.");
+                this.wasmModules = {};
+            }
+
+            async _loadAndInstantiateWasm(moduleName, wasmBinaryData) {
+                if (this.wasmModules[moduleName]) {
+                    logger.info(`Biter: Using cached WASM module for ${moduleName} (simulated).`);
+                    return this.wasmModules[moduleName];
+                }
+
+                logger.info(`Biter: Simulating WASM compilation and instantiation for ${moduleName}...`);
+                await new Promise(resolve => setTimeout(resolve, 500)); // Simulate loading time
+                const currentLogger = window.pepxIDE ? window.pepxIDE.logger : logger;
+
+
+                logger.success(`Biter: Simulating WASM compilation and instantiation for ${moduleName}.`);
+                const instance = {
+                    exports: {
+                        run: (code) => { // Pass code here to simulate language processing
+                            currentLogger.info(`Biter: Simulating execution of ${moduleName} code.`);
+                            currentLogger.log(`Code snippet to execute:\n${code.substring(0, Math.min(code.length, 100))}...`);
+                            if (moduleName === 'blang') {
+                                currentLogger.log(`Blang simulation: Processed ${code.length} characters. Result: ${code.length * 2}`);
+                            } else if (moduleName === 'bitegems') {
+                                currentLogger.log(`BiteGems simulation: Mined ${Math.floor(code.length / 10)} gems.`);
+                            } else if (moduleName === 'cib') {
+                                currentLogger.log(`CIB simulation: Executed. Return code: 0`);
+                            } else if (moduleName === 'baskell') {
+                                currentLogger.log(`Baskell simulation: Computation complete. Value: ${code.length % 7}`);
+                            }
+                            return `Simulated ${moduleName} execution complete.`;
+                        },
+                    }
+                };
+                this.wasmModules[moduleName] = instance;
+                return instance;
+            }
+
+            async runLanguage(langName, code) {
+                logger.info(`Biter: Preparing to run ${langName} code...`);
+                const langConfig = BiterConfig.languages[langName];
+                if (!langConfig) {
+                    throw new Error(`Unsupported language: ${langName}. No configuration found.`);
+                }
+
+                let processedCodeOrBinary;
+                try {
+                    processedCodeOrBinary = await assist.getCompilerAssistance(code, langName);
+                    logger.info(`Biter: Compiler assistance for ${langName} completed.`);
+                } catch (error) {
+                    logger.error(`Biter: Compiler assistance failed for ${langName}: ${error.message}`);
+                    throw new Error(`Compilation/Transpilation failed for ${langName}.`);
+                }
+
+                if (typeof processedCodeOrBinary === 'string') {
+                    logger.info(`Biter: Running transpiled ${langName} (as JS) code.`);
+                    const tempRunJS = (jsCode) => {
+                        const currentLogger = window.pepxIDE ? window.pepxIDE.logger : logger;
+                        const originalConsoleLog = console.log;
+                        const originalConsoleError = console.error;
+                        const originalConsoleWarn = console.warn;
+
+                        console.log = (...args) => currentLogger.log(`TRANSPILER_OUT:`, ...args);
+                        console.error = (...args) => currentLogger.error(`TRANSPILER_ERR:`, ...args);
+                        console.warn = (...args) => currentLogger.warn(`TRANSPILER_WARN:`, ...args);
+
+                        try {
+                            new Function(jsCode)();
+                        } catch (e) {
+                            currentLogger.error(`Transpiled JS Runtime Error for ${langName}: ${e.message}\nStack: ${e.stack}`);
+                            throw e;
+                        } finally {
+                            console.log = originalConsoleLog;
+                            console.error = originalConsoleError;
+                            console.warn = originalConsoleWarn;
+                        }
+                    };
+                    tempRunJS(processedCodeOrBinary);
+                } else if (processedCodeOrBinary instanceof ArrayBuffer) {
+                    logger.info(`Biter: Running compiled ${langName} (as WASM) binary.`);
+                    const wasmInstance = await this._loadAndInstantiateWasm(langName, processedCodeOrBinary);
+                    wasmInstance.exports.run(code); // Pass original code for simulation in _loadAndInstantiateWasm
+                } else {
+                    throw new Error(`Unexpected output from compiler assistance for ${langName}.`);
+                }
+                logger.success(`${langName} execution simulated.`);
+            }
+        }
+
+        // --- Application Manager (OBPI's Core App Launcher) ---
+        // Chronological Tag: 20250525200037 - AppManager for OBPI's desktop apps.
+        const AppManager = {
+            apps: { // Functions to generate app content
+                encapsulatedWebView: () => {
+                    const container = document.createElement('div');
+                    container.className = 'p-4 h-full flex flex-col';
+                    container.innerHTML = `
+                        <div class="mb-2 flex">
+                            <input type="text" id="webview-url-input" class="flex-grow p-2 border rounded-l" placeholder="Enter URL (e.g., https://example.com)">
+                            <button id="webview-go-btn" class="p-2 bg-indigo-500 text-white rounded-r hover:bg-indigo-600">Go</button>
+                        </div>
+                        <iframe id="webview-iframe" class="w-full h-full border-2 border-gray-300 rounded"></iframe>
+                    `;
+                    setTimeout(() => { // Ensure elements are in DOM before adding listeners
+                        const input = container.querySelector('#webview-url-input');
+                        const goBtn = container.querySelector('#webview-go-btn');
+                        const iframe = container.querySelector('#webview-iframe');
+                        const loadUrl = () => {
+                            let url = input.value.trim();
+                            if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+                                url = 'https://' + url;
+                            }
+                            if (url) {
+                                 try {
+                                    // Basic check to prevent loading local file paths or javascript: URLs
+                                    const u = new URL(url);
+                                    if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+                                        Modal.show("Error", "Invalid URL protocol. Only http and https are allowed.");
+                                        return;
+                                    }
+                                    iframe.src = url;
+                                } catch (e) {
+                                    Modal.show("Error", "Invalid URL format.");
+                                }
+                            }
+                        };
+                        goBtn.onclick = loadUrl;
+                        input.onkeypress = (e) => { if (e.key === 'Enter') loadUrl(); };
+                    },0);
+                    return container;
+                },
+                simpleTextEditor: () => {
+                    const editor = document.createElement('textarea');
+                    editor.className = 'w-full h-full p-2 border cli-font bg-white text-black';
+                    editor.placeholder = 'Type your notes here...';
+                    return editor;
+                },
+                settingsApp: () => {
+                    const content = document.createElement('div');
+                    content.className = 'p-4';
+                    content.innerHTML = `
+                        <h3 class="text-xl font-semibold mb-3">OBPI Settings</h3>
+                        <div class="mb-4">
+                            <label for="theme-select" class="block mb-1">Theme:</label>
+                            <select id="theme-select" class="p-2 border rounded w-full text-gray-800">
+                                <option value="dark">Dark Theme</option>
+                                <option value="light">Light Theme</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                             <button id="clear-storage-btn" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Clear All OBPI LocalStorage</button>
+                             <p class="text-xs text-gray-500 mt-1">Warning: This will reset all windows, VFS, PEPx data, and themes.</p>
+                        </div>
+                         <div class="mb-4">
+                             <button id="reset-pepx-btn" class="px-4 py-2 bg-yellow-500 text-black rounded hover:bg-yellow-600">Reset PEPx IDE Storage</button>
+                             <p class="text-xs text-gray-500 mt-1">Warning: This will reset only the PEPx IDE file system (pixel storage metadata).</p>
+                        </div>
+                        <h4 class="text-lg font-medium mt-6 mb-2">About OBPI</h4>
+                        <p>Version: ${OBPI.version}</p>
+                        <p>${OBPI.name}</p>
+                        <p class="mt-2">Conceptual OS-like environment running in your browser.</p>
+                    `;
+                    setTimeout(() => {
+                        const themeSelect = content.querySelector('#theme-select');
+                        themeSelect.value = OBPI.activeTheme;
+                        themeSelect.onchange = (e) => AppManager.cliCommands.theme({ args: [e.target.value], print: Terminal.print }); // Pass print
+
+                        content.querySelector('#clear-storage-btn').onclick = () => {
+                            Modal.confirm("Confirm Clear Storage", "Are you sure you want to clear ALL OBPI data from localStorage? This action cannot be undone.", (confirmed) => {
+                                if (confirmed) {
+                                    localStorage.removeItem(OBPI.config.windowStateStorageKey);
+                                    localStorage.removeItem(OBPI.config.themeStorageKey);
+                                    localStorage.removeItem(OBPI.config.desktopIconStorageKey);
+                                    localStorage.removeItem(FileSystem.FS_STORAGE_KEY);
+                                    localStorage.removeItem(AppConfigPEPx.pepxStorage.localStorageMetadataKey); // PEPx metadata
+                                    // Add other keys if necessary
+                                    logger.warn("All OBPI localStorage cleared. Please reload the page.");
+                                    Modal.show("Storage Cleared", "All OBPI data has been cleared. Please reload the page for changes to take full effect.", [{text:"Reload Now", handler: () => window.location.reload()}]);
+                                }
+                            });
+                        };
+                         content.querySelector('#reset-pepx-btn').onclick = () => {
+                            Modal.confirm("Confirm Reset PEPx Storage", "Are you sure you want to reset only the PEPx IDE file system? This action cannot be undone.", (confirmed) => {
+                                if (confirmed) {
+                                    localStorage.removeItem(AppConfigPEPx.pepxStorage.localStorageMetadataKey); // PEPx metadata
+                                    logger.warn("PEPx IDE localStorage cleared. Please reload the PEPx IDE app or the page.");
+                                    // Re-initialize PEPx storage related components if possible or prompt reload
+                                    if (window.pepxIDE && window.pepxIDE.fileManager && window.pepxIDE.fileManager.storage) {
+                                        window.pepxIDE.fileManager.storage.metadataStore = new PEPxMetadataStore(); // Re-init
+                                        window.pepxIDE.fileManager.refreshFileList();
+                                        Modal.show("PEPx Storage Reset", "PEPx IDE file system has been reset. The file explorer has been refreshed.");
+                                    } else {
+                                        Modal.show("PEPx Storage Reset", "PEPx IDE file system has been reset. Please reload the page or relaunch the PEPx IDE app.", [{text:"Reload Now", handler: () => window.location.reload()}]);
+                                    }
+                                }
+                            });
+                        };
+                    },0);
+                    return content;
+                },
+                aiAssistantApp: () => {
+                    const content = document.createElement('div');
+                    // The styles for #window-ai-assistant .window-content define padding and flex,
+                    // so we just need the internal structure here.
+                    content.innerHTML = `
+                        <div id="ai-chat-output" class="cli-font">
+                            <div class="ai-message assistant">Hello! I am OBPI's AI assistant. How can I help you today?</div>
+                        </div>
+                        <div id="ai-input-area">
+                            <input type="text" id="ai-input" placeholder="Type your message...">
+                            <button id="ai-send-button">Send</button>
+                        </div>
+                    `;
+                    setTimeout(() => {
+                        const output = content.querySelector('#ai-chat-output');
+                        const input = content.querySelector('#ai-input');
+                        const sendBtn = content.querySelector('#ai-send-button');
+
+                        const addMessage = (text, sender) => {
+                            const msgDiv = document.createElement('div');
+                            msgDiv.classList.add('ai-message', sender);
+                            msgDiv.textContent = text;
+                            output.appendChild(msgDiv);
+                            output.scrollTop = output.scrollHeight;
+                        };
+
+                        const handleSend = () => {
+                            const userText = input.value.trim();
+                            if (!userText) return;
+                            addMessage(userText, 'user');
+                            input.value = '';
+
+                            // Simulate AI response
+                            setTimeout(() => {
+                                let aiResponse = "I'm sorry, I can only provide simulated responses right now.";
+                                if (userText.toLowerCase().includes('hello') || userText.toLowerCase().includes('hi')) {
+                                    aiResponse = "Hello there! How are you doing?";
+                                } else if (userText.toLowerCase().includes('time')) {
+                                    aiResponse = `The current time is ${new Date().toLocaleTimeString()}.`;
+                                } else if (userText.toLowerCase().includes('date')) {
+                                    aiResponse = `Today's date is ${new Date().toLocaleDateString()}.`;
+                                } else if (userText.toLowerCase().includes('help')) {
+                                    aiResponse = "I can tell you the time, date, or just chat. What do you need?";
+                                }
+                                addMessage(aiResponse, 'assistant');
+                            }, 1000 + Math.random() * 1000);
+                        };
+
+                        sendBtn.onclick = handleSend;
+                        input.onkeypress = (e) => { if (e.key === 'Enter') handleSend(); };
+                    },0);
+                    return content;
+                },
+                pepxIDEApp: () => {
+                    // The PEPxIDE class will populate its own content within the window's content area.
+                    // We just need a placeholder div for it, or rely on the PEPxIDE.init() to take the window's content div.
+                    const pepxContainer = document.createElement('div');
+                    pepxContainer.id = 'pepx-ide-instance-container'; // Unique ID for the IDE instance
+                    pepxContainer.className = 'w-full h-full flex'; // Use flex for internal layout of PEPx IDE
+                    pepxContainer.style.backgroundColor = 'var(--pepx-bg-color)'; // Match PEPx theme
+                    // The PEPxIDE.init method will be called with the window's content div directly.
+                    return pepxContainer; // This element itself will be the container if not handled by init
+                },
+                pepxFileExplorerApp: () => {
+                    const explorerContainer = document.createElement('div');
+                    explorerContainer.id = 'pepx-explorer-instance-container';
+                    explorerContainer.className = 'w-full h-full';
+                    // The PEPxFileManager will be initialized into this container.
+                    // This setup assumes PEPxFileManager can be used standalone.
+                    // For this version, it's part of PEPxIDE. If needed as standalone,
+                    // it would require its own PEPxStorage instance.
+                    // For now, let's just show a message that it's part of PEPxIDE.
+                    explorerContainer.innerHTML = `<div class="p-4">The PEPx File Explorer is integrated into the PEPx IDE application. Please launch the PEPx IDE to manage PEPx files.</div>`;
+                    return explorerContainer;
+                },
+                 welcomeNoteApp: () => {
+                    const content = document.createElement('div');
+                    content.className = 'p-6';
+                    content.innerHTML = `
+                        <h2 class="text-2xl font-bold mb-4" style="color: var(--accent-color);">Welcome to OBPI v${OBPI.version}!</h2>
+                        <p class="mb-2"><strong>${OBPI.name}</strong></p>
+                        <p class="mb-2">This is a browser-based persistent instance simulating a desktop environment. Your window states, OBPI's virtual file system (VFS), and PEPx IDE files are saved in your browser's local storage.</p>
+                        <p class="mb-2"><strong>Key Features:</strong></p>
+                        <ul class="list-disc list-inside mb-3">
+                            <li>Window management (drag, resize, minimize, maximize)</li>
+                            <li>Persistent window states</li>
+                            <li>Termia Chronos Shell (basic CLI in "Terminal" app)</li>
+                            <li>OBPI Virtual File System (VFS) for core OS files</li>
+                            <li>PEPx IDE with Pixel-Encoded Persistent Storage (for projects)</li>
+                            <li>Light/Dark themes (try 'theme light' or 'theme dark' in Terminal)</li>
+                            <li>Basic apps: Web View, Text Editor, AI Assistant (Simulated)</li>
+                        </ul>
+                        <p class="mb-2"><strong>Getting Started:</strong></p>
+                        <ul class="list-disc list-inside mb-3">
+                            <li>Open the "Terminal" app from the Start Menu or desktop icon.</li>
+                            <li>Type <code>help</code> in the terminal for OBPI commands.</li>
+                            <li>Launch "PEPx IDE" to start developing projects with pixel storage.</li>
+                            <li>Explore "Settings" to change themes or manage storage.</li>
+                        </ul>
+                        <p class="text-sm mt-4"><em>Built with HTML, CSS (TailwindCSS), JavaScript, and THREE.js. Conceptually uses PyScript, Monaco Editor, and WASM.</em></p>
+                        <hr class="my-4">
+                        <p class="text-xs">Chronological Tag: ${new Date().toISOString().substring(0,10).replace(/-/g,'')}${new Date().toTimeString().substring(0,8).replace(/:/g,'')}00</p>
+                    `;
+                    return content;
+                },
+                wasmEmulatorApp: () => {
+                    const content = document.createElement('div');
+                    content.className = 'p-4 cli-font';
+                    content.innerHTML = `
+                        <h3 class="text-lg font-semibold mb-3">Core Emulator (WASM Interaction)</h3>
+                        <div class="mb-2">
+                            <button id="wasm-greet-btn" class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600">Greet from WASM</button>
+                            <input type="text" id="wasm-greet-name" placeholder="Enter name" class="ml-2 p-1 border rounded bg-gray-700 text-white">
+                        </div>
+                        <div class="mb-2">
+                            <button id="wasm-add-btn" class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600">Add with WASM</button>
+                            <input type="number" id="wasm-add-a" value="5" class="ml-2 p-1 w-16 border rounded bg-gray-700 text-white">
+                            <input type="number" id="wasm-add-b" value="7" class="ml-1 p-1 w-16 border rounded bg-gray-700 text-white">
+                        </div>
+                        <div class="mb-2">
+                            <button id="wasm-timestamp-btn" class="px-3 py-1 bg-yellow-500 text-black rounded hover:bg-yellow-600">Get WASM Timestamp</button>
+                        </div>
+                        <div id="wasm-output" class="mt-3 p-2 bg-black text-green-400 rounded border border-green-700 h-32 overflow-y: auto"></div>
+                    `;
+
+                    let coreEmulatorModule = null;
+                    const outputDiv = content.querySelector('#wasm-output');
+                    const logToWasmOutput = (msg) => {
+                        outputDiv.innerHTML += `${msg.replace(/</g, "&lt;")}<br>`;
+                        outputDiv.scrollTop = outputDiv.scrollHeight;
+                    };
+
+                    OBPI.kernel.loadWasmModule('core_emulator.wasm')
+                        .then(module => {
+                            coreEmulatorModule = module;
+                            logToWasmOutput("Core Emulator WASM module loaded (simulated).");
+                        })
+                        .catch(err => logToWasmOutput(`Error loading WASM: ${err.message}`));
+
+                    setTimeout(() => { // Ensure elements are in DOM
+                        content.querySelector('#wasm-greet-btn').onclick = () => {
+                            if (!coreEmulatorModule) { logToWasmOutput("WASM module not ready."); return; }
+                            const name = content.querySelector('#wasm-greet-name').value || "OBPI User";
+                            try {
+                                const result = coreEmulatorModule.get_native_greeting(name); // Passing JS string directly for simulation
+                                logToWasmOutput(`WASM Greet: ${result}`);
+                            } catch(e) { logToWasmOutput(`Error in WASM Greet: ${e.message}`); }
+                        };
+                        content.querySelector('#wasm-add-btn').onclick = () => {
+                            if (!coreEmulatorModule) { logToWasmOutput("WASM module not ready."); return; }
+                            const a = parseInt(content.querySelector('#wasm-add-a').value);
+                            const b = parseInt(content.querySelector('#wasm-add-b').value);
+                            try {
+                                const result = coreEmulatorModule.add_native(a, b);
+                                logToWasmOutput(`WASM Add (${a}, ${b}): ${result}`);
+                            } catch(e) { logToWasmOutput(`Error in WASM Add: ${e.message}`); }
+                        };
+                        content.querySelector('#wasm-timestamp-btn').onclick = () => {
+                            if (!coreEmulatorModule) { logToWasmOutput("WASM module not ready."); return; }
+                            try {
+                                const result = coreEmulatorModule.get_system_timestamp_native();
+                                logToWasmOutput(`WASM Timestamp: ${result} (Unix epoch)`);
+                            } catch(e) { logToWasmOutput(`Error in WASM Timestamp: ${e.message}`); }
+                        };
+                    },0);
+                    return content;
+                },
+
+            },
+            installedApps: { // Map app IDs to definitions
+                'terminal': { // Added terminal to the installed apps list
+                    name: 'Terminal',
+                    icon: '🖥️',
+                    launch: () => { // Terminal.init already creates its window if not exists
+                        if (!OBPI.windows['terminal']) Terminal.init();
+                        else WindowManager.focus('terminal');
+                    }
+                },
+                'web_view': {
+                    name: 'Web View',
+                    icon: '🌐',
+                    launch: () => AppManager.launch('web-view', 'Encapsulated Web View', AppManager.apps.encapsulatedWebView(), { width: '1024px', height: '768px'})
+                },
+                'text_editor': {
+                    name: 'Text Editor',
+                    icon: '📝',
+                    launch: () => AppManager.launch('text-editor', 'Simple Text Editor', AppManager.apps.simpleTextEditor(), { width: '600px', height: '400px'})
+                },
+                'settings': {
+                    name: 'Settings',
+                    icon: '⚙️',
+                    launch: () => AppManager.launch('settings', 'OBPI Settings', AppManager.apps.settingsApp(), {width: '500px', height:'650px'})
+                },
+                'ai_assistant': {
+                    name: 'AI Assistant',
+                    icon: '🤖',
+                    launch: () => AppManager.launch('ai-assistant', 'OBPI AI Assistant', AppManager.apps.aiAssistantApp(), { width: '450px', height: '600px'})
+                },
+                'pepx_ide': {
+                    name: 'PEPx IDE',
+                    icon: '💡', // Or a custom PEPx icon
+                    launch: () => {
+                        const pepxWindow = WindowManager.create('pepx-ide-app', 'PEPx IDE v0.8', AppManager.apps.pepxIDEApp(), { width: '1200px', height: '800px' });
+                        if (pepxWindow && !window.pepxIDEInstance) { // Check if not already initialized
+                            const pepxStorage = new PEPxStorage();
+                            const pepxFileManager = new PEPxFileManager(pepxStorage);
+                            const pepxPublisher = new BackendPublisherClientPEPx();
+                            window.pepxIDEInstance = new PEPxIDE(pepxFileManager, pepxPublisher);
+                            // Pass the content div of the window to the IDE's init method
+                            window.pepxIDEInstance.init(OBPI.windows['pepx-ide-app'].contentElement);
+
+                            // Handle PEPxIDE window close
+                             OBPI.windows['pepx-ide-app'].onClose = () => {
+                                if (window.pepxIDEInstance && window.pepxIDEInstance.activeEditor) {
+                                    window.pepxIDEInstance.activeEditor.dispose();
+                                }
+                                window.pepxIDEInstance = null; // Clear instance
+                                OBPI.kernel.log("PEPx IDE window closed and instance cleaned up.");
+                            };
+                        } else if (window.pepxIDEInstance) {
+                            WindowManager.focus('pepx-ide-app'); // Focus existing if somehow launched again
+                        }
+                    }
+                },
+                 'welcome_note': {
+                    name: 'Welcome to OBPI',
+                    icon: '🌟',
+                    launch: () => AppManager.launch('welcome-note', 'Welcome to OBPI', AppManager.apps.welcomeNoteApp(), {width: '700px', height: '550px'})
+                },
+                'wasm_emulator': {
+                    name: 'WASM Emulator',
+                    icon: '🔩',
+                    launch: () => AppManager.launch('wasm-emulator', 'Core Emulator (WASM)', AppManager.apps.wasmEmulatorApp(), {width: '600px', height: '400px'})
+                },
+            },
+            desktopIcons: [ // Define initial desktop icons
+                { appId: 'terminal', name: 'Terminal', icon: '🖥️' },
+                { appId: 'pepx_ide', name: 'PEPx IDE', icon: '💡' },
+                { appId: 'web_view', name: 'Web View', icon: '🌐' },
+                { appId: 'settings', name: 'Settings', icon: '⚙️' },
+                { appId: 'welcome_note', name: 'Welcome', icon: '🌟' }
+            ],
+            launch: (id, title, contentHTML, options = {}) => {
+                WindowManager.create(id, title, contentHTML, options);
+                WindowManager.focus(id);
+            },
+            getAppDefinition: (appId) => {
+                return AppManager.installedApps[appId];
+            },
+            initStartMenu: () => {
+                OBPI.startMenuElement.innerHTML = ''; // Clear previous items
+                for (const appId in AppManager.installedApps) {
+                    const appDef = AppManager.installedApps[appId];
+                    const item = document.createElement('a');
+                    item.href = '#';
+                    item.className = 'start-menu-item';
+                    item.innerHTML = `<span class="mr-2">${appDef.icon || '🚀'}</span>${appDef.name}`;
+                    item.onclick = (e) => {
+                        e.preventDefault();
+                        appDef.launch();
+                        OBPI.startMenuElement.classList.add('hidden');
+                    };
+                    OBPI.startMenuElement.appendChild(item);
+                }
+                // Add Theme Toggle to Start Menu
+                const themeToggleItem = document.createElement('a');
+                themeToggleItem.href = '#';
+                themeToggleItem.className = 'start-menu-item mt-2 border-t border-gray-700 pt-2';
+                themeToggleItem.innerHTML = `<span class="mr-2">🎨</span>Toggle Theme`;
+                themeToggleItem.onclick = (e) => {
+                    e.preventDefault();
+                    const newTheme = OBPI.activeTheme === 'dark' ? 'light' : 'dark';
+                    AppManager.cliCommands.theme({args: [newTheme], print: Terminal.print}); // Reuse CLI command logic
+                    OBPI.startMenuElement.classList.add('hidden');
+                };
+                OBPI.startMenuElement.appendChild(themeToggleItem);
+
+            },
+            initDesktopIcons: () => {
+                const storedIcons = localStorage.getItem(OBPI.config.desktopIconStorageKey);
+                let iconsToDisplay = AppManager.desktopIcons;
+                if (storedIcons) {
+                    try {
+                        // For now, just use default. Could extend to save/load icon positions.
+                        // iconsToDisplay = JSON.parse(storedIcons);
+                    } catch(e) { OBPI.kernel.log("Error parsing stored desktop icons.", "error"); }
+                }
+
+                OBPI.desktopElement.querySelectorAll('.desktop-icon').forEach(icon => icon.remove()); // Clear existing
+
+                iconsToDisplay.forEach(iconData => {
+                    const appDef = AppManager.installedApps[iconData.appId];
+                    if (appDef) {
+                        const iconEl = document.createElement('div');
+                        iconEl.className = 'desktop-icon';
+                        iconEl.innerHTML = `<div class="icon-placeholder">${iconData.icon || appDef.icon || '🚀'}</div><span>${iconData.name || appDef.name}</span>`;
+                        iconEl.ondblclick = () => appDef.launch();
+                        OBPI.desktopElement.appendChild(iconEl);
+                    }
+                });
+            },
+            cliCommands: {
+                help: ({ print }) => {
+                    print("OBPI Command List:");
+                    print("  help                   - Show this help message");
+                    print("  ls [path]              - List files in OBPI VFS (current or specified path)");
+                    print("  cd <path>              - Change current directory in OBPI VFS");
+                    print("  cat <filepath>         - Display file content from OBPI VFS");
+                    print("  mkdir <dirname>        - Create a directory in OBPI VFS");
+                    print("  touch <filename>       - Create an empty file in OBPI VFS");
+                    print("  echo <text>            - Display text");
+                    print("  date                   - Show current date and time");
+                    print("  clear                  - Clear terminal output");
+                    print("  theme <dark|light>     - Change UI theme");
+                    print("  launch <app_id>        - Launch an application (e.g., launch pepx_ide)");
+                    print("  ps                     - List running 'windows' (conceptual)");
+                    print("  kill <window_id>       - Close a window (use ID from 'ps')");
+                    print("  env                    - Show environment variables");
+                    print("  setenv <VAR> <VAL>     - Set environment variable");
+                    print("  alias <name>=<cmd>     - Create a command alias");
+                    print("  reload                 - Reload the OBPI instance");
+                    print("  fullscreen             - Attempt to enter fullscreen mode");
+                    print("  kernel_log <msg> [lvl] - Log to OBPI kernel (info, warn, error, success)");
+                    print("  pepx_capacity          - Show conceptual capacity of PEPx storage");
+
+                },
+                ls: ({ args, print }) => {
+                    const path = args[0] || OBPI.currentPath;
+                    const resolved = FileSystem.resolvePath(path);
+                    if (resolved.error || !resolved.node || resolved.node.type !== 'dir') {
+                        print(`ls: cannot access '${path}': ${resolved.error || 'Not a directory'}`, false, 'error');
+                        return;
+                    }
+                    const items = Object.keys(resolved.node.children);
+                    if (items.length === 0) print("(empty)");
+                    else items.forEach(item => print(item + (resolved.node.children[item].type === 'dir' ? '/' : '')));
+                },
+                cd: ({ args, print }) => {
+                    if (!args[0]) { print("cd: missing operand", false, 'error'); return; }
+                    const resolved = FileSystem.resolvePath(args[0]);
+                    if (resolved.error || !resolved.node || resolved.node.type !== 'dir') {
+                        print(`cd: ${args[0]}: ${resolved.error || 'Not a directory'}`, false, 'error');
+                    } else {
+                        OBPI.currentPath = resolved.path.endsWith('/') ? resolved.path : resolved.path + '/';
+                        if (OBPI.currentPath === '//') OBPI.currentPath = '/'; // Fix for root
+                        Terminal.updatePrompt();
+                    }
+                },
+                cat: ({ args, print }) => {
+                    if (!args[0]) { print("cat: missing operand", false, 'error'); return; }
+                    const resolved = FileSystem.resolvePath(args[0]);
+                    if (resolved.error || !resolved.node || resolved.node.type === 'file') {
+                        print(resolved.node.content || '', false); // Print content directly
+                    } else {
+                         print(`cat: ${args[0]}: ${resolved.error || 'Not a file or does not exist'}`, false, 'error');
+                    }
+                },
+                mkdir: ({ args, print }) => {
+                    if (!args[0]) { print("mkdir: missing operand", false, 'error'); return; }
+                    const dirName = args[0];
+                    const parentPath = FileSystem.resolvePath(OBPI.currentPath);
+                    if (parentPath.error || !parentPath.node || parentPath.node.type !== 'dir') {
+                        print(`mkdir: cannot create directory in '${OBPI.currentPath}': Invalid path`, false, 'error'); return;
+                    }
+                    if (parentPath.node.children[dirName]) {
+                        print(`mkdir: cannot create directory '${dirName}': File exists`, false, 'error'); return;
+                    }
+                    parentPath.node.children[dirName] = { type: 'dir', children: {} };
+                    FileSystem.save();
+                    print(`Directory '${dirName}' created.`);
+                },
+                touch: ({ args, print }) => {
+                    if (!args[0]) { print("touch: missing operand", false, 'error'); return; }
+                    const fileName = args[0];
+                    const parentPath = FileSystem.resolvePath(OBPI.currentPath);
+                     if (parentPath.error || !parentPath.node || parentPath.node.type !== 'dir') {
+                        print(`touch: cannot create file in '${OBPI.currentPath}': Invalid path`, false, 'error'); return;
+                    }
+                    if (!parentPath.node.children[fileName]) {
+                         parentPath.node.children[fileName] = { type: 'file', content: '' };
+                         FileSystem.save();
+                    } else if (parentPath.node.children[fileName].type === 'file') {
+                        // Update timestamp conceptually, or do nothing for this simple VFS
+                    } else {
+                         print(`touch: cannot touch '${fileName}': It is a directory`, false, 'error'); return;
+                    }
+                },
+                echo: ({ commandStr, print }) => {
+                    print(commandStr.substring(commandStr.indexOf(' ') + 1));
+                },
+                date: ({ print }) => print(new Date().toString()),
+                clear: () => Terminal.clear(),
+                theme: ({ args, print }) => {
+                    if (!args[0] || (args[0] !== 'light' && args[0] !== 'dark')) {
+                        print("Usage: theme <dark|light>", false, 'error');
+                        return;
+                    }
+                    OBPI.activeTheme = args[0];
+                    document.body.classList.toggle('light-theme', OBPI.activeTheme === 'light');
+                    localStorage.setItem(OBPI.config.themeStorageKey, OBPI.activeTheme);
+                    print(`Theme set to ${OBPI.activeTheme}.`);
+                    // Update WebGL background if it exists
+                    if (renderer) renderer.setClearColor(OBPI.activeTheme === 'light' ? 0xe0e0e0 : 0x1a1a2e, 1);
+                    if (stars && stars.material) {
+                        stars.material.color.setHex(OBPI.activeTheme === 'light' ? 0x333333 : 0xffffff);
+                        stars.material.size = OBPI.activeTheme === 'light' ? 0.8 : 1.2;
+                    }
+                    // Update Monaco editor theme if PEPxIDE is open
+                    if (window.pepxIDE && window.pepxIDE.activeEditor) {
+                        monaco.editor.setTheme(OBPI.activeTheme === 'light' ? 'vs' : 'vs-dark');
+                    }
+
+                },
+                launch: ({ args, print }) => {
+                    if (!args[0]) { print("Usage: launch <app_id>", false, 'error'); return; }
+                    const appDef = AppManager.installedApps[args[0]];
+                    if (appDef) {
+                        appDef.launch();
+                        print(`Launching ${appDef.name}...`);
+                    } else {
+                        print(`App '${args[0]}' not found.`, false, 'error');
+                    }
+                },
+                ps: ({ print }) => {
+                    print("Running Windows (Conceptual):");
+                    if (Object.keys(OBPI.windows).length === 0) {
+                        print("  No windows open.");
+                        return;
+                    }
+                    for (const id in OBPI.windows) {
+                        const win = OBPI.windows[id];
+                        print(`  ID: ${id}, Title: ${win.title}, Minimized: ${win.minimized}, Z-Index: ${win.zIndex}`);
+                    }
+                },
+                kill: ({ args, print }) => {
+                    if (!args[0]) { print("Usage: kill <window_id>", false, 'error'); return; }
+                    const windowId = args[0];
+                    if (OBPI.windows[windowId]) {
+                        WindowManager.close(windowId);
+                        print(`Window '${windowId}' closed.`);
+                    } else {
+                        print(`Window ID '${windowId}' not found.`, false, 'error');
+                    }
+                },
+                env: ({ print }) => {
+                    print("Environment Variables:");
+                    for(const key in OBPI.envVars) {
+                        print(`  ${key}=${OBPI.envVars[key]}`);
+                    }
+                },
+                setenv: ({ args, print }) => {
+                    if (args.length < 2) { print("Usage: setenv <VAR_NAME> <VALUE>", false, 'error'); return; }
+                    OBPI.envVars[args[0]] = args.slice(1).join(' ');
+                    print(`Set ${args[0]}=${OBPI.envVars[args[0]]}`);
+                },
+                alias: ({ args, print }) => {
+                    if (!args[0]) {
+                        print("Current Aliases:");
+                        for (const name in OBPI.aliases) print(`  alias ${name}='${OBPI.aliases[name]}'`);
+                        return;
+                    }
+                    const [name, cmd] = args[0].split('=');
+                    if (name && cmd) {
+                        OBPI.aliases[name] = cmd;
+                        print(`Alias created: ${name} -> ${cmd}`);
+                    } else if (name && !cmd) {
+                        delete OBPI.aliases[name];
+                        print(`Alias removed: ${name}`);
+                    } else {
+                        print("Usage: alias <name>=<command>  OR  alias <name> (to remove)", false, 'error');
+                    }
+                },
+                reload: () => window.location.reload(),
+                fullscreen: ({ print }) => {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen().catch(err => {
+                            print(`Error entering fullscreen: ${err.message}`, false, 'error');
+                        });
+                    } else {
+                        document.exitFullscreen();
+                    }
+                },
+                kernel_log: ({ args, print }) => {
+                    if (!args[0]) { print("Usage: kernel_log <message> [level: info|warn|error|success]", false, 'error'); return; }
+                    const level = args[1] || 'info';
+                    OBPI.kernel.log(args[0], level);
+                    print(`Logged to kernel: "${args[0]}" with level "${level}"`);
+                },
+                pepx_capacity: ({print}) => {
+                    if (window.pepxIDE && window.pepxIDE.fileManager && window.pepxIDE.fileManager.storage) {
+                        const capacity = window.pepxIDE.fileManager.storage.calculateCapacity();
+                        print(`PEPx Storage Conceptual Capacity: ${window.pepxIDE.fileManager.formatFileSize(capacity)} (${capacity} bytes)`);
+                    } else {
+                        const tempStorage = new PEPxStorage(); // Calculate based on default config
+                        const capacity = tempStorage.calculateCapacity();
+                        print(`PEPx Storage Conceptual Capacity (default config): ${tempStorage.formatFileSize(capacity)} (${capacity} bytes)`);
+                        print(`(Launch PEPx IDE for current instance capacity if initialized)`);
+
+                    }
+                },
+            },
+            executeCommand: (commandStr) => {
+                let cmdToExecute = commandStr;
+                const parts = commandStr.split(' ');
+                const aliasCmd = OBPI.aliases[parts[0]];
+                if (aliasCmd) {
+                    cmdToExecute = aliasCmd + commandStr.substring(parts[0].length);
+                    Terminal.print(`Executing alias '${parts[0]}': ${cmdToExecute}`, false, 'info');
+                }
+
+                const cmdParts = cmdToExecute.match(/(?:[^\s"]+|"[^"]*")+/g) || []; // Handle quoted arguments
+                const commandName = cmdParts[0]?.toLowerCase();
+                const args = cmdParts.slice(1).map(arg => arg.startsWith('"') && arg.endsWith('"') ? arg.slice(1, -1) : arg);
+
+
+                if (AppManager.cliCommands[commandName]) {
+                    try {
+                        AppManager.cliCommands[commandName]({ args: args, print: Terminal.print, commandStr: cmdToExecute });
+                    } catch (e) {
+                        Terminal.print(`Error executing command '${commandName}': ${e.message}`, false, 'error');
+                        console.error(e);
+                    }
+                } else {
+                    // Try to execute from OBPI VFS /bin or /home/guest/bin (conceptual)
+                    const pathsToSearch = (OBPI.envVars.PATH || '/bin').split(':');
+                    let foundExecutable = false;
+                    for (const p of pathsToSearch) {
+                        const fullPath = p.endsWith('/') ? p + commandName : p + '/' + commandName;
+                        const resolved = FileSystem.resolvePath(fullPath);
+                        if (resolved.node && resolved.node.type === 'file') {
+                            Terminal.print(`Executing script (simulated): ${fullPath}`);
+                            if (resolved.node.content.startsWith('#!/bin/simulated_executable')) {
+                                 Terminal.print(`Output of ${commandName}: (Simulated standard output)`);
+                                 if (commandName === 'curl' || commandName === 'wget') Terminal.print(`Simulated fetch of ${args[0] || 'default_url'}`);
+                            } else if (fullPath.endsWith('.obsh')) { // OBPI Shell Script
+                                const lines = resolved.node.content.split('\n');
+                                lines.forEach(line => {
+                                    if (line.trim() && !line.trim().startsWith('#')) {
+                                        Terminal.print(`> ${line}`, true); // Echo script line
+                                        AppManager.executeCommand(line);
+                                    }
+                                });
+                            } else {
+                                Terminal.print(resolved.node.content);
+                            }
+                            foundExecutable = true;
+                            break;
+                        }
+                    }
+                    if (!foundExecutable) {
+                        Terminal.print(`Command not found: ${commandName}`, false, 'error');
+                    }
+                }
+                Terminal.updatePrompt();
+            }
+        };
+
+        // --- Initialization ---
+        // Chronological Tag: 20250525200038 - OBPI Initialization sequence.
+        document.addEventListener('DOMContentLoaded', () => {
+            OBPI.kernel.log(`OBPI v${OBPI.version} Initializing...`);
+
+            // Load theme
+            const savedTheme = localStorage.getItem(OBPI.config.themeStorageKey);
+            if (savedTheme) {
+                OBPI.activeTheme = savedTheme;
+                document.body.classList.toggle('light-theme', OBPI.activeTheme === 'light');
+            }
+
+            initWebGLBackground();
+            FileSystem.init();
+            WindowManager.restoreAllWindowStates(); // Load persisted window states conceptually
+            // Terminal.init(); // Terminal window launches itself via AppManager now
+            AppManager.installedApps.terminal.launch(); // Launch terminal on startup
+            AppManager.initStartMenu();
+            AppManager.initDesktopIcons();
+
+            OBPI.startMenuButton.onclick = () => OBPI.startMenuElement.classList.toggle('hidden');
+            document.addEventListener('click', (e) => { // Hide start menu on click outside
+                if (!OBPI.startMenuElement.contains(e.target) && !OBPI.startMenuButton.contains(e.target)) {
+                    OBPI.startMenuElement.classList.add('hidden');
+                }
+                // Hide context menu on click outside
+                if (OBPI.contextMenuElement && !OBPI.contextMenuElement.contains(e.target)) { // Check if contextMenuElement exists
+                     OBPI.contextMenuElement.classList.add('hidden');
+                }
+            });
+            // Prevent default browser context menu on desktop (not inside windows)
+            OBPI.desktopElement.oncontextmenu = (e) => {
+                if (e.target === OBPI.desktopElement || e.target === document.getElementById('webgl-canvas')) { // Only for desktop background
+                    e.preventDefault();
+                    // Example desktop context menu
+                    OBPI.contextMenuElement.innerHTML = `
+                        <div class="context-menu-item" onclick="AppManager.cliCommands.theme({args: [OBPI.activeTheme === 'dark' ? 'light' : 'dark'], print: Terminal.print }); OBPI.contextMenuElement.classList.add('hidden');">Toggle Theme</div>
+                        <div class="context-menu-item" onclick="AppManager.installedApps.settings.launch(); OBPI.contextMenuElement.classList.add('hidden');">Settings</div>
+                        <div class="context-menu-item" onclick="AppManager.initDesktopIcons(); OBPI.contextMenuElement.classList.add('hidden');">Refresh Desktop</div>
+                    `;
+                    OBPI.contextMenuElement.style.top = `${e.clientY}px`;
+                    OBPI.contextMenuElement.style.left = `${e.clientX}px`;
+                    OBPI.contextMenuElement.classList.remove('hidden');
+                }
+            };
+
+
+            // Welcome message or app
+            if (!localStorage.getItem('OBPI_welcomed_v0.7')) {
+                AppManager.installedApps.welcome_note.launch();
+                localStorage.setItem('OBPI_welcomed_v0.7', 'true');
+            }
+
+            OBPI.kernel.log("OBPI Initialization Complete.", "success");
+
+            // Test PyScript loading indication (conceptual, as PyScript itself is loaded via HTML tag)
+            if (window.pyscript) {
+                OBPI.kernel.log("PyScript global object detected.", "info");
+                // You can add further checks or initializations if PyScript is ready.
+                // e.g. window.pyscript.interpreter might be available after some time.
+            } else {
+                OBPI.kernel.log("PyScript global object not detected at initial load.", "warn");
+            }
+        });
+
+        // Fullscreen lock (pointer lock on fullscreen)
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement && OBPI.isLocked) {
+                OBPI.desktopElement.requestPointerLock = OBPI.desktopElement.requestPointerLock || OBPI.desktopElement.mozRequestPointerLock || OBPI.desktopElement.webkitRequestPointerLock;
+                if (OBPI.desktopElement.requestPointerLock) {
+                    OBPI.desktopElement.requestPointerLock();
+                }
+            } else if (!document.fullscreenElement && document.pointerLockElement) {
+                document.exitPointerLock = document.exitPointerLock || document.mozExitPointerLock || document.webkitExitPointerLock;
+                if (document.exitPointerLock) {
+                    document.exitPointerLock();
+                }
+            }
+        });
+        // Basic check for PyScript readiness (actual PyScript API might be different)
+        if (typeof pyscript !== 'undefined' && pyscript.interpreter) {
+            OBPI.kernel.log("PyScript interpreter seems ready.", "info");
+        } else {
+            OBPI.kernel.log("PyScript interpreter not immediately available.", "warn");
+        }
+
+        // --- Chronological Tag: 20250525210000 - PWA Enhancements added to the main init sequence
+        document.addEventListener('DOMContentLoaded', () => {
+            // OBPI.kernel.log(`osBIT²EN v${OSBIT2EN_CONFIG.version} Initializing (PWA Enhanced)...`); // Use OBPI logger
+
+            // Load theme (already in your OBPI init, ensure no conflicts)
+            // const savedTheme = localStorage.getItem(OBPI.config.themeStorageKey);
+            // if (savedTheme) {
+            //     OBPI.activeTheme = savedTheme;
+            //     document.body.classList.toggle('light-theme', OBPI.activeTheme === 'light');
+            // }
+             // Initialize OBPI Core components - This is already done above, avoid re-initializing
+
+            // PWA specific logic in DOMContentLoaded
+            // The PWA install button and logic would be part of a separate PWA bootstrapping script.
+            // This HTML file itself is the "app".
+            // const installButton = document.getElementById('install-app-button'); // Assume this button exists for PWA install
+            // if (installButton) {
+            //     if (isPWAMode()) {
+            //         OBPI.kernel.log("osBIT²EN running in PWA (standalone) mode - Full Experience.", "success");
+            //         installButton.style.display = 'none';
+            //     } else {
+            //         OBPI.kernel.log("osBIT²EN running in browser tab - Light Experience.", "info");
+            //         // installButton visibility is handled by 'beforeinstallprompt'
+            //     }
+            // }
+
+
+            // Attach start menu toggle (already done)
+            // OBPI.startMenuButton.onclick = () => OBPI.startMenuElement.classList.toggle('hidden');
+
+            // Global click listener for start menu and context menu dismissal (already done)
+            // document.addEventListener('click', (e) => { ... });
+
+            // Desktop context menu (already done)
+            // OBPI.desktopElement.oncontextmenu = (e) => { ... };
+
+
+            // Launch welcome note if not welcomed before (already done)
+            // if (!localStorage.getItem('OBPI_welcomed_v0.7')) { ... }
+
+
+            OBPI.kernel.log("osBIT²EN (OBPI) PWA-Enhanced Initialization aspects are conceptually integrated.", "info");
+        });
+
+
+    </script>
+</body>
+</html>
