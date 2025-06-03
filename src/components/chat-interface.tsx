@@ -96,6 +96,55 @@ export function ChatInterface({ userTier, isTrialActive }: ChatInterfaceProps) {
   
   const tierInfo = getTierDisplayName();
 
+  const cortexCanvasPlaceholder = `// Conceptual output area for Cortex OS
+// Example: A requested Python script might appear here.
+
+function helloWorld() {
+  console.log('Hello from Cortex Canvas!');
+}
+
+// Or a Mermaid diagram definition:
+// graph TD;
+//   A-->B;
+//   A-->C;
+//   B-->D;
+//   C-->D;
+
+// --- Puppeteer Browser Automation Examples ---
+
+// -- Firefox Example --
+// import puppeteer from 'puppeteer'; // Assumes puppeteer is installed server-side
+
+// async function runFirefoxAutomation() {
+//   const firefoxBrowser = await puppeteer.launch({
+//     product: 'firefox', // WebDriver BiDi is used by default for Firefox.
+//   });
+//   const ffPage = await firefoxBrowser.newPage();
+//   await ffPage.goto('https://example.org');
+//   console.log('Firefox Page Title:', await ffPage.title());
+//   // ... more actions like screenshots, data extraction, etc.
+//   await firefoxBrowser.close();
+// }
+// runFirefoxAutomation();
+
+
+// -- Chrome Example with WebDriver BiDi --
+// import puppeteer from 'puppeteer'; // Assumes puppeteer is installed server-side
+
+// async function runChromeAutomation() {
+//   const chromeBrowser = await puppeteer.launch({
+//     product: 'chrome',
+//     protocol: 'webDriverBiDi', // Explicitly use WebDriver BiDi (CDP is default for Chrome)
+//   });
+//   const chPage = await chromeBrowser.newPage();
+//   await chPage.goto('https://pptr.dev');
+//   console.log('Chrome Page Title:', await chPage.title());
+//   // ... more actions
+//   await chromeBrowser.close();
+// }
+// runChromeAutomation();
+`;
+
   return (
     <div className="flex flex-col h-full p-1 md:p-2 bg-transparent">
         <CardHeader className="px-2 py-3 text-center border-b border-border/30">
@@ -185,7 +234,7 @@ export function ChatInterface({ userTier, isTrialActive }: ChatInterfaceProps) {
                             rows={10} 
                             className="mt-1 text-xs bg-input/70 focus:bg-input flex-grow resize-none" 
                             readOnly 
-                            value="// Conceptual output area for Cortex OS\n// Example: A requested Python script might appear here.\n\nfunction helloWorld() {\n  console.log('Hello from Cortex Canvas!');\n}\n\n// Or a Mermaid diagram definition:\n// graph TD;\n//   A-->B;\n//   A-->C;\n//   B-->D;\n//   C-->D;"
+                            value={cortexCanvasPlaceholder}
                         />
                         <p className="text-xs text-muted-foreground mt-1 shrink-0">This area represents where complex code, previews, or diagrams would be rendered for admin users.</p>
                     </div>
@@ -209,6 +258,8 @@ export function ChatInterface({ userTier, isTrialActive }: ChatInterfaceProps) {
     </div>
   );
 }
+
+    
 
     
 
