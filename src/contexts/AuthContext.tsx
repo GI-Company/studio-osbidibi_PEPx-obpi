@@ -3,11 +3,9 @@
 import type * as React from 'react';
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
-import { v4 as uuidv4 } from 'uuid'; // For generating unique IDs
+import { v4 as uuidv4 } from 'uuid';
 import { addDays, isPast } from 'date-fns';
 
-
-// Superuser credentials
 const SUPERUSER_USERNAME = "serpOS@GI";
 const SUPERUSER_INITIAL_PASSWORD = "12345678";
 
@@ -17,40 +15,42 @@ interface UserRegistrationDetails {
   ipAddress?: string;
   deviceId?: string;
   registrationTimestamp?: string;
-  provider: 'google' | 'microsoft' | 'yahoo' | 'credentials';
+  provider: 'credentials'; // Only credentials for now
   projectInterest?: string;
 }
 
-// Exporting for admin apps
 export interface StoredUserEntry {
-  password?: string; 
+  password?: string;
   details: UserRegistrationDetails;
   subscriptionTier: SubscriptionTier;
-  trialEndDate?: string; 
+  trialEndDate?: string;
+  is2FAEnabled?: boolean; // New field for 2FA
 }
 
-export interface AuthUser { // Exporting for use in other files like flows
+export interface AuthUser {
   id: string;
   username: string;
   role: 'superuser' | 'user' | 'guest';
   details: UserRegistrationDetails;
   subscriptionTier: SubscriptionTier;
-  trialEndDate?: string; // ISO date string
-  isTrialActive?: boolean; // Derived property
+  trialEndDate?: string;
+  isTrialActive?: boolean;
+  is2FAEnabled?: boolean; // New field for 2FA
 }
 
-type AuthStatus = 
+type AuthStatus =
   | 'loading'
   | 'needs_mode_selection'
   | 'needs_onboarding'
   | 'needs_login'
+  | 'needs_2fa_setup'       // New status after onboarding
+  | 'needs_2fa_verification' // New status after password login, before 2FA code
   | 'authenticated'
   | 'ghost_mode';
 
-type SocialProvider = 'google' | 'microsoft' | 'yahoo';
-
 interface AuthContextType {
   currentUser: AuthUser | null;
+  pending2FAUser: AuthUser | null; // To hold user details between password and 2FA verification
   authStatus: AuthStatus;
   isLoading: boolean;
   appMode: 'persistent' | 'ghost' | null;
@@ -61,21 +61,22 @@ interface AuthContextType {
   changePassword: (oldPass: string, newPass: string) => Promise<boolean>;
   resetToModeSelection: () => void;
   switchToOnboarding: () => void;
-  signInWithProvider: (provider: SocialProvider, projectInterest?: string) => Promise<boolean>;
-  endUserTrial: (username: string) => void; 
+  endUserTrial: (username: string) => void;
   upgradeSubscription: (username: string, newTier: 'paid_weekly' | 'paid_monthly') => void;
-  // Conceptual: Add function to manage timed ghost mode if implemented
-  // manageGhostSession: (action: 'start' | 'check') => void; 
+  complete2FASetup: () => void; // New function
+  verify2FA: (code: string) => Promise<boolean>; // New function
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const LOCAL_STORAGE_KEYS = {
   APP_MODE: 'binaryblocksphere_appMode',
-  CURRENT_USER: 'binaryblocksphere_currentUser', 
+  CURRENT_USER: 'binaryblocksphere_currentUser',
   USERS_DATA: 'binaryblocksphere_usersData',
   SUPERUSER_PASSWORD: 'binaryblocksphere_superuserPassword'
 };
+
+const SIMULATED_2FA_CODE = "123456"; // Fixed 2FA code for simulation
 
 const getSimulatedDeviceInfo = (): { ipAddress: string; deviceId: string } => {
   if (typeof window !== 'undefined') {
@@ -90,9 +91,9 @@ const getSimulatedDeviceInfo = (): { ipAddress: string; deviceId: string } => {
   return { ipAddress: 'server_ip_placeholder', deviceId: 'server_device_id_placeholder' };
 };
 
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [pending2FAUser, setPending2FAUser] = useState<AuthUser | null>(null);
   const [authStatus, setAuthStatus] = useState<AuthStatus>('loading');
   const [isLoading, setIsLoading] = useState(true);
   const [appMode, setAppMode] = useState<'persistent' | 'ghost' | null>(null);
@@ -130,9 +131,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (baseUser.subscriptionTier === 'trial' && baseUser.trialEndDate) {
       isActiveTrial = !isPast(new Date(baseUser.trialEndDate));
     }
-    return { ...baseUser, isTrialActive: isActiveTrial };
+    return { ...baseUser, isTrialActive: isActiveTrial, is2FAEnabled: baseUser.is2FAEnabled || false };
   };
-
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -145,11 +145,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (storedUserJson) {
           const userFromStorage = JSON.parse(storedUserJson) as AuthUser;
           const fullUser = deriveUserProperties(userFromStorage);
-           // Check if trial expired
           if (fullUser.subscriptionTier === 'trial' && fullUser.trialEndDate && isPast(new Date(fullUser.trialEndDate))) {
             fullUser.subscriptionTier = 'free_limited';
             fullUser.isTrialActive = false;
-            // Persist this change
             localStorage.setItem(LOCAL_STORAGE_KEYS.CURRENT_USER, JSON.stringify(fullUser));
             const usersData = loadUsersData();
             if(usersData[fullUser.username]) {
@@ -164,23 +162,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setAuthStatus('needs_login');
         }
       } else if (storedMode === 'ghost') {
-        // Conceptual: Implement timed ghost mode based on tier here if required.
-        // For now, ghost mode is unlimited.
-        // If user had a tier, you might fetch it.
-        // if (currentUser && currentUser.role !== 'superuser') { /* apply time limits */ }
-
         const { ipAddress, deviceId } = getSimulatedDeviceInfo();
-        setCurrentUser(deriveUserProperties({ 
-          id: 'ghost', 
-          username: 'GhostUser', 
-          role: 'guest', 
-          details: { 
-            provider: 'credentials', 
-            ipAddress, 
-            deviceId, 
-            registrationTimestamp: new Date().toISOString() 
+        setCurrentUser(deriveUserProperties({
+          id: 'ghost',
+          username: 'GhostUser',
+          role: 'guest',
+          details: {
+            provider: 'credentials',
+            ipAddress,
+            deviceId,
+            registrationTimestamp: new Date().toISOString()
           },
-          subscriptionTier: 'free_limited' // Ghosts don't get trials usually
+          subscriptionTier: 'free_limited',
+          is2FAEnabled: false,
         }));
         setAuthStatus('ghost_mode');
       } else {
@@ -197,21 +191,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAppMode(mode);
       if (mode === 'ghost') {
         const { ipAddress, deviceId } = getSimulatedDeviceInfo();
-        setCurrentUser(deriveUserProperties({ 
-          id: 'ghost', 
-          username: 'GhostUser', 
-          role: 'guest', 
-          details: { 
-            provider: 'credentials', 
-            ipAddress, 
-            deviceId, 
-            registrationTimestamp: new Date().toISOString() 
+        setCurrentUser(deriveUserProperties({
+          id: 'ghost',
+          username: 'GhostUser',
+          role: 'guest',
+          details: {
+            provider: 'credentials',
+            ipAddress,
+            deviceId,
+            registrationTimestamp: new Date().toISOString()
           },
-          subscriptionTier: 'free_limited'
+          subscriptionTier: 'free_limited',
+          is2FAEnabled: false,
         }));
         setAuthStatus('ghost_mode');
         localStorage.removeItem(LOCAL_STORAGE_KEYS.CURRENT_USER);
-      } else { 
+      } else {
         setAuthStatus('needs_login');
       }
     }
@@ -222,19 +217,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const usersData = loadUsersData();
     const superuserPassword = loadSuperuserPassword();
     const { ipAddress, deviceId } = getSimulatedDeviceInfo();
-
     let role: AuthUser['role'] = 'user';
 
     if (username === SUPERUSER_USERNAME && pass === superuserPassword) {
       userToLoginData = usersData[SUPERUSER_USERNAME] || {
-        details: { 
-          provider: 'credentials', 
-          ipAddress, 
-          deviceId, 
+        details: {
+          provider: 'credentials',
+          ipAddress,
+          deviceId,
           registrationTimestamp: new Date().toISOString(),
           projectInterest: "System Administration"
         },
-        subscriptionTier: 'admin'
+        subscriptionTier: 'admin',
+        is2FAEnabled: usersData[SUPERUSER_USERNAME]?.is2FAEnabled ?? false // Superuser 2FA could be optional or managed differently
       };
       role = 'superuser';
     } else if (usersData[username] && usersData[username].password === pass && usersData[username].details.provider === 'credentials') {
@@ -243,34 +238,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (userToLoginData) {
-      let fullUser = deriveUserProperties({
-        id: username, 
+      const fullUser = deriveUserProperties({
+        id: username,
         username,
         role,
-        details: { ...userToLoginData.details, ipAddress, deviceId }, 
+        details: { ...userToLoginData.details, ipAddress, deviceId },
         subscriptionTier: userToLoginData.subscriptionTier,
-        trialEndDate: userToLoginData.trialEndDate
+        trialEndDate: userToLoginData.trialEndDate,
+        is2FAEnabled: userToLoginData.is2FAEnabled
       });
 
-      if (fullUser.subscriptionTier === 'trial' && fullUser.trialEndDate && isPast(new Date(fullUser.trialEndDate))) {
-          fullUser.subscriptionTier = 'free_limited';
-          fullUser.isTrialActive = false;
-          usersData[username].subscriptionTier = 'free_limited'; 
-          saveUsersData(usersData);
-          toast({ title: "Trial Expired", description: "Your free trial has ended. You are now on the limited free tier."});
+      if (fullUser.is2FAEnabled) {
+        setPending2FAUser(fullUser);
+        setAuthStatus('needs_2fa_verification');
+        toast({ title: "2FA Required", description: "Please enter your two-factor authentication code." });
+        return true; // Indicates password was correct, now needs 2FA
+      } else {
+        // No 2FA, proceed with regular login
+        if (fullUser.subscriptionTier === 'trial' && fullUser.trialEndDate && isPast(new Date(fullUser.trialEndDate))) {
+            fullUser.subscriptionTier = 'free_limited';
+            fullUser.isTrialActive = false;
+            usersData[username].subscriptionTier = 'free_limited';
+            saveUsersData(usersData);
+            toast({ title: "Trial Expired", description: "Your free trial has ended. You are now on the limited free tier."});
+        }
+        setCurrentUser(fullUser);
+        setAuthStatus('authenticated');
+        if (appMode === 'persistent') {
+          localStorage.setItem(LOCAL_STORAGE_KEYS.CURRENT_USER, JSON.stringify(fullUser));
+        }
+        toast({ title: "Login Successful", description: `Welcome, ${fullUser.username}!` });
+        return true;
       }
-
-
-      setCurrentUser(fullUser);
-      setAuthStatus('authenticated');
-      if (appMode === 'persistent') {
-        localStorage.setItem(LOCAL_STORAGE_KEYS.CURRENT_USER, JSON.stringify(fullUser));
-      }
-      toast({ title: "Login Successful", description: `Welcome, ${fullUser.username}!` });
-      return true;
     }
-    toast({ title: "Login Failed", description: "Invalid username or password for credential-based login.", variant: "destructive" });
+    toast({ title: "Login Failed", description: "Invalid username or password.", variant: "destructive" });
     return false;
+  };
+
+  const verify2FA = async (code: string): Promise<boolean> => {
+    if (!pending2FAUser) {
+        toast({ title: "2FA Error", description: "No user pending 2FA verification.", variant: "destructive"});
+        setAuthStatus('needs_login');
+        return false;
+    }
+    if (code === SIMULATED_2FA_CODE) {
+        let userToAuth = { ...pending2FAUser }; // Make a mutable copy
+        setPending2FAUser(null);
+
+        // Check trial expiration again here, as time might have passed
+        const usersData = loadUsersData();
+        if (userToAuth.subscriptionTier === 'trial' && userToAuth.trialEndDate && isPast(new Date(userToAuth.trialEndDate))) {
+            userToAuth.subscriptionTier = 'free_limited';
+            userToAuth.isTrialActive = false;
+            if (usersData[userToAuth.username]) { // Ensure user exists in usersData
+                usersData[userToAuth.username].subscriptionTier = 'free_limited';
+                saveUsersData(usersData);
+            }
+            toast({ title: "Trial Expired", description: "Your free trial has ended. You are now on the limited free tier."});
+        }
+
+        setCurrentUser(userToAuth);
+        setAuthStatus('authenticated');
+        if (appMode === 'persistent') {
+            localStorage.setItem(LOCAL_STORAGE_KEYS.CURRENT_USER, JSON.stringify(userToAuth));
+        }
+        toast({ title: "Login Successful", description: `Welcome, ${userToAuth.username}! 2FA Verified.` });
+        return true;
+    } else {
+        toast({ title: "2FA Failed", description: "Invalid 2FA code.", variant: "destructive"});
+        return false;
+    }
   };
 
   const onboardUser = async (username: string, pass: string, projectInterest?: string): Promise<boolean> => {
@@ -287,7 +324,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { ipAddress, deviceId } = getSimulatedDeviceInfo();
     const registrationTimestamp = new Date().toISOString();
     const trialEndDate = addDays(new Date(), 7).toISOString();
-    
+
     const newUserDetails: UserRegistrationDetails = {
         provider: 'credentials',
         ipAddress,
@@ -296,92 +333,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         projectInterest: projectInterest || 'Not specified'
     };
 
-    usersData[username] = { 
-        password: pass, 
+    usersData[username] = {
+        password: pass,
         details: newUserDetails,
         subscriptionTier: 'trial',
-        trialEndDate 
+        trialEndDate,
+        is2FAEnabled: true // Enable 2FA by default for new users
     };
     saveUsersData(usersData);
-        
-    const newUser = deriveUserProperties({ id: username, username, role: 'user', details: newUserDetails, subscriptionTier: 'trial', trialEndDate });
-    setCurrentUser(newUser);
-    setAuthStatus('authenticated');
-    if (appMode === 'persistent') {
-        localStorage.setItem(LOCAL_STORAGE_KEYS.CURRENT_USER, JSON.stringify(newUser));
-    }
-    toast({ title: "Onboarding Successful", description: `Welcome, ${username}! Your 7-day full access trial has started.` });
-    return true;
-  };
 
-  const signInWithProvider = async (provider: SocialProvider, projectInterest?: string): Promise<boolean> => {
-    toast({ title: `Simulating Sign-in with ${provider}`, description: `Processing...` });
-    
-    await new Promise(resolve => setTimeout(resolve, 1500)); 
-
-    const { ipAddress, deviceId } = getSimulatedDeviceInfo();
-    const registrationTimestamp = new Date().toISOString();
-    const socialUserId = uuidv4();
-    const username = `${provider.charAt(0).toUpperCase() + provider.slice(1)}User_${socialUserId.substring(0, 6)}`;
-    const trialEndDate = addDays(new Date(), 7).toISOString();
-
-    const newUserDetails: UserRegistrationDetails = {
-      provider,
-      ipAddress,
-      deviceId,
-      registrationTimestamp,
-      projectInterest: projectInterest || 'Via social signup'
-    };
-    
-    const usersData = loadUsersData();
-    usersData[username] = { 
-        details: newUserDetails, 
-        subscriptionTier: 'trial', 
-        trialEndDate 
-    }; 
-    saveUsersData(usersData);
-
-    const user = deriveUserProperties({
-      id: socialUserId, 
+    const newUser = deriveUserProperties({
+      id: username,
       username,
       role: 'user',
       details: newUserDetails,
       subscriptionTier: 'trial',
-      trialEndDate
+      trialEndDate,
+      is2FAEnabled: true
     });
 
-    setCurrentUser(user);
-    setAuthStatus('authenticated');
-    if (appMode === 'persistent') {
-      localStorage.setItem(LOCAL_STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
-    }
-    toast({ title: "Sign-in Successful", description: `Welcome, ${user.username}! (via ${provider}). Your 7-day trial has started.` });
+    setCurrentUser(newUser); // Set current user before transitioning to 2FA setup
+    setAuthStatus('needs_2fa_setup'); // Go to 2FA setup screen
+    // Don't save to localStorage yet, will do after 2FA setup completion conceptually
+    toast({ title: "Registration Successful", description: `Welcome, ${username}! Please set up 2FA.` });
     return true;
   };
 
+  const complete2FASetup = () => {
+    if (currentUser) { // User should be set by onboardUser before this step
+        setAuthStatus('authenticated');
+        if (appMode === 'persistent') {
+            localStorage.setItem(LOCAL_STORAGE_KEYS.CURRENT_USER, JSON.stringify(currentUser));
+        }
+        toast({ title: "2FA Setup Complete", description: "You are now logged in." });
+    } else {
+        // Should not happen if flow is correct
+        toast({ title: "Error", description: "User data missing during 2FA setup completion.", variant: "destructive"});
+        setAuthStatus('needs_login');
+    }
+  };
+
+
   const logout = () => {
     setCurrentUser(null);
+    setPending2FAUser(null);
     if (typeof window !== 'undefined') {
       localStorage.removeItem(LOCAL_STORAGE_KEYS.CURRENT_USER);
       const storedMode = localStorage.getItem(LOCAL_STORAGE_KEYS.APP_MODE) as 'persistent' | 'ghost' | null;
       if (storedMode === 'persistent') {
-         setAuthStatus('needs_login'); 
-      } else if (storedMode === 'ghost') { 
+         setAuthStatus('needs_login');
+      } else if (storedMode === 'ghost') {
         const { ipAddress, deviceId } = getSimulatedDeviceInfo();
-        setCurrentUser(deriveUserProperties({ 
-          id: 'ghost', 
-          username: 'GhostUser', 
-          role: 'guest', 
-          details: { 
-            provider: 'credentials', 
-            ipAddress, 
-            deviceId, 
-            registrationTimestamp: new Date().toISOString() 
+        setCurrentUser(deriveUserProperties({
+          id: 'ghost',
+          username: 'GhostUser',
+          role: 'guest',
+          details: {
+            provider: 'credentials',
+            ipAddress,
+            deviceId,
+            registrationTimestamp: new Date().toISOString()
           },
-          subscriptionTier: 'free_limited'
+          subscriptionTier: 'free_limited',
+          is2FAEnabled: false,
         }));
         setAuthStatus('ghost_mode');
-      } else { 
+      } else {
         setAuthStatus('needs_mode_selection');
       }
     }
@@ -390,7 +407,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const changePassword = async (oldPass: string, newPass: string): Promise<boolean> => {
     if (!currentUser || currentUser.details.provider !== 'credentials') {
-      toast({ title: "Error", description: currentUser?.details.provider !== 'credentials' ? "Password change is not available for social logins or guest users." : "No user logged in.", variant: "destructive" });
+      toast({ title: "Error", description: "Password change is not available for guest users.", variant: "destructive" });
       return false;
     }
 
@@ -409,7 +426,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast({ title: "Password Changed", description: "Your password has been updated successfully." });
       return true;
     }
-    
+
     toast({ title: "Password Change Failed", description: "Incorrect old password.", variant: "destructive" });
     return false;
   };
@@ -417,10 +434,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const resetToModeSelection = useCallback(() => {
     if (typeof window !== 'undefined') {
         setCurrentUser(null);
+        setPending2FAUser(null);
         setAppMode(null);
         setAuthStatus('needs_mode_selection');
         Object.values(LOCAL_STORAGE_KEYS).forEach(key => {
-            if (key !== LOCAL_STORAGE_KEYS.USERS_DATA && key !== LOCAL_STORAGE_KEYS.SUPERUSER_PASSWORD) { 
+            if (key !== LOCAL_STORAGE_KEYS.USERS_DATA && key !== LOCAL_STORAGE_KEYS.SUPERUSER_PASSWORD) {
                 localStorage.removeItem(key);
             }
         });
@@ -436,7 +454,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const usersData = loadUsersData();
     if (usersData[username] && usersData[username].subscriptionTier === 'trial') {
         usersData[username].subscriptionTier = 'free_limited';
-        usersData[username].trialEndDate = undefined; 
+        usersData[username].trialEndDate = undefined;
         saveUsersData(usersData);
         if (currentUser?.username === username) {
             setCurrentUser(prev => prev ? deriveUserProperties({...prev, subscriptionTier: 'free_limited', trialEndDate: undefined }) : null);
@@ -449,7 +467,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const usersData = loadUsersData();
      if (usersData[username]) {
         usersData[username].subscriptionTier = newTier;
-        usersData[username].trialEndDate = undefined; 
+        usersData[username].trialEndDate = undefined;
         saveUsersData(usersData);
         if (currentUser?.username === username) {
             setCurrentUser(prev => prev ? deriveUserProperties({...prev, subscriptionTier: newTier, trialEndDate: undefined }) : null);
@@ -458,14 +476,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-
   useEffect(() => {
     if (typeof window !== 'undefined' && authStatus !== 'loading') {
         const usersData = loadUsersData();
         if (!usersData[SUPERUSER_USERNAME]) {
             const { ipAddress, deviceId } = getSimulatedDeviceInfo();
             usersData[SUPERUSER_USERNAME] = {
-                password: loadSuperuserPassword(), // Ensure superuser password is set if not already
+                password: loadSuperuserPassword(),
                 details: {
                     provider: 'credentials',
                     ipAddress,
@@ -473,16 +490,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     registrationTimestamp: new Date().toISOString(),
                     projectInterest: "System Administration"
                 },
-                subscriptionTier: 'admin', 
+                subscriptionTier: 'admin',
+                is2FAEnabled: false, // Superuser might not have 2FA by default or it's managed differently
             };
             saveUsersData(usersData);
         }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authStatus]); 
+  }, [authStatus]);
 
   return (
-    <AuthContext.Provider value={{ currentUser, authStatus, isLoading, appMode, login, logout, onboardUser, selectMode, changePassword, resetToModeSelection, switchToOnboarding, signInWithProvider, endUserTrial, upgradeSubscription }}>
+    <AuthContext.Provider value={{ currentUser, pending2FAUser, authStatus, isLoading, appMode, login, logout, onboardUser, selectMode, changePassword, resetToModeSelection, switchToOnboarding, endUserTrial, upgradeSubscription, complete2FASetup, verify2FA }}>
       {children}
     </AuthContext.Provider>
   );
@@ -501,3 +519,5 @@ if (typeof window !== 'undefined') {
     (window as any).uuidv4 = uuid.v4;
   });
 }
+
+    

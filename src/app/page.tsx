@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -8,6 +9,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import LaunchModeSelector from '@/components/launch-mode-selector';
 import UserOnboarding from '@/components/user-onboarding';
 import UserLogin from '@/components/user-login';
+import TwoFactorSetup from '@/components/two-factor-setup'; // New import
+import TwoFactorAuth from '@/components/two-factor-auth';   // New import
 
 
 export default function Home() {
@@ -29,10 +32,10 @@ export default function Home() {
   }, [currentUser, endUserTrial]);
 
 
-  if (isAuthLoading || (authStatus !== 'ghost_mode' && authStatus !== 'authenticated' && isLoadingApp)) {
+  if (isAuthLoading || (authStatus !== 'ghost_mode' && authStatus !== 'authenticated' && authStatus !== 'needs_2fa_setup' && authStatus !== 'needs_2fa_verification' && isLoadingApp)) {
     return <Preloader />;
   }
-  
+
   switch (authStatus) {
     case 'needs_mode_selection':
       return <LaunchModeSelector />;
@@ -40,6 +43,10 @@ export default function Home() {
       return <UserOnboarding />;
     case 'needs_login':
       return <UserLogin />;
+    case 'needs_2fa_setup': // New case
+      return <TwoFactorSetup />;
+    case 'needs_2fa_verification': // New case
+      return <TwoFactorAuth />;
     case 'authenticated':
     case 'ghost_mode':
       return (
@@ -49,7 +56,8 @@ export default function Home() {
         </div>
       );
     default:
-      return <Preloader />; 
+      return <Preloader />;
   }
 }
 
+    
