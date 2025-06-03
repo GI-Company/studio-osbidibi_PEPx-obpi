@@ -22,7 +22,7 @@ interface MiniBrowserProps {
   initialUrl?: string;
 }
 
-export function MiniBrowser({ initialUrl = "https://www.google.com/" }: MiniBrowserProps) { 
+export function MiniBrowser({ initialUrl = "https://example.org/" }: MiniBrowserProps) { 
   const [addressBarInput, setAddressBarInput] = useState(initialUrl);
   const [searchBarInput, setSearchBarInput] = useState("");
   const [selectedSearchEngine, setSelectedSearchEngine] = useState<SearchEngineKey>("google"); 
@@ -137,3 +137,4 @@ export function MiniBrowser({ initialUrl = "https://www.google.com/" }: MiniBrow
     </div>
   );
 }
+

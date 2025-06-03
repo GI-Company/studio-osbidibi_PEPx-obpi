@@ -7,6 +7,9 @@
   packages = [
     pkgs.nodejs_20
     pkgs.zulu
+    pkgs.undollar
+    pkgs.electron-chromedriver_35
+    pkgs.electron
   ];
   # Sets environment variables in the workspace
   env = {};
