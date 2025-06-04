@@ -1,9 +1,10 @@
+
 "use client";
 
 import type * as React from 'react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
-import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb, LayoutGrid, BotMessageSquare, LogOut, FolderOpen, Package, Loader2, Users, Activity, Lock, PlaySquare, ScreenShare, Wifi, BookOpenText, FileSearch, NotebookText, CreditCard, Phone, ShieldQuestion, Settings, ChevronLeft, ChevronRight, Zap } from 'lucide-react'; // Added Zap for Timesense
+import { Globe, TerminalSquare, XIcon, HardDrive, Layers3, Lightbulb, LayoutGrid, BotMessageSquare, LogOut, FolderOpen, Package, Loader2, Users, Activity, Lock, PlaySquare, ScreenShare, Wifi, BookOpenText, FileSearch, NotebookText, CreditCard, Phone, ShieldQuestion, Settings, ChevronLeft, ChevronRight, Zap, InfoIcon } from 'lucide-react'; // Added InfoIcon
 import { MiniBrowser } from './mini-browser';
 import { Separator } from './ui/separator';
 import { VirtualPartitionApp } from './virtual-partition-app';
@@ -26,7 +27,8 @@ import { DocumentViewerApp } from '@/components/document-viewer-app';
 import { NotepadApp } from '@/components/notepad-app';
 import { PaymentTerminalApp } from '@/components/payment-terminal-app';
 import { DataIntelligenceApp } from '@/components/data-intelligence-app';
-import { TimesenseAdapterApp } from './timesense-adapter-app'; // Import TimesenseAdapterApp
+import { TimesenseAdapterApp } from './timesense-adapter-app';
+import { SystemInformationApp } from './SystemInformationApp'; // New Import
 import { toast } from '@/hooks/use-toast';
 import { useVFS } from '@/contexts/VFSContext';
 import { cn } from '@/lib/utils';
@@ -49,7 +51,8 @@ type ActiveApp =
   | 'notepad'
   | 'paymentTerminal'
   | 'dataIntelligenceApp'
-  | 'timesenseAdapter' // Added Timesense Adapter
+  | 'timesenseAdapter'
+  | 'systemInformation' // New App ID
   | 'dockSettings'
   | { type: 'pixelProject'; id: string; name: string; path: string; }
   | null;
@@ -93,12 +96,13 @@ export function DesktopEnvironment() {
     { id: 'fileManager', name: 'File Manager', icon: FolderOpen, action: () => openApp('fileManager'), dataAiHint: "file system browser" },
     { id: 'mediaPlayer', name: 'Media Hub', icon: PlaySquare, action: () => openApp('mediaPlayer'), dataAiHint: "media player video audio" },
     { id: 'connectivityCenter', name: 'Connectivity', icon: Wifi, action: () => openApp('connectivityCenter'), dataAiHint: "network wifi cast" },
-    { id: 'timesenseAdapter', name: 'Timesense Adapter', icon: Zap, action: () => openApp('timesenseAdapter'), dataAiHint: "time synchronization adapter" }, // Added Timesense Adapter
+    { id: 'timesenseAdapter', name: 'Timesense Adapter', icon: Zap, action: () => openApp('timesenseAdapter'), dataAiHint: "time synchronization adapter" },
     { id: 'userManual', name: 'User Manual', icon: BookOpenText, action: () => openApp('userManual'), dataAiHint: "help documentation manual" },
     { id: 'documentViewer', name: 'Doc Viewer', icon: FileSearch, action: () => openApp('documentViewer'), dataAiHint: "document viewer files" },
     { id: 'notepad', name: 'Notepad', icon: NotebookText, action: () => openApp('notepad'), dataAiHint: "text editor notes" },
     { id: 'paymentTerminal', name: 'Payment POS', icon: CreditCard, action: () => openApp('paymentTerminal'), dataAiHint: "payment terminal POS" },
     { id: 'dataIntelligenceApp', name: 'Data Intel', icon: ShieldQuestion, action: () => openApp('dataIntelligenceApp'), dataAiHint: "data lookup intelligence" },
+    { id: 'systemInformation', name: 'System Info', icon: InfoIcon, action: () => openApp('systemInformation'), dataAiHint: "system graphics information" }, // New App
   ];
 
   const adminAppsList: AppLauncherItem[] = [
@@ -138,7 +142,12 @@ export function DesktopEnvironment() {
       const savedDock = localStorage.getItem('binaryblocksphere_dockedAppIds');
       if (savedDock) return JSON.parse(savedDock);
     }
-    return coreAppsList.slice(0, DOCK_PAGE_SIZE).map(app => app.id);
+    // Ensure System Info is added to default dock if not already configured
+    const defaultCoreDock = coreAppsList.slice(0, DOCK_PAGE_SIZE -1).map(app => app.id);
+    if (!defaultCoreDock.includes('systemInformation')) {
+        defaultCoreDock.push('systemInformation');
+    }
+    return defaultCoreDock.slice(0, DOCK_PAGE_SIZE);
   });
 
   useEffect(() => {
@@ -183,8 +192,6 @@ export function DesktopEnvironment() {
     } else if (typeof appId === 'object' && appId !== null) { // For pixelProject type
         setActiveApp(appId);
     } else {
-        // If string ID not in map, it could be a dynamic project ID not yet in map.
-        // This case might need re-evaluation if project opening logic changes.
         setActiveApp(appId as any);
     }
     setShowWelcome(false);
@@ -194,8 +201,6 @@ export function DesktopEnvironment() {
     setIsLoadingProject(true);
     toast({ title: "Loading Project from VFS", description: `Opening "${project.name}" from ${project.path}...`});
 
-    // This will set activeApp to a specific structure for pixel projects
-    // To display the project name in the title bar, we can use this structure
     setActiveApp({type: 'pixelProject', id: project.id, name: project.name, path: project.path });
     setShowWelcome(false);
 
@@ -205,7 +210,6 @@ export function DesktopEnvironment() {
     }
 
     await new Promise(resolve => setTimeout(resolve, 2500));
-    // The actual app being opened is the agentic terminal, but in the context of the project
     openApp('agenticTerminal');
     toast({ title: "Project Context Active", description: `Project "${project.name}" loaded. Agent Terminal is active for this project.`});
     setIsLoadingProject(false);
@@ -252,34 +256,18 @@ export function DesktopEnvironment() {
     if (activeApp === null) return 'OSbidibi GDE Central';
 
     if (typeof activeApp === 'object' && activeApp.type === 'pixelProject') {
-      return `Project: ${activeApp.name}`; // Display project name if it's a pixelProject context
+      return `Project: ${activeApp.name}`;
     }
 
     const appInfo = allPossibleItemsMap.get(activeApp as string);
     if (appInfo) return appInfo.name;
-
-    // Fallback for other string-based activeApp values if needed, though typically they should be in the map.
-    switch (activeApp) {
-      case 'browser': return 'Web Browser';
-      case 'osbidibiShell': return 'OSbidibi-PEPX0.0.1 Shell (bidibi)';
-      case 'virtualPartition': return 'Virtual Partition Environment';
-      case 'pepxApp': return 'PEPx Storage Interface';
-      case 'codingAssistant': return 'AI Coding Assistant / Chat';
-      case 'agenticTerminal': return 'Agentic Coding Terminal'; // Default title if no project context
-      case 'fileManager': return 'File Manager';
-      case 'userManagement': return 'User Management Console';
-      case 'sessionLogs': return 'Session Activity Logs';
-      case 'mediaPlayer': return 'Multimedia Hub';
-      case 'connectivityCenter': return 'BBS Connectivity Center';
-      case 'timesenseAdapter': return 'Bidibi Timesense Adapter'; // Added Timesense Adapter
-      case 'userManual': return 'User Manual';
-      case 'documentViewer': return 'Document Viewer';
-      case 'notepad': return 'Notepad';
-      case 'paymentTerminal': return 'Payment Terminal';
-      case 'dataIntelligenceApp': return 'Data Intelligence Suite';
-      case 'dockSettings': return 'Dock Configuration';
-      default: return 'OSbidibi GDE Application';
+    
+    // Fallback for string IDs not in map (should be rare now)
+    if (typeof activeApp === 'string') {
+        const knownTitle = activeApp.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+        return knownTitle || 'OSbidibi GDE Application';
     }
+    return 'OSbidibi GDE Application';
   };
 
   const allLaunchpadItems = [...availableAppsForLaunchpad, ...savedPixelStoreProjects];
@@ -289,11 +277,11 @@ export function DesktopEnvironment() {
       setVisibleDockRange(prev => {
         let newStart = prev.start;
         if (direction === 'left') {
-          newStart = Math.max(0, prev.start - 1); // Scroll one by one for wheel
+          newStart = Math.max(0, prev.start - 1);
         } else {
           newStart = Math.min(prev.start + 1, Math.max(0, currentDockItems.length - DOCK_PAGE_SIZE));
         }
-        if (newStart === prev.start && currentDockItems.length <= DOCK_PAGE_SIZE) return prev; // No change if not scrollable
+        if (newStart === prev.start && currentDockItems.length <= DOCK_PAGE_SIZE) return prev;
         return { start: newStart, end: Math.min(newStart + DOCK_PAGE_SIZE, currentDockItems.length) };
       });
       setFocusedDockItemIndex(null);
@@ -306,15 +294,11 @@ export function DesktopEnvironment() {
       if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
         event.preventDefault();
         setFocusedDockItemIndex(prev => {
-          const currentVisibleItems = currentDockItems.slice(visibleDockRange.start, visibleDockRange.end);
           if (prev === null) return visibleDockRange.start;
-
           const currentDockRelativeIndex = prev - visibleDockRange.start;
           let newRelativeIndex = Math.max(0, currentDockRelativeIndex - 1);
-
-          if (newRelativeIndex < 0 && visibleDockRange.start > 0) { // Scrolled past beginning of current page
+          if (newRelativeIndex < 0 && visibleDockRange.start > 0) {
             scrollDock('left');
-            // After scroll, focus last item of new page
             return Math.min(visibleDockRange.start + DOCK_PAGE_SIZE -1, currentDockItems.length -1);
           }
           return visibleDockRange.start + newRelativeIndex;
@@ -322,16 +306,13 @@ export function DesktopEnvironment() {
       } else if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
         event.preventDefault();
          setFocusedDockItemIndex(prev => {
-          const currentVisibleItems = currentDockItems.slice(visibleDockRange.start, visibleDockRange.end);
           if (prev === null) return visibleDockRange.start;
-
+          const currentVisibleItems = currentDockItems.slice(visibleDockRange.start, visibleDockRange.end);
           const currentDockRelativeIndex = prev - visibleDockRange.start;
           let newRelativeIndex = Math.min(currentVisibleItems.length - 1, currentDockRelativeIndex + 1);
-
-          if (newRelativeIndex >= DOCK_PAGE_SIZE && visibleDockRange.end < currentDockItems.length) { // Scrolled past end of current page
+          if (newRelativeIndex >= DOCK_PAGE_SIZE -1 && visibleDockRange.end < currentDockItems.length && prev === visibleDockRange.end -1) {
             scrollDock('right');
-             // After scroll, focus first item of new page
-            return visibleDockRange.start + DOCK_PAGE_SIZE; // This will be the new visibleDockRange.start
+            return visibleDockRange.start + DOCK_PAGE_SIZE ; 
           }
           return visibleDockRange.start + newRelativeIndex;
         });
@@ -364,7 +345,7 @@ export function DesktopEnvironment() {
         if (isBottomDockVisible) {
           dockHideTimeoutRef.current = setTimeout(() => {
             const stillOverDock = dockRef.current && dockRef.current.matches(':hover');
-            if (!stillOverDock && !isLaunchpadOpen && activeApp !== 'dockSettings') { // Don't hide if launchpad or settings open
+            if (!stillOverDock && !isLaunchpadOpen && activeApp !== 'dockSettings') {
               setIsBottomDockVisible(false);
             }
           }, DOCK_HIDE_TIMEOUT_MS);
@@ -381,9 +362,9 @@ export function DesktopEnvironment() {
   const handleWheelScrollDock = (event: React.WheelEvent<HTMLDivElement>) => {
      if (currentDockItems.length <= DOCK_PAGE_SIZE) return;
      event.preventDefault();
-     if (event.deltaY > 0 || event.deltaX > 0) { // Scroll right or down
+     if (event.deltaY > 0 || event.deltaX > 0) {
         scrollDock('right');
-     } else { // Scroll left or up
+     } else {
         scrollDock('left');
      }
   };
@@ -471,12 +452,12 @@ export function DesktopEnvironment() {
               {activeApp === 'notepad' && <NotepadApp />}
               {activeApp === 'paymentTerminal' && <PaymentTerminalApp />}
               {activeApp === 'dataIntelligenceApp' && <DataIntelligenceApp />}
+              {activeApp === 'systemInformation' && <SystemInformationApp />} {/* Render new app */}
               {activeApp === 'dockSettings' && (
                 <div className="p-4 text-foreground radiant-text">
                   <h2 className="text-xl mb-2">Dock Settings (Conceptual)</h2>
                   <p>This area would allow users to add, remove, and reorder applications in the dock.</p>
                   <p className="mt-2">Current Docked App IDs: {dockedAppIds.join(', ')}</p>
-                  {/* Placeholder for actual settings UI */}
                 </div>
               )}
           </div>
@@ -505,7 +486,7 @@ export function DesktopEnvironment() {
                 <ChevronLeft className="w-5 h-5" />
               </Button>
             )}
-            <div className="flex items-center justify-center space-x-1 md:space-x-1.5 transition-transform duration-300 ease-in-out" style={{ transform: `translateX(-${(visibleDockRange.start % DOCK_PAGE_SIZE) * (60)}px)` }}> {/* Approx 60px per item */}
+            <div className="flex items-center justify-center space-x-1 md:space-x-1.5 transition-transform duration-300 ease-in-out" style={{ transform: `translateX(-${(visibleDockRange.start % DOCK_PAGE_SIZE) * (60)}px)` }}>
               {currentDockItems.map((app, index) => (
               <Button
                   key={app.id}
@@ -517,7 +498,7 @@ export function DesktopEnvironment() {
                       (typeof activeApp === 'object' && activeApp?.type === 'pixelProject' && activeApp.id === app.id)
                         ? 'bg-primary/40 scale-105 shadow-lg'
                         : 'bg-card/30 hover:bg-primary/20 hover:scale-110 hover:shadow-md',
-                      index >= visibleDockRange.start && index < visibleDockRange.end ? 'opacity-100' : 'opacity-0 w-0 h-0 p-0 m-0 pointer-events-none', // Hide non-visible items smoothly
+                      index >= visibleDockRange.start && index < visibleDockRange.end ? 'opacity-100' : 'opacity-0 w-0 h-0 p-0 m-0 pointer-events-none',
                       focusedDockItemIndex === index && 'ring-2 ring-accent ring-offset-2 ring-offset-background scale-110 shadow-lg'
                   )}
                   onClick={app.action}
@@ -525,7 +506,7 @@ export function DesktopEnvironment() {
                   onBlur={() => { if(focusedDockItemIndex === index) setFocusedDockItemIndex(null);}}
                   aria-label={`Launch ${app.name}`}
                   data-ai-hint={app.dataAiHint || app.name.toLowerCase().replace(' ', '')}
-                  tabIndex={isBottomDockVisible && index >= visibleDockRange.start && index < visibleDockRange.end ? 0 : -1} // Make focusable only when visible
+                  tabIndex={isBottomDockVisible && index >= visibleDockRange.start && index < visibleDockRange.end ? 0 : -1}
               >
                   <app.icon className="w-5 h-5 md:w-6 md:h-6 text-accent" />
                   <span className="text-[8px] md:text-[10px] text-center radiant-text truncate w-full">{app.name}</span>
