@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { InfoIcon, Cpu, MonitorSmartphone, Palette, HardDrive, PieChart } from 'lucide-react';
+import { InfoIcon, Cpu, MonitorSmartphone, Palette, HardDrive, PieChart, LinkIcon, RefreshCw, Activity, DatabaseIcon, Puzzle } from 'lucide-react';
 
 interface InfoItem {
   label: string;
@@ -124,6 +124,27 @@ Execute modelOverwrite result:
 OverwriteSet Selected
 `;
 
+const foundationalModelStateRaw = `
+Foundational model state: Ready
+Model Name: v2Nano
+Version: 2024.09.25.2033
+File path: /Users/hanna/Library/Application Support/Google/Chrome/OptGuideOnDeviceModel/2024.9.25.2033
+Model crash count (current/maximum): 0/3
+Foundational model criteria
+Property	Value
+device capable	true
+disk space available	true
+enabled by enterprise policy	true
+enabled by feature	true
+is already installing	true
+on device feature recently used	true
+out of retention	false
+Supplementary Models
+OPTIMIZATION_TARGET	Status
+OPTIMIZATION_TARGET_LANGUAGE_DETECTION	Ready
+OPTIMIZATION_TARGET_TEXT_SAFETY	Ready
+`;
+
 interface ParsedSegment {
   key: string;
   segment: string;
@@ -131,6 +152,24 @@ interface ParsedSegment {
   resultStatus?: string;
   resultOutput?: string;
   resultTime?: string;
+}
+
+interface FoundationalModelState {
+  state?: string;
+  modelName?: string;
+  version?: string;
+  filePath?: string;
+  crashCount?: string;
+}
+
+interface ModelCriteria {
+  property: string;
+  value: string;
+}
+
+interface SupplementaryModel {
+  target: string;
+  status: string;
 }
 
 function parseSegmentationData(rawData: string): ParsedSegment[] {
@@ -157,9 +196,9 @@ function parseSegmentationData(rawData: string): ParsedSegment[] {
           segment.resultStatus = statusMatch[1].trim();
           segment.resultOutput = statusMatch[2].trim();
           const timeVal = parseInt(statusMatch[3].trim());
-          segment.resultTime = timeVal > 0 ? new Date(timeVal / 1000).toLocaleString() : 'N/A'; // Assuming microseconds
+          segment.resultTime = timeVal > 0 ? new Date(timeVal / 1000).toLocaleString() : 'N/A';
         } else {
-          segment.resultOutput = resultText; // Fallback
+          segment.resultOutput = resultText; 
         }
       } else if (resultText.startsWith("Time:")) {
         const timeMatch = resultText.match(/Time: (.*)/);
@@ -190,8 +229,60 @@ const parsedSegmentationItems = parseSegmentationData(segmentationRawText).map(s
 }));
 
 
-const Section: React.FC<{ title: string; items: InfoItem[]; icon?: React.ElementType, defaultOpen?: boolean }> = ({ title, items, icon: Icon, defaultOpen }) => (
-  <AccordionItem value={title.toLowerCase().replace(/\s/g, '-')}>
+function parseFoundationalModelData(rawText: string): { modelState: FoundationalModelState, criteria: ModelCriteria[], supplementary: SupplementaryModel[] } {
+    const modelState: FoundationalModelState = {};
+    const criteria: ModelCriteria[] = [];
+    const supplementary: SupplementaryModel[] = [];
+
+    const lines = rawText.trim().split('\n');
+    let currentSection = '';
+
+    lines.forEach(line => {
+        if (line.startsWith('Foundational model state:')) {
+            modelState.state = line.split(': ')[1];
+        } else if (line.startsWith('Model Name:')) {
+            modelState.modelName = line.split(': ')[1];
+        } else if (line.startsWith('Version:')) {
+            modelState.version = line.split(': ')[1];
+        } else if (line.startsWith('File path:')) {
+            modelState.filePath = line.split(': ')[1];
+        } else if (line.startsWith('Model crash count')) {
+            modelState.crashCount = line.split(': ')[1];
+        } else if (line.startsWith('Foundational model criteria')) {
+            currentSection = 'criteria';
+        } else if (line.startsWith('Supplementary Models')) {
+            currentSection = 'supplementary';
+        } else if (line.startsWith('OPTIMIZATION_TARGET')) { // Header for supplementary
+            return;
+        }
+         else if (currentSection === 'criteria' && line.includes('\t')) {
+            const [property, value] = line.split('\t');
+            if (property && value && property.trim() !== 'Property' && property.trim() !== 'Value') {
+                 criteria.push({ property: property.trim(), value: value.trim() });
+            }
+        } else if (currentSection === 'supplementary' && line.trim()) {
+            const parts = line.split(/\s+/); // Split by whitespace
+            if (parts.length >= 2) {
+                 supplementary.push({ target: parts[0], status: parts.slice(1).join(' ') });
+            }
+        }
+    });
+    return { modelState, criteria, supplementary };
+}
+
+const { modelState, criteria, supplementary } = parseFoundationalModelData(foundationalModelStateRaw);
+
+const foundationalModelStateItems: InfoItem[] = [
+    { label: "State", value: modelState.state || "N/A" },
+    { label: "Model Name", value: modelState.modelName || "N/A" },
+    { label: "Version", value: modelState.version || "N/A" },
+    { label: "File Path", value: <span className="text-xs break-all">{modelState.filePath || "N/A"}</span> },
+    { label: "Crash Count", value: modelState.crashCount || "N/A" },
+];
+
+
+const Section: React.FC<{ title: string; items?: InfoItem[]; children?: React.ReactNode; icon?: React.ElementType, defaultOpen?: boolean }> = ({ title, items, children, icon: Icon, defaultOpen }) => (
+  <AccordionItem value={title.toLowerCase().replace(/\s+/g, '-').replace(/[():]/g, '')}>
     <AccordionTrigger className="text-base hover:no-underline">
       <div className="flex items-center">
         {Icon && <Icon className="w-5 h-5 mr-2 text-primary" />}
@@ -199,16 +290,19 @@ const Section: React.FC<{ title: string; items: InfoItem[]; icon?: React.Element
       </div>
     </AccordionTrigger>
     <AccordionContent>
-      <Table className="text-xs">
-        <TableBody>
-          {items.map((item, index) => (
-            <TableRow key={`${item.label}-${index}`}>
-              <TableCell className="font-medium text-muted-foreground w-1/3 py-1.5 px-2 radiant-text align-top">{item.label}</TableCell>
-              <TableCell className="py-1.5 px-2 radiant-text align-top">{item.value}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      {items && (
+        <Table className="text-xs">
+          <TableBody>
+            {items.map((item, index) => (
+              <TableRow key={`${item.label}-${index}`}>
+                <TableCell className="font-medium text-muted-foreground w-1/3 py-1.5 px-2 radiant-text align-top">{item.label}</TableCell>
+                <TableCell className="py-1.5 px-2 radiant-text align-top">{item.value}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+      {children}
     </AccordionContent>
   </AccordionItem>
 );
@@ -227,12 +321,119 @@ export function SystemInformationApp() {
       </CardHeader>
       <CardContent className="flex-grow p-2 overflow-hidden">
         <ScrollArea className="h-full p-1 -m-1">
-          <Accordion type="multiple" defaultValue={['graphics-feature-status', 'version-information', 'segmentation-internals']} className="w-full space-y-1">
-            <Section title="Graphics Feature Status" items={graphicsFeatureStatus} icon={Palette} defaultOpen />
+          <Accordion type="multiple" defaultValue={['version-information', 'graphics-feature-status', 'segmentation-internals', 'on-device-model-information']} className="w-full space-y-1">
             <Section title="Version Information" items={versionInformation} icon={Cpu} defaultOpen />
+            <Section title="Graphics Feature Status" items={graphicsFeatureStatus} icon={Palette} defaultOpen />
             <Section title="Driver Information (Host)" items={driverInformation} icon={HardDrive} />
             <Section title="Display Information (Host)" items={displayInformation} icon={MonitorSmartphone} />
             <Section title="Segmentation Internals (Host)" items={parsedSegmentationItems} icon={PieChart} defaultOpen />
+            
+            <Section title="On-Device Model Information" icon={DatabaseIcon} defaultOpen>
+                 <h4 className="text-sm font-semibold mt-2 mb-1 text-primary radiant-text">Foundational Model State</h4>
+                 <Table className="text-xs mb-3">
+                    <TableBody>
+                        {foundationalModelStateItems.map((item, index) => (
+                            <TableRow key={`model-state-${index}`}>
+                                <TableCell className="font-medium text-muted-foreground w-1/3 py-1 px-2 radiant-text align-top">{item.label}</TableCell>
+                                <TableCell className="py-1 px-2 radiant-text align-top">{item.value}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                 </Table>
+                 <h4 className="text-sm font-semibold mt-3 mb-1 text-primary radiant-text">Foundational Model Criteria</h4>
+                 <Table className="text-xs mb-3">
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="radiant-text">Property</TableHead>
+                            <TableHead className="radiant-text">Value</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {criteria.map((crit, index) => (
+                            <TableRow key={`criteria-${index}`}>
+                                <TableCell className="py-1 px-2 radiant-text capitalize">{crit.property}</TableCell>
+                                <TableCell className="py-1 px-2 radiant-text">{crit.value}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                 </Table>
+                 <h4 className="text-sm font-semibold mt-3 mb-1 text-primary radiant-text">Supplementary Models</h4>
+                 <Table className="text-xs">
+                     <TableHeader>
+                        <TableRow>
+                            <TableHead className="radiant-text">Target</TableHead>
+                            <TableHead className="radiant-text">Status</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {supplementary.map((supModel, index) => (
+                            <TableRow key={`sup-model-${index}`}>
+                                <TableCell className="py-1 px-2 radiant-text">{supModel.target}</TableCell>
+                                <TableCell className="py-1 px-2 radiant-text">{supModel.status}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                 </Table>
+            </Section>
+
+            <Section title="Related Website Sets (Host)" icon={LinkIcon}>
+              <div className="space-y-2 text-xs max-h-60 overflow-y-auto">
+                {JSON.parse(segmentationRawText.substring(segmentationRawText.indexOf('[ {'), segmentationRawText.lastIndexOf('} ]') + 3) || "[]").map((set: any, index: number) => (
+                  <div key={index} className="p-1.5 border-b border-border/30">
+                    <p><strong className="text-muted-foreground/80">Primary:</strong> {set.PrimarySites.join(', ')}</p>
+                    {set.AssociatedSites && <p><strong className="text-muted-foreground/80">Associated:</strong> {set.AssociatedSites.join(', ')}</p>}
+                    {set.ServiceSites && <p><strong className="text-muted-foreground/80">Service:</strong> {set.ServiceSites.join(', ')}</p>}
+                  </div>
+                ))}
+              </div>
+            </Section>
+            <Section title="Sync Internals (Host)" icon={RefreshCw}>
+                {JSON.parse(segmentationRawText.substring(segmentationRawText.indexOf('{"actionable_error":'), segmentationRawText.lastIndexOf('}')+1) || "{}").details?.map((detailSet: any, index: number) => (
+                    detailSet.data && (
+                        <div key={`sync-detail-${index}`} className="mb-2">
+                            <h5 className="text-xs font-semibold text-primary/90 mb-0.5 radiant-text">{detailSet.title}</h5>
+                            <Table className="text-[10px]">
+                                <TableBody>
+                                {detailSet.data.map((item: any, idx: number) => (
+                                    <TableRow key={`${detailSet.title}-${idx}`}>
+                                        <TableCell className="font-medium text-muted-foreground w-2/5 py-0.5 px-1.5 radiant-text align-top">{item.stat_name}</TableCell>
+                                        <TableCell className="py-0.5 px-1.5 radiant-text align-top">{item.stat_value}</TableCell>
+                                    </TableRow>
+                                ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    )
+                ))}
+                 <h5 className="text-xs font-semibold text-primary/90 mt-2 mb-0.5 radiant-text">Data Type Status</h5>
+                 <Table className="text-[10px]">
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="radiant-text">Name</TableHead>
+                            <TableHead className="radiant-text">State</TableHead>
+                             <TableHead className="radiant-text">Total</TableHead>
+                            <TableHead className="radiant-text">Live</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {JSON.parse(segmentationRawText.substring(segmentationRawText.indexOf('{"actionable_error":'), segmentationRawText.lastIndexOf('}')+1) || "{}").type_status?.slice(1).map((type: any, index: number) => (
+                             <TableRow key={`type-status-${index}`}>
+                                <TableCell className="py-0.5 px-1.5 radiant-text">{type.name}</TableCell>
+                                <TableCell className="py-0.5 px-1.5 radiant-text">{type.state}</TableCell>
+                                <TableCell className="py-0.5 px-1.5 radiant-text">{type.num_entries}</TableCell>
+                                <TableCell className="py-0.5 px-1.5 radiant-text">{type.num_live}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                 </Table>
+            </Section>
+            <Section title="Device Event Log (Host)" icon={Activity}>
+                <pre className="text-[10px] whitespace-pre-wrap max-h-48 overflow-y-auto bg-black/20 p-1.5 rounded-md radiant-text">
+                    {segmentationRawText.substring(segmentationRawText.indexOf('device_event_log'), segmentationRawText.indexOf('🔗 extensions')).split('\n').slice(1, 16).join('\n') + "\n..."}
+                </pre>
+            </Section>
+
+
           </Accordion>
         </ScrollArea>
       </CardContent>
